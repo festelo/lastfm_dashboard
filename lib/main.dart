@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:lastfm_dashboard/components/loading_screen.dart';
+import 'package:lastfm_dashboard/provider.dart';
 
 import 'pages/home_page/home_page.dart';
 
@@ -47,6 +49,11 @@ class DashboardApp extends StatelessWidget {
           ),
         )
       ),
+      textTheme: TextTheme(
+        bodyText2: TextStyle(
+          color: Colors.white60
+        )
+      ),
       scaffoldBackgroundColor: Colors.black,
       cardColor: Colors.grey[850],
       bottomSheetTheme: BottomSheetThemeData(
@@ -64,7 +71,10 @@ class DashboardApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: theme(),
       darkTheme: darkTheme(),
-      home: HomePage(),
+      home: ProviderWrapper(
+        child: HomePage(),
+        loadingChild: LoadingScreen()
+      )
     );
   }
 }

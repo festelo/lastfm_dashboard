@@ -8,7 +8,11 @@ class ArtistsChart extends StatelessWidget {
     return Padding(
       padding: EdgeInsets.all(10),
       child: BaseChart([
-        ChartSeries()
+        ChartSeries(
+          entities: [],
+          color: ChartColor.blue,
+          name: 'Sample'
+        )
       ])
     );
   }

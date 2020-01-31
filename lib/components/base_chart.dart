@@ -52,7 +52,7 @@ class BaseChart extends StatelessWidget {
           return c.MaterialPalette.transparent;
         },
       )
-    );
+    ).toList();
   }
 
   final List<ChartSeries> series;
@@ -63,7 +63,7 @@ class BaseChart extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: EdgeInsets.all(10),
-      child: c.LineChart(_convertChartSeries(series),
+      child: c.TimeSeriesChart(_convertChartSeries(series),
         animate: false,
         behaviors: [
           c.PanBehavior(),
