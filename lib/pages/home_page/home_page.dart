@@ -4,6 +4,7 @@ import 'package:lastfm_dashboard/models/models.dart';
 import 'package:lastfm_dashboard/pages/home_page/accounts_modal.dart';
 import 'package:lastfm_dashboard/pages/home_page/viewmodel.dart';
 import 'package:lastfm_dashboard/services/auth/auth_service.dart';
+import 'package:lastfm_dashboard/services/lastfm/lastfm_api.dart';
 import 'package:lastfm_dashboard/services/local_database/database_service.dart';
 import 'package:provider/provider.dart';
 
@@ -12,6 +13,7 @@ import 'artists_tab/artists_tab.dart';
 /// Providers: 
 /// - LocalDatabaseService
 /// - AuthService
+/// - LastFMApi
 class HomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -19,6 +21,7 @@ class HomePage extends StatelessWidget {
       create: (_) => HomePageViewModel(
         authService: Provider.of<AuthService>(context),
         db: Provider.of<LocalDatabaseService>(context),
+        lastFMApi: Provider.of<LastFMApi>(context)
       ),
       child: _HomePageContent(),
     );
@@ -26,7 +29,6 @@ class HomePage extends StatelessWidget {
 }
 
 class _HomePageContent extends StatelessWidget {
-  static const image = "https://lastfm.freetls.fastly.net/i/u/avatar170s/9d2c9621f61b7a07532ada4b9fbd70a3.webp";
   final GlobalKey<ScaffoldState> scaffoldKey = GlobalKey();
   
   void accountsManagement(BuildContext context) {
@@ -55,7 +57,9 @@ class _HomePageContent extends StatelessWidget {
             alignment: Alignment.center,
             child: IconButton(
               icon: CircleAvatar(
-                backgroundImage: NetworkImage(image),
+                backgroundImage: user.imageInfo?.small == null
+                  ? null
+                  : NetworkImage(user.imageInfo?.small),
               ),
               onPressed: () => accountsManagement(context)
             )

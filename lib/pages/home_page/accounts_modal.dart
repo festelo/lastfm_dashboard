@@ -10,7 +10,6 @@ class AccountsModal extends StatefulWidget {
 }
 
 class _AccountsModalState extends State<AccountsModal> {
-  static const image = "https://lastfm.freetls.fastly.net/i/u/avatar170s/9d2c9621f61b7a07532ada4b9fbd70a3.webp";
   var _connecting = false;
 
   TextEditingController _connectingController = TextEditingController();
@@ -23,7 +22,9 @@ class _AccountsModalState extends State<AccountsModal> {
       child: Row(
         children: <Widget>[
           CircleAvatar(
-            backgroundImage: NetworkImage(user.imageUrl),
+            backgroundImage: user.imageInfo?.small == null
+              ? null
+              : NetworkImage(user.imageInfo?.small),
           ),
           SizedBox(width: 20,),
           Expanded(
@@ -46,13 +47,7 @@ class _AccountsModalState extends State<AccountsModal> {
 
   void add(String username) {
     Provider.of<HomePageViewModel>(context, listen: false)
-      .addAccountAndSwitch(
-        User(
-          imageUrl: image,
-          lastSync: DateTime.now(),
-          username: username
-        )
-      );
+      .addAccountAndSwitch(username);
   }
 
   void remove(String username) {

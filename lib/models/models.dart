@@ -1,70 +1,132 @@
 import 'database_mapped_model.dart';
+
+class ImageInfo {
+  final String small;
+  final String medium;
+  final String large;
+  final String extraLarge;
+
+  ImageInfo({
+    this.small,
+    this.medium,
+    this.large,
+    this.extraLarge
+  });
+
+  ImageInfo.fromMap(Map<String, dynamic> map):
+    small = map['small'],
+    medium = map['medium'],
+    large = map['large'],
+    extraLarge = map['extraLarge'];
+
+  Map<String, dynamic> toMap() => {
+    'small': small,
+    'medium': medium,
+    'large': large,
+    'extraLarge': extraLarge
+  };
+}
+
 class User extends DatabaseMappedModel {
   String get id => username;
 
   final String username;
-  final String imageUrl;
   final DateTime lastSync;
+  final int playCount;
+  final ImageInfo imageInfo;
 
   User({
     this.username,
     this.lastSync,
-    this.imageUrl
+    this.playCount,
+    this.imageInfo
   });
 
   User.deserialize(String username, Map<String, dynamic> dbMap):
     username = username,
-    imageUrl = dbMap['imageUrl'],
+    playCount = dbMap['playCount'],
+    imageInfo = dbMap['imageInfo'] == null
+      ? null
+      : ImageInfo.fromMap(dbMap['imageInfo']),
     lastSync = dbMap['lastSync'] == null 
       ? null
       : DateTime.fromMillisecondsSinceEpoch(dbMap['lastSync']);
 
   @override
   Map<String, dynamic> toDbMap() => {
-    'imageUrl': imageUrl,
-    'lastSync': lastSync?.millisecondsSinceEpoch
+    'lastSync': lastSync?.millisecondsSinceEpoch,
+    'playCount': playCount,
+    'imageInfo': imageInfo?.toMap()
   };
 }
 
 class Artist extends DatabaseMappedModel {
-  final String id;
+  // final String id;
+  String get id => name;
   final String name;
+  final String mbid;
+  final String url;
+  final ImageInfo imageInfo;
 
   Artist({
-    this.id,
+    this.mbid,
     this.name,
+    this.url,
+    this.imageInfo
   });
 
-  Artist.deserialize(String id, Map<String, dynamic> map):
-    id = id,
-    name = map['name'];
+  Artist.deserialize(String name, Map<String, dynamic> map):
+    name = name,
+    mbid = map['mbid'],
+    url = map['url'],
+    imageInfo = map['imageInfo'] == null
+      ? null
+      : ImageInfo.fromMap(map['imageInfo']);
   
   @override
   Map<String, dynamic> toDbMap() => {
-    'name': name
+    'mbid': mbid,
+    'url': url,
+    'imageInfo': imageInfo?.toMap()
   };
 }
 
 class Track extends DatabaseMappedModel {
-  final String id;
+  String get id => artistId + '@' + name;
+  final String mbid;
   final String name;
   final String artistId;
+  final ImageInfo imageInfo;
+  final String url;
+  final bool loved;
 
   Track({
-    this.id,
     this.name,
-    this.artistId
+    this.mbid,
+    this.artistId,
+    this.imageInfo,
+    this.url,
+    this.loved
   });
 
   Track.deserialize(String id, Map<String, dynamic> map):
-    id = id,
+    mbid = map['mbid'],
     name = map['name'],
-    artistId = map['artistId'];
+    url = map['url'],
+    loved = map['loved'],
+    artistId = map['artistId'],
+    imageInfo = map['imageInfo'] == null
+      ? null
+      : ImageInfo.fromMap(map['imageInfo']);
   
   @override
   Map<String, dynamic> toDbMap() => {
     'name': name,
-    'artistId': artistId
+    'mbid': mbid,
+    'url': url,
+    'artistId': artistId,
+    'loved': loved,
+    'imageInfo': imageInfo?.toMap()
   };
 }
 
@@ -81,14 +143,12 @@ class TrackScrobble extends DatabaseMappedModel {
   static const properties = _TrackScrobbleProperties();
 
   final String id;
-  final String name;
   final String trackId;
   final String artistId;
   final DateTime date;
 
   TrackScrobble({
     this.id,
-    this.name,
     this.trackId,
     this.artistId,
     this.date
@@ -96,7 +156,6 @@ class TrackScrobble extends DatabaseMappedModel {
 
   TrackScrobble.deserialize(String id, Map<String, dynamic> map):
     id = id,
-    name = map[properties.name],
     artistId = map[properties.artistId],
     trackId = map[properties.trackId],
     date = map[properties.date] == null 
@@ -105,7 +164,6 @@ class TrackScrobble extends DatabaseMappedModel {
   
   @override
   Map<String, dynamic> toDbMap() => {
-    properties.name: name,
     properties.trackId: trackId,
     properties.artistId: artistId,
     properties.date: date?.millisecondsSinceEpoch

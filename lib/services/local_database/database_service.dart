@@ -33,9 +33,6 @@ class DatabaseBuilder {
   StoreRef<String, Map<String, dynamic>> tracksStore() =>
     StoreRef<String, Map<String, dynamic>>(tracksStorePath);
 
-  StoreRef<String, Map<String, dynamic>> trackScrobblesStore() =>
-    StoreRef<String, Map<String, dynamic>>(trackScrobblesStorePath);
-
   Future<LocalDatabaseService> build() async {
     final directory = await getApplicationDocumentsDirectory();
     final fullPath = join(directory.path, path);
@@ -44,7 +41,7 @@ class DatabaseBuilder {
       usersStore: usersStore(),
       artistsStore: artistsStore(),
       tracksStore: tracksStore(),
-      trackScrobblesStore: trackScrobblesStore()
+      trackScrobblesSubpath: trackScrobblesStorePath
     );
   }
 }
@@ -55,18 +52,16 @@ class LocalDatabaseService {
   final UsersCollection users;
   final ArtistsCollection artists;
   final TracksCollection tracks;
-  final TrackScrobblesCollection trackScrobbles;
 
   LocalDatabaseService(this.database, {
     @required StoreRef<String, Map<String, dynamic>> usersStore,
     @required StoreRef<String, Map<String, dynamic>> artistsStore,
     @required StoreRef<String, Map<String, dynamic>> tracksStore,
-    @required StoreRef<String, Map<String, dynamic>> trackScrobblesStore
+    @required String trackScrobblesSubpath
   }) : 
-    users = UsersCollection(database, usersStore),
+    users = UsersCollection(database, usersStore, trackScrobblesSubpath),
     artists = ArtistsCollection(database, artistsStore),
-    tracks = TracksCollection(database, tracksStore),
-    trackScrobbles = TrackScrobblesCollection(database, trackScrobblesStore);
+    tracks = TracksCollection(database, tracksStore);
 }
 
 class DatabaseEntity<T extends DatabaseMappedModel> {
@@ -86,13 +81,13 @@ class DatabaseEntity<T extends DatabaseMappedModel> {
     return await record.exists(database);
   }
 
-  // Future<void> update(Map<String, dynamic> data, {bool createIfNotExist = false}) async {
-  //   if (createIfNotExist) {
-  //     await record.add(database, data);
-  //   } else {
-  //     await record.update(database, data);
-  //   }
-  // }
+  Future<void> update(Map<String, dynamic> data, {bool createIfNotExist = false}) async {
+    if (createIfNotExist) {
+      await record.add(database, data);
+    } else {
+      await record.update(database, data);
+    }
+  }
 
   /// Create/add object to databse. If [id] is specified, then
   /// the object will be created with this Id, otherwise Id
@@ -111,11 +106,42 @@ class DatabaseEntity<T extends DatabaseMappedModel> {
     return record.onSnapshot(database).map((d) => d == null ? null : constructor(id, d.value));
   }
 
-  Future<void> delete({String id}) async {
+  Future<void> delete() async {
     await record.delete(database);
   }
 }
+class UserEntity extends DatabaseEntity<User> {
+  final String scrobblesSubpath;
 
+  UserEntity({
+    @required this.scrobblesSubpath,
+    String id, 
+    RecordRef<String, Map<String, dynamic>> record,
+    Database database, 
+    User Function(String, Map<String, dynamic>) constructor
+  }): super(
+    id: id, 
+    record: record,
+    database: database, 
+    constructor: constructor
+  );
+
+  StoreRef<String, Map<String, dynamic>> _scrobblesStoreRef(String userId) =>
+    StoreRef<String, Map<String, dynamic>>(scrobblesSubpath + '_' + userId);
+
+  TrackScrobblesCollection get scrobbles {
+    return TrackScrobblesCollection(
+      database,
+      _scrobblesStoreRef(id)
+    );
+  }
+  
+  @override
+  Future<void> delete() async {
+    await scrobbles.delete();
+    await super.delete();
+  }
+}
 
 class _DatabaseCollection<T extends DatabaseMappedModel> {
   final StoreRef<String, Map<String, dynamic>> store;
@@ -180,7 +206,29 @@ class UsersCollection extends _DatabaseCollection<User> {
   UsersCollection(
     Database database, 
     StoreRef<String, Map<String, dynamic>> store,
+    this.scrobblesSubpath
   ) : super(database, store, (id, data) => User.deserialize(id, data));
+  
+  final String scrobblesSubpath;
+
+  @override
+  UserEntity operator [](String id) => UserEntity(
+    id: id,
+    database: database,
+    constructor: constructor,
+    record: record(id),
+    scrobblesSubpath: scrobblesSubpath
+  );
+
+  @override
+  Future<void> delete() async {
+    final users = await getAll();
+    final futures = users
+      .map((v) => this[v.id].scrobbles.delete());
+    await Future.wait(futures);
+    await super.delete();
+    return;
+  }
 }
 
 class ArtistsCollection extends _DatabaseCollection<Artist> {

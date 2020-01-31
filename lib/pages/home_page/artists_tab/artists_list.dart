@@ -1,18 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
-class _ArtistInfo {
-  String name;
-  String image;
-  int scrobbles;
-  Color selectionColor;
-
-  _ArtistInfo({
-    this.name,
-    this.image,
-    this.scrobbles,
-    this.selectionColor
-  });
-}
+import 'viewmodel.dart';
 
 class ArtistsList extends StatefulWidget {
   @override
@@ -24,44 +13,6 @@ class _ArtistsListState extends State<ArtistsList> {
   static const mansonImage = "https://lastfm.freetls.fastly.net/i/u/770x0/cbf5083cc1244b36cb8ef0810528670f.webp#cbf5083cc1244b36cb8ef0810528670f";
   
   var counter = 0;
-
-  final artistsArray = [
-    _ArtistInfo(
-      image: mansonImage,
-      name: "Marilyn Manson",
-      scrobbles: 12345,
-    ),
-    _ArtistInfo(
-      image: msiImage,
-      name: "Mindless Self Indulgence",
-      scrobbles: 12345,
-    ),
-    _ArtistInfo(
-      image: msiImage,
-      name: "Mindless Self Indulgence",
-      scrobbles: 12345,
-    ),
-    _ArtistInfo(
-      image: msiImage,
-      name: "Mindless Self Indulgence",
-      scrobbles: 12345,
-    ),
-    _ArtistInfo(
-      image: msiImage,
-      name: "Mindless Self Indulgence",
-      scrobbles: 12345,
-    ),
-    _ArtistInfo(
-      image: mansonImage,
-      name: "Marilyn Manson",
-      scrobbles: 12345,
-    ),
-    _ArtistInfo(
-      image: mansonImage,
-      name: "Marilyn Manson",
-      scrobbles: 12345,
-    ),
-  ];
 
   Widget listItem({
     String name, 
@@ -140,26 +91,36 @@ class _ArtistsListState extends State<ArtistsList> {
       margin: EdgeInsets.all(10),
       child: Padding(
         padding: EdgeInsets.all(0),
-        child: ListView.builder(
-          padding: EdgeInsets.symmetric(
-            vertical: 10
-          ),
-          itemCount: artistsArray.length,
-          itemBuilder: (_, i) => listItem(
-            image: artistsArray[i].image,
-            name: artistsArray[i].name,
-            scrobbles: artistsArray[i].scrobbles,
-            selectionColor: artistsArray[i].selectionColor,
-            onPressed: () => setState(() => 
-              artistsArray[i].selectionColor = [
-                Colors.red,
-                Colors.green,
-                Colors.orange,
-                Colors.yellow,
-                null
-              ][counter++ % 5]
-            )
-          ),
+        child: StreamBuilder<List<SingleArtistViewModel>>(
+          stream: Provider.of<ArtistsViewModel>(context).artists,
+          builder: (_, snap) {
+            if (snap.connectionState == ConnectionState.waiting)
+              return Center(
+                child: CircularProgressIndicator(),
+              );
+              
+            return ListView.builder(
+              padding: EdgeInsets.symmetric(
+                vertical: 10
+              ),
+              itemCount: snap.data.length,
+              itemBuilder: (_, i) => listItem(
+                image: snap.data[i].artist.imageInfo.small,
+                name: snap.data[i].artist.name,
+                scrobbles: snap.data[i].scrobbles,
+                selectionColor: snap.data[i].selectionColor,
+                // onPressed: () => setState(() => 
+                //   artistsArray[i].selectionColor = [
+                //     Colors.red,
+                //     Colors.green,
+                //     Colors.orange,
+                //     Colors.yellow,
+                //     null
+                //   ][counter++ % 5]
+                // )
+              ),
+            );
+          }
         )
       )
     );

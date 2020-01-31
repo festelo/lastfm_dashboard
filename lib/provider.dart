@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lastfm_dashboard/services/auth/auth_service.dart';
+import 'package:lastfm_dashboard/services/lastfm/lastfm_api.dart';
 import 'package:lastfm_dashboard/services/local_database/database_service.dart';
 import 'package:provider/provider.dart';
 
@@ -41,6 +42,9 @@ class _ProviderWrapperState extends State<ProviderWrapper> {
               ),
               Provider<LocalDatabaseService>(
                 create: (_) => snap.data[1],
+              ),
+              Provider<LastFMApi>(
+                create: (_) => LastFMApi(),
               ),
             ],
             child: widget.child,
