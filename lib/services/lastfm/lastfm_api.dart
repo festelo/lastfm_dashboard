@@ -21,7 +21,8 @@ class LastFMApi {
       queryParameters: {
         'api_key': apiKey,
         'format': 'json'
-      }
+      },
+      receiveDataWhenStatusError: true,
     )
   );
 
@@ -79,12 +80,22 @@ class LastFMApi {
   }
 
   Future<List<LastFMScrobble>> getUserScrobbles(String username) async {
-    final resp = await _request('user.getrecenttracks', {
-      'user': username,
-      'extended': '1'
-    });
+    final scrobbles = <dynamic>[];
+    for(var i = 1; ; i++) {
+      final resp = await _request('user.getrecenttracks', {
+        'user': username,
+        'extended': '1',
+        'limit': '200',
+        'page': i.toString()
+      });
+      scrobbles.addAll(resp['recenttracks']['track']);
+      final totalPages = int.tryParse(resp['recenttracks']['@attr']['totalPages']);
+      if (i >= totalPages) break;
+      print('$i/$totalPages');
+    }
     final res = <LastFMScrobble>[];
-    for (final scrobble in resp['recenttracks']['track']) {
+    for (final scrobble in scrobbles) {
+      if (scrobble['@attr'] != null && scrobble['@attr']['nowplaying'] == "true") continue;
       final artist = Artist(
         imageInfo: _deserializeImage(scrobble['image']), // bypass
         name: scrobble['artist']['name'],
