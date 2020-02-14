@@ -12,7 +12,7 @@ class AccountsModal extends StatefulWidget {
 class _AccountsModalState extends State<AccountsModal> {
   var _connecting = false;
 
-  TextEditingController _connectingController = TextEditingController();
+  final TextEditingController _connectingController = TextEditingController();
 
   Widget userWidget(User user) => Padding(
     padding: EdgeInsets.symmetric(
@@ -100,7 +100,7 @@ class _AccountsModalState extends State<AccountsModal> {
                       padding: EdgeInsets.all(30),
                       child: Text('There\'s some problems'),
                     );
-                  if (snap.data.length == 0)
+                  if (snap.data.isEmpty)
                     return Padding(
                       padding: EdgeInsets.all(20),
                       child: Text(
@@ -136,7 +136,7 @@ class _AccountsModalState extends State<AccountsModal> {
                     controller: _connectingController,
                     onSubmitted: (t) => add(t),
                     decoration: InputDecoration(
-                      hintText: "Last.FM username or link",
+                      hintText: 'Last.FM username or link',
                       suffix: IconButton(
                         onPressed: () {
                           add(_connectingController.text);

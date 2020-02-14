@@ -57,12 +57,12 @@ class BaseChart extends StatelessWidget {
 
   final List<ChartSeries> series;
 
-  BaseChart(this.series);
+  const BaseChart(this.series);
   
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.all(10),
+      padding: const EdgeInsets.all(10),
       child: c.TimeSeriesChart(_convertChartSeries(series),
         animate: false,
         behaviors: [
@@ -73,11 +73,11 @@ class BaseChart extends StatelessWidget {
         defaultRenderer: c.LineRendererConfig(includePoints: true),
         domainAxis: c.DateTimeAxisSpec(
           viewport: c.DateTimeExtents(
-            start: DateTime.now().subtract(Duration(days: 7)),
+            start: DateTime.now().subtract(const Duration(days: 7)),
             end: DateTime.now(),
           )
         ),
-        primaryMeasureAxis: c.NumericAxisSpec(
+        primaryMeasureAxis: const c.NumericAxisSpec(
           viewport: c.NumericExtents(0, 100)
         ),
       )

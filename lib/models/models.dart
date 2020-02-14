@@ -28,7 +28,7 @@ class ImageInfo {
 }
 
 class User extends DatabaseMappedModel {
-  String get id => username;
+  @override String get id => username;
 
   final String username;
   final DateTime lastSync;
@@ -42,8 +42,7 @@ class User extends DatabaseMappedModel {
     this.imageInfo
   });
 
-  User.deserialize(String username, Map<String, dynamic> dbMap):
-    username = username,
+  User.deserialize(this.username, Map<String, dynamic> dbMap):
     playCount = dbMap['playCount'],
     imageInfo = dbMap['imageInfo'] == null
       ? null
@@ -62,7 +61,7 @@ class User extends DatabaseMappedModel {
 
 class Artist extends DatabaseMappedModel {
   // final String id;
-  String get id => name;
+  @override String get id => name;
   final String name;
   final String mbid;
   final String url;
@@ -75,8 +74,7 @@ class Artist extends DatabaseMappedModel {
     this.imageInfo
   });
 
-  Artist.deserialize(String name, Map<String, dynamic> map):
-    name = name,
+  Artist.deserialize(this.name, Map<String, dynamic> map):
     mbid = map['mbid'],
     url = map['url'],
     imageInfo = map['imageInfo'] == null
@@ -92,7 +90,7 @@ class Artist extends DatabaseMappedModel {
 }
 
 class Track extends DatabaseMappedModel {
-  String get id => artistId + '@' + name;
+  @override String get id => artistId + '@' + name;
   final String mbid;
   final String name;
   final String artistId;
@@ -109,7 +107,7 @@ class Track extends DatabaseMappedModel {
     this.loved
   });
 
-  Track.deserialize(String id, Map<String, dynamic> map):
+  Track.deserialize(Map<String, dynamic> map):
     mbid = map['mbid'],
     name = map['name'],
     url = map['url'],
@@ -131,18 +129,18 @@ class Track extends DatabaseMappedModel {
 }
 
 class _TrackScrobbleProperties {
-  final String name = "name";
-  final String trackId = "trackId";
-  final String date = "date";
-  final String artistId = "artistId";
-  final String id = "id";
+  String get name => 'name';
+  String get trackId => 'trackId';
+  String get date => 'date';
+  String get artistId => 'artistId';
+  String get id => 'id';
   const _TrackScrobbleProperties();
 }
 
 class TrackScrobble extends DatabaseMappedModel {
   static const properties = _TrackScrobbleProperties();
 
-  final String id;
+  @override final String id;
   final String trackId;
   final String artistId;
   final DateTime date;
@@ -154,8 +152,7 @@ class TrackScrobble extends DatabaseMappedModel {
     this.date
   });
 
-  TrackScrobble.deserialize(String id, Map<String, dynamic> map):
-    id = id,
+  TrackScrobble.deserialize(this.id, Map<String, dynamic> map):
     artistId = map[properties.artistId],
     trackId = map[properties.trackId],
     date = map[properties.date] == null 

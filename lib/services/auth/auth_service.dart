@@ -18,7 +18,7 @@ class AuthServicePreferences {
 }
 
 class AuthService {
-  BehaviorSubject<String> _currentUserSubject;
+  final BehaviorSubject<String> _currentUserSubject;
   ValueStream<String> get currentUser => _currentUserSubject?.stream;
 
   AuthServicePreferences preferences;

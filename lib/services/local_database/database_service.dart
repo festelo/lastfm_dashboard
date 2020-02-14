@@ -11,11 +11,11 @@ typedef Constructor<T> = T Function(String id, Map<String, dynamic> data);
 
 class DatabaseBuilder {
   DatabaseBuilder({
-    this.path: LocalDatabaseInfo.databaseFileName,
-    this.usersStorePath: LocalDatabaseInfo.usersPath,
-    this.artistsStorePath: LocalDatabaseInfo.artistsPath,
-    this.tracksStorePath: LocalDatabaseInfo.tracksPath,
-    this.trackScrobblesStorePath: LocalDatabaseInfo.trackScrobblesPath,
+    this.path = LocalDatabaseInfo.databaseFileName,
+    this.usersStorePath = LocalDatabaseInfo.usersPath,
+    this.artistsStorePath = LocalDatabaseInfo.artistsPath,
+    this.tracksStorePath = LocalDatabaseInfo.tracksPath,
+    this.trackScrobblesStorePath = LocalDatabaseInfo.trackScrobblesPath,
   });
 
   final String usersStorePath;
@@ -242,7 +242,7 @@ class TracksCollection extends _DatabaseCollection<Track> {
   TracksCollection(
     Database database, 
     StoreRef<String, Map<String, dynamic>> store,
-  ) : super(database, store, (id, data) => Track.deserialize(id, data));
+  ) : super(database, store, (id, data) => Track.deserialize(data));
 }
 
 class TrackScrobblesCollection extends _DatabaseCollection<TrackScrobble> {

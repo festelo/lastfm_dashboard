@@ -9,8 +9,8 @@ class ArtistsList extends StatefulWidget {
 }
 
 class _ArtistsListState extends State<ArtistsList> {
-  static const msiImage = "https://lastfm.freetls.fastly.net/i/u/770x0/e9b435adf77c4cc2ac4d9ff6ce2d3b9e.webp#e9b435adf77c4cc2ac4d9ff6ce2d3b9e";
-  static const mansonImage = "https://lastfm.freetls.fastly.net/i/u/770x0/cbf5083cc1244b36cb8ef0810528670f.webp#cbf5083cc1244b36cb8ef0810528670f";
+  static const msiImage = 'https://lastfm.freetls.fastly.net/i/u/770x0/e9b435adf77c4cc2ac4d9ff6ce2d3b9e.webp#e9b435adf77c4cc2ac4d9ff6ce2d3b9e';
+  static const mansonImage = 'https://lastfm.freetls.fastly.net/i/u/770x0/cbf5083cc1244b36cb8ef0810528670f.webp#cbf5083cc1244b36cb8ef0810528670f';
   
   var counter = 0;
 

@@ -8,7 +8,7 @@ class ProviderWrapper extends StatefulWidget {
   final Widget child;
   final Widget loadingChild;
 
-  ProviderWrapper({
+  const ProviderWrapper({
     @required this.child,
     @required this.loadingChild
   });

@@ -49,7 +49,7 @@ class _HomePageContent extends StatelessWidget {
       appBar: AppBar(
         centerTitle: true,
         automaticallyImplyLeading: false,
-        title: Text("Last.FM Dashboard"),
+        title: Text('Last.FM Dashboard'),
         actions: <Widget>[
           if (user == null) Container()
           else Container(
@@ -87,15 +87,15 @@ class _HomePageContent extends StatelessWidget {
               items: [
                 BottomNavigationBarItem(
                   icon: Icon(Icons.music_note),
-                  title: Text("Tracks")
+                  title: Text('Tracks')
                 ),
                 BottomNavigationBarItem(
                   icon: Icon(Icons.people),
-                  title: Text("Artists")
+                  title: Text('Artists')
                 ),
                 BottomNavigationBarItem(
                   icon: Icon(Icons.library_music),
-                  title: Text("Tags")
+                  title: Text('Tags')
                 ),
               ],
             )

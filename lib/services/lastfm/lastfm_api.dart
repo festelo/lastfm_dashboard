@@ -95,7 +95,7 @@ class LastFMApi {
     }
     final res = <LastFMScrobble>[];
     for (final scrobble in scrobbles) {
-      if (scrobble['@attr'] != null && scrobble['@attr']['nowplaying'] == "true") continue;
+      if (scrobble['@attr'] != null && scrobble['@attr']['nowplaying'] == 'true') continue;
       final artist = Artist(
         imageInfo: _deserializeImage(scrobble['image']), // bypass
         name: scrobble['artist']['name'],

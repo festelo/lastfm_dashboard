@@ -17,15 +17,15 @@ class SingleArtistViewModel {
     this.selectionColor
   });
 }
-class SingleArtistViewModelMutable {
+class _SingleArtistViewModelMutable {
   Artist artist;
   int scrobbles;
-  SingleArtistViewModelMutable({
+  _SingleArtistViewModelMutable({
     this.artist,
     this.scrobbles
   });
   SingleArtistViewModel toImmutable() =>
-    SingleArtistViewModel(artist:  artist, scrobbles: scrobbles);
+    SingleArtistViewModel(artist: artist, scrobbles: scrobbles);
 }
 
 class ArtistsViewModel {
@@ -48,10 +48,12 @@ class ArtistsViewModel {
   }
 
   Future<void> _updateArtists(List<TrackScrobble> scrobbles) async {
-    _artists.values.forEach((a) => a.scrobbles = 0);
+    for (final a in _artists.values)
+      a.scrobbles = 0;
+
     for(final scrobble in scrobbles) {
       if(_artists[scrobble.artistId] == null) {
-        _artists[scrobble.artistId] = SingleArtistViewModelMutable(
+        _artists[scrobble.artistId] = _SingleArtistViewModelMutable(
           artist: await db.artists[scrobble.artistId].get(),
           scrobbles: 1
         );
@@ -62,9 +64,9 @@ class ArtistsViewModel {
     _artistsSubject.add(_artists.values.toList());
   }
 
-  final _artists = <String, SingleArtistViewModelMutable>{}; 
+  final _artists = <String, _SingleArtistViewModelMutable>{}; 
 
-  BehaviorSubject<List<SingleArtistViewModelMutable>> _artistsSubject = BehaviorSubject.seeded(null);
+  final BehaviorSubject<List<_SingleArtistViewModelMutable>> _artistsSubject = BehaviorSubject.seeded(null);
   Stream<List<SingleArtistViewModel>> get artists => 
     _artistsSubject
       .stream
