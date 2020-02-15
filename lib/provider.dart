@@ -10,7 +10,7 @@ class ProviderWrapper extends StatefulWidget {
 
   ProviderWrapper({
     @required this.child,
-    @required this.loadingChild
+    @required this.loadingChild,
   });
 
   @override
@@ -25,10 +25,10 @@ class _ProviderWrapperState extends State<ProviderWrapper> {
     super.initState();
     _futures = [
       AuthService.load(),
-      DatabaseBuilder().build()
+      DatabaseBuilder().build(),
     ];
   }
-  
+
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<List<dynamic>>(
@@ -51,7 +51,7 @@ class _ProviderWrapperState extends State<ProviderWrapper> {
           );
         }
         return widget.loadingChild;
-      }
+      },
     );
   }
 }

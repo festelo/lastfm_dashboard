@@ -2,32 +2,31 @@ import 'package:rxdart/rxdart.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthServicePreferences {
-  Future<SharedPreferences> _pref() => SharedPreferences.getInstance();
-
   const AuthServicePreferences();
 
+  Future<SharedPreferences> get _pref async => SharedPreferences.getInstance();
+
   Future<String> getCurrentUsername() async {
-    final p = await _pref();
+    final p = await _pref;
     return p.getString('currentUser');
-  } 
+  }
 
   Future<void> setCurrentUsername(String value) async {
-    final p = await _pref();
+    final p = await _pref;
     await p.setString('currentUser', value);
-  } 
+  }
 }
 
 class AuthService {
-  BehaviorSubject<String> _currentUserSubject;
-  ValueStream<String> get currentUser => _currentUserSubject?.stream;
-
   AuthServicePreferences preferences;
+  BehaviorSubject<String> _currentUserSubject;
 
   AuthService({
     String username,
-    this.preferences = const AuthServicePreferences()
-  }):
-    _currentUserSubject = BehaviorSubject.seeded(username);
+    this.preferences = const AuthServicePreferences(),
+  }) : _currentUserSubject = BehaviorSubject.seeded(username);
+
+  ValueStream<String> get currentUser => _currentUserSubject?.stream;
 
   static Future<AuthService> load() async {
     final service = AuthService();

@@ -1,5 +1,6 @@
-abstract class DatabaseMappedModel {
-  const DatabaseMappedModel();
+abstract class Entity {
+  const Entity();
+  
   String get id;
 
   /// Map which contains only properties that db

@@ -15,7 +15,6 @@ class ArtistsTab extends StatefulWidget {
 }
 
 class _ArtistsTabState extends State<ArtistsTab> {
-
   @override
   Widget build(BuildContext context) {
     return Provider<ArtistsViewModel>(
@@ -23,20 +22,18 @@ class _ArtistsTabState extends State<ArtistsTab> {
         db: Provider.of<LocalDatabaseService>(context),
         authService: Provider.of<AuthService>(context),
       ),
-      dispose: (_, a) => a.close(),
+      dispose: (_, viewModel) => viewModel.close(),
       child: Column(
         children: [
-          Expanded(
-            child: ArtistsChart()
-          ),
+          Expanded(child: ArtistsChart()),
           Expanded(
             child: Padding(
-              padding: EdgeInsets.only(bottom: 20),
-              child: ArtistsList()
-            )
+              padding: const EdgeInsets.only(bottom: 20),
+              child: ArtistsList(),
+            ),
           )
         ],
-      )
+      ),
     );
   }
 }

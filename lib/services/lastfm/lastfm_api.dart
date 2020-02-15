@@ -6,33 +6,28 @@ class LastFMScrobble {
   final Artist artist;
   final Track track;
   final DateTime date;
-  LastFMScrobble({
-    this.artist,
-    this.track,
-    this.date
-  });
+
+  LastFMScrobble({this.artist, this.track, this.date});
 }
 
 class LastFMApi {
   static const apiKey = sensitive.lastFmKey;
-  final _dio = Dio(
-    BaseOptions(
-      baseUrl: 'http://ws.audioscrobbler.com/2.0/',
-      queryParameters: {
-        'api_key': apiKey,
-        'format': 'json'
-      },
-      receiveDataWhenStatusError: true,
-    )
-  );
 
-  Future<dynamic> _request(String method, Map<String, String> parameters) async {
-    final response = await _dio.get('/', 
-      queryParameters: {
-        'method': method,
-        ...parameters
-      },
+  final _dio = Dio(BaseOptions(
+    baseUrl: 'http://ws.audioscrobbler.com/2.0/',
+    queryParameters: {'api_key': apiKey, 'format': 'json'},
+    receiveDataWhenStatusError: true,
+  ));
+
+  Future<dynamic> _request(
+    String method,
+    Map<String, String> parameters,
+  ) async {
+    final response = await _dio.get(
+      '/',
+      queryParameters: {'method': method, ...parameters},
     );
+
     if (response.data['error'] != null) {
       throw Exception(response.data);
     }
@@ -41,6 +36,7 @@ class LastFMApi {
 
   ImageInfo _deserializeImage(List<dynamic> list) {
     if (list == null) return ImageInfo();
+
     String extraLargeImage;
     String largeImage;
     String mediumImage;
@@ -59,18 +55,18 @@ class LastFMApi {
         smallImage = image['#text'];
       }
     }
+
     return ImageInfo(
       extraLarge: extraLargeImage,
       large: largeImage,
       medium: mediumImage,
-      small: smallImage
+      small: smallImage,
     );
   }
 
   Future<User> getUser(String username) async {
-    final resp = await _request('user.getinfo', {
-      'user': username
-    });
+    final resp = await _request('user.getinfo', {'user': username});
+    
     return User(
       imageInfo: _deserializeImage(resp['user']['image']),
       lastSync: DateTime.now(),
@@ -81,7 +77,7 @@ class LastFMApi {
 
   Future<List<LastFMScrobble>> getUserScrobbles(String username) async {
     final scrobbles = <dynamic>[];
-    for(var i = 1; ; i++) {
+    for (var i = 1;; i++) {
       final resp = await _request('user.getrecenttracks', {
         'user': username,
         'extended': '1',
@@ -89,18 +85,20 @@ class LastFMApi {
         'page': i.toString()
       });
       scrobbles.addAll(resp['recenttracks']['track']);
-      final totalPages = int.tryParse(resp['recenttracks']['@attr']['totalPages']);
+      final totalPages =
+          int.tryParse(resp['recenttracks']['@attr']['totalPages']);
       if (i >= totalPages) break;
       print('$i/$totalPages');
     }
     final res = <LastFMScrobble>[];
     for (final scrobble in scrobbles) {
-      if (scrobble['@attr'] != null && scrobble['@attr']['nowplaying'] == "true") continue;
+      if (scrobble['@attr'] != null &&
+          scrobble['@attr']['nowplaying'] == "true") continue;
       final artist = Artist(
         imageInfo: _deserializeImage(scrobble['image']), // bypass
         name: scrobble['artist']['name'],
         mbid: scrobble['artist']['mbid'],
-        url: scrobble['artist']['url']
+        url: scrobble['artist']['url'],
       );
       final track = Track(
         imageInfo: _deserializeImage(scrobble['image']),
@@ -108,14 +106,10 @@ class LastFMApi {
         mbid: scrobble['mbid'],
         name: scrobble['name'],
         url: scrobble['url'],
-        loved: scrobble['loved'] == '1'
+        loved: scrobble['loved'] == '1',
       );
       res.add(
-        LastFMScrobble(
-          artist: artist,
-          track: track,
-          date: DateTime.now()
-        )
+        LastFMScrobble(artist: artist, track: track, date: DateTime.now()),
       );
     }
     return res;
