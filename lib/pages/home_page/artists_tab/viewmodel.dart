@@ -30,6 +30,18 @@ class ArtistsViewModel {
   StreamSubscription _authSubscription;
   StreamSubscription _scrobblesSubscription;
 
+  final _artists = <String, SingleArtistViewModelMutable>{};
+
+  BehaviorSubject<List<SingleArtistViewModelMutable>> _artistsSubject =
+      BehaviorSubject.seeded(null);
+
+  Stream<List<SingleArtistViewModel>> get artists =>
+      _artistsSubject.stream.map((artist) => artist
+          .where((a) => a.scrobbles > 0)
+          .map((a) => a.toImmutable())
+          .toList()
+            ..sort((b, a) => a.scrobbles.compareTo(b.scrobbles)));
+
   ArtistsViewModel({this.db, this.authService}) {
     _authSubscription = authService.currentUser.listen((username) {
       _scrobblesSubscription?.cancel();
@@ -53,17 +65,6 @@ class ArtistsViewModel {
     }
     _artistsSubject.add(_artists.values.toList());
   }
-
-  final _artists = <String, SingleArtistViewModelMutable>{};
-
-  BehaviorSubject<List<SingleArtistViewModelMutable>> _artistsSubject =
-      BehaviorSubject.seeded(null);
-  Stream<List<SingleArtistViewModel>> get artists =>
-      _artistsSubject.stream.map((artist) => artist
-          .where((a) => a.scrobbles > 0)
-          .map((a) => a.toImmutable())
-          .toList()
-            ..sort((b, a) => a.scrobbles.compareTo(b.scrobbles)));
 
   Future<void> close() async {
     await _authSubscription?.cancel();

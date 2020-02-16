@@ -6,15 +6,13 @@ class ArtistsChart extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.all(10),
-      child: BaseChart(
-        [
-          ChartSeries(
-            entities: [],
-            color: ChartColor.blue,
-            name: 'Sample',
-          )
-        ],
-      ),
+      child: BaseChart([
+        ChartSeries(
+          entities: [],
+          color: ChartColor.blue,
+          name: 'Sample',
+        )
+      ]),
     );
   }
 }

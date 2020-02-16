@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lastfm_dashboard/components/button.dart';
 import 'package:lastfm_dashboard/components/no_glow_scroll_behavior.dart';
 import 'package:lastfm_dashboard/models/models.dart';
 import 'package:lastfm_dashboard/pages/home_page/viewmodel.dart';
@@ -16,32 +17,42 @@ class _AccountsModalState extends State<AccountsModal> {
 
   Widget userWidget(User user) {
     return Padding(
-      padding: EdgeInsets.symmetric(vertical: 5),
-      child: InkWell(
-        child: Row(
-          children: <Widget>[
-            CircleAvatar(
-              backgroundImage: user.imageInfo?.small == null
-                  ? null
-                  : NetworkImage(user.imageInfo?.small),
-            ),
-            SizedBox(width: 20),
-            Expanded(
-              child: Text(
-                user.username,
-                style: Theme.of(context).textTheme.subtitle,
-              ),
-            ),
-            IconButton(
-              onPressed: () => remove(user.username),
-              icon: Icon(Icons.delete),
-            )
-          ],
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.all(
+            Radius.circular(8),
+          ),
         ),
-        onTap: () {
-          switchAccount(user.username);
-          Navigator.of(context).pop();
-        },
+        child: InkWell(
+          onTap: () {
+            switchAccount(user.username);
+            Navigator.of(context).pop();
+          },
+          child: Row(
+            children: <Widget>[
+              Padding(
+                padding: const EdgeInsets.all(4),
+                child: CircleAvatar(
+                  backgroundImage: user.imageInfo?.small == null
+                      ? null
+                      : NetworkImage(user.imageInfo?.small),
+                ),
+              ),
+              SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  user.username,
+                  style: Theme.of(context).textTheme.subtitle,
+                ),
+              ),
+              IconButton(
+                onPressed: () => remove(user.username),
+                icon: Icon(Icons.delete),
+              )
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -64,7 +75,7 @@ class _AccountsModalState extends State<AccountsModal> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(24),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
@@ -72,14 +83,9 @@ class _AccountsModalState extends State<AccountsModal> {
             children: <Widget>[
               Expanded(
                 child: Text(
-                  'Accounts management',
+                  'Account management',
                   style: Theme.of(context).textTheme.subtitle,
                 ),
-              ),
-              IconButton(
-                iconSize: 24,
-                icon: Icon(Icons.close),
-                onPressed: () => Navigator.of(context).pop(),
               )
             ],
           ),
@@ -115,14 +121,9 @@ class _AccountsModalState extends State<AccountsModal> {
             ),
           ),
           if (!_connecting)
-            Container(
-              width: double.infinity,
-              child: FlatButton(
-                onPressed: () {
-                  setState(() => _connecting = true);
-                },
-                child: Text('Connect account'),
-              ),
+            ActionOutlineButton(
+              onTap: () => setState(() => _connecting = true),
+              text: 'Connect account',
             )
           else
             Row(
@@ -130,17 +131,14 @@ class _AccountsModalState extends State<AccountsModal> {
                 Expanded(
                   child: TextField(
                     autofocus: true,
+                    cursorColor: Theme.of(context).accentColor,
                     controller: _connectingController,
-                    onSubmitted: (t) => add(t),
+                    onSubmitted: (text) {
+                      add(_connectingController.text);
+                      Navigator.of(context).pop();
+                    },
                     decoration: InputDecoration(
-                      hintText: "Last.FM username or link",
-                      suffix: IconButton(
-                        onPressed: () {
-                          add(_connectingController.text);
-                          Navigator.of(context).pop();
-                        },
-                        icon: Icon(Icons.check_circle),
-                      ),
+                      hintText: "Last.fm username or link",
                     ),
                   ),
                 ),

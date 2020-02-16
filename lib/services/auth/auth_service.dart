@@ -1,51 +1,50 @@
+import 'package:flutter/cupertino.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthServicePreferences {
-  const AuthServicePreferences();
+  const AuthServicePreferences(this.preferences);
 
-  Future<SharedPreferences> get _pref async => SharedPreferences.getInstance();
+  final SharedPreferences preferences;
 
   Future<String> getCurrentUsername() async {
-    final p = await _pref;
-    return p.getString('currentUser');
+    return preferences.getString('currentUser');
   }
 
-  Future<void> setCurrentUsername(String value) async {
-    final p = await _pref;
-    await p.setString('currentUser', value);
+  Future<bool> setCurrentUsername(String value) async {
+    return preferences.setString('currentUser', value);
   }
 }
 
 class AuthService {
-  AuthServicePreferences preferences;
-  BehaviorSubject<String> _currentUserSubject;
-
   AuthService({
     String username,
-    this.preferences = const AuthServicePreferences(),
+    @required this.authServicePreferences,
   }) : _currentUserSubject = BehaviorSubject.seeded(username);
+
+  AuthServicePreferences authServicePreferences;
+  BehaviorSubject<String> _currentUserSubject;
 
   ValueStream<String> get currentUser => _currentUserSubject?.stream;
 
-  static Future<AuthService> load() async {
-    final service = AuthService();
+  static Future<AuthService> load(AuthServicePreferences servicePreferences) async {
+    final service = AuthService(authServicePreferences: servicePreferences);
     await service.loadUser();
     return service;
   }
 
   Future<void> loadUser() async {
-    final username = await preferences.getCurrentUsername();
+    final username = await authServicePreferences.getCurrentUsername();
     _currentUserSubject.add(username);
   }
 
   Future<void> switchUser(String username) async {
-    await preferences.setCurrentUsername(username);
+    await authServicePreferences.setCurrentUsername(username);
     _currentUserSubject.add(username);
   }
 
   Future<void> logOut() async {
-    await preferences.setCurrentUsername(null);
+    await authServicePreferences.setCurrentUsername(null);
     _currentUserSubject.add(null);
   }
 

@@ -3,11 +3,11 @@ import 'package:dio/dio.dart';
 import 'package:lastfm_dashboard/sensitive.dart' as sensitive;
 
 class LastFMScrobble {
+  LastFMScrobble({this.artist, this.track, this.date});
+
   final Artist artist;
   final Track track;
   final DateTime date;
-
-  LastFMScrobble({this.artist, this.track, this.date});
 }
 
 class LastFMApi {
@@ -65,12 +65,12 @@ class LastFMApi {
   }
 
   Future<User> getUser(String username) async {
-    final resp = await _request('user.getinfo', {'user': username});
-    
+    final response = await _request('user.getinfo', {'user': username});
+
     return User(
-      imageInfo: _deserializeImage(resp['user']['image']),
+      imageInfo: _deserializeImage(response['user']['image']),
       lastSync: DateTime.now(),
-      playCount: int.tryParse(resp['user']['playcount']),
+      playCount: int.tryParse(response['user']['playcount']),
       username: username,
     );
   }
@@ -87,19 +87,27 @@ class LastFMApi {
       scrobbles.addAll(resp['recenttracks']['track']);
       final totalPages =
           int.tryParse(resp['recenttracks']['@attr']['totalPages']);
-      if (i >= totalPages) break;
+
+      if (i >= totalPages) {
+        break;
+      }
       print('$i/$totalPages');
     }
+
     final res = <LastFMScrobble>[];
     for (final scrobble in scrobbles) {
       if (scrobble['@attr'] != null &&
-          scrobble['@attr']['nowplaying'] == "true") continue;
+          scrobble['@attr']['nowplaying'] == "true") {
+        continue;
+      }
+      
       final artist = Artist(
         imageInfo: _deserializeImage(scrobble['image']), // bypass
         name: scrobble['artist']['name'],
         mbid: scrobble['artist']['mbid'],
         url: scrobble['artist']['url'],
       );
+
       final track = Track(
         imageInfo: _deserializeImage(scrobble['image']),
         artistId: artist.id,
@@ -108,10 +116,12 @@ class LastFMApi {
         url: scrobble['url'],
         loved: scrobble['loved'] == '1',
       );
+
       res.add(
         LastFMScrobble(artist: artist, track: track, date: DateTime.now()),
       );
     }
+    
     return res;
   }
 }

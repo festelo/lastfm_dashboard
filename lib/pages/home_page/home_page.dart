@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lastfm_dashboard/components/button.dart';
 import 'package:lastfm_dashboard/pages/home_page/artists_tab/artists_tab.dart';
 import 'package:provider/provider.dart';
 import 'package:lastfm_dashboard/components/loading_screen.dart';
@@ -31,15 +32,7 @@ class _HomePageContent extends StatelessWidget {
   final GlobalKey<ScaffoldState> scaffoldKey = GlobalKey();
 
   void accountsManagement(BuildContext context) {
-    scaffoldKey.currentState.showBottomSheet(
-      (_) => AccountsModal(),
-      shape: Border(
-        top: BorderSide(
-          color: Theme.of(context).dividerColor,
-          width: 2,
-        ),
-      ),
-    );
+    scaffoldKey.currentState.showBottomSheet((_) => AccountsModal());
   }
 
   Widget content(BuildContext context, User user) {
@@ -48,13 +41,18 @@ class _HomePageContent extends StatelessWidget {
       appBar: AppBar(
         centerTitle: true,
         automaticallyImplyLeading: false,
-        title: Text("Last.fm Dashboard"),
+        title: Text(
+          "Last.fm Dashboard",
+          style: TextStyle(
+            color: Theme.of(context).accentColor,
+          ),
+        ),
         actions: <Widget>[
           if (user == null)
             Container()
           else
             Container(
-              margin: const EdgeInsets.all(5),
+              margin: const EdgeInsets.all(4),
               alignment: Alignment.center,
               child: IconButton(
                 icon: CircleAvatar(
@@ -69,15 +67,9 @@ class _HomePageContent extends StatelessWidget {
       ),
       body: user == null
           ? Center(
-              child: Card(
-                child: Container(
-                  height: 100,
-                  width: double.infinity,
-                  child: FlatButton(
-                    child: Text('Pick an account'),
-                    onPressed: () => accountsManagement(context),
-                  ),
-                ),
+              child: ActionButton(
+                text: 'Pick an account',
+                onTap: () => accountsManagement(context),
               ),
             )
           : Column(

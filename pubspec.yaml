@@ -25,3 +25,16 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+
+  assets:
+    - assets/
+
+  fonts:
+    - family: Lato
+      fonts:
+        - asset: assets/font/Lato-Regular.ttf
+          weight: 700
+        - asset: assets/font/Lato-Bold.ttf
+          weight: 900
+        - asset: assets/font/Lato-Light.ttf
+          weight: 500

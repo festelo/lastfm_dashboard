@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lastfm_dashboard/components/no_glow_scroll_behavior.dart';
 import 'package:lastfm_dashboard/pages/home_page/artists_tab/viewmodel.dart';
 import 'package:provider/provider.dart';
 
@@ -105,23 +106,26 @@ class _ArtistsListState extends State<ArtistsList> {
                 child: CircularProgressIndicator(),
               );
 
-            return ListView.builder(
-              padding: EdgeInsets.symmetric(vertical: 10),
-              itemCount: snap.data.length,
-              itemBuilder: (_, i) => listItem(
-                image: snap.data[i].artist.imageInfo.small,
-                name: snap.data[i].artist.name,
-                scrobbles: snap.data[i].scrobbles,
-                selectionColor: snap.data[i].selectionColor,
-                // onPressed: () => setState(() =>
-                //   artistsArray[i].selectionColor = [
-                //     Colors.red,
-                //     Colors.green,
-                //     Colors.orange,
-                //     Colors.yellow,
-                //     null
-                //   ][counter++ % 5]
-                // )
+            return ScrollConfiguration(
+              behavior: NoGlowScrollBehavior(),
+              child: ListView.builder(
+                padding: EdgeInsets.symmetric(vertical: 10),
+                itemCount: snap.data.length,
+                itemBuilder: (_, i) => listItem(
+                  image: snap.data[i].artist.imageInfo.small,
+                  name: snap.data[i].artist.name,
+                  scrobbles: snap.data[i].scrobbles,
+                  selectionColor: snap.data[i].selectionColor,
+                  // onPressed: () => setState(() =>
+                  //   artistsArray[i].selectionColor = [
+                  //     Colors.red,
+                  //     Colors.green,
+                  //     Colors.orange,
+                  //     Colors.yellow,
+                  //     null
+                  //   ][counter++ % 5]
+                  // )
+                ),
               ),
             );
           },
