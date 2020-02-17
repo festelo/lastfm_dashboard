@@ -94,7 +94,10 @@ class _ArtistsListState extends State<ArtistsList> {
         child: StreamBuilder<List<SingleArtistViewModel>>(
           stream: Provider.of<ArtistsViewModel>(context).artists,
           builder: (_, snap) {
-            if (snap.connectionState == ConnectionState.waiting || snap.data == null)
+            if (
+              snap.connectionState == ConnectionState.waiting || 
+              snap.data == null
+            )
               return Center(
                 child: CircularProgressIndicator(),
               );

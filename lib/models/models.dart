@@ -57,6 +57,18 @@ class User extends DatabaseMappedModel {
     'playCount': playCount,
     'imageInfo': imageInfo?.toMap()
   };
+
+  User copyWith({
+    DateTime lastSync,
+    String username,
+    int playCount,
+    ImageInfo imageInfo
+  }) => User(
+    lastSync: lastSync ?? this.lastSync,
+    username: username ?? this.username,
+    playCount: playCount ?? this.playCount,
+    imageInfo: imageInfo ?? this.imageInfo
+  );
 }
 
 class Artist extends DatabaseMappedModel {

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lastfm_dashboard/components/no_glow_scroll_behavior.dart';
 import 'package:lastfm_dashboard/models/models.dart';
+import 'package:lastfm_dashboard/extensions.dart';
 import 'package:lastfm_dashboard/pages/home_page/viewmodel.dart';
 import 'package:provider/provider.dart';
 
@@ -31,6 +32,9 @@ class _AccountsModalState extends State<AccountsModal> {
             child: Text(user.username,
               style: Theme.of(context).textTheme.subtitle1,
             ),
+          ),
+          Text(
+            user.lastSync?.toHumanable()
           ),
           IconButton(
             onPressed: () { remove(user.username); },

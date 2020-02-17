@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lastfm_dashboard/services/auth/auth_service.dart';
 import 'package:lastfm_dashboard/services/lastfm/lastfm_api.dart';
 import 'package:lastfm_dashboard/services/local_database/database_service.dart';
+import 'package:lastfm_dashboard/services/updater/updater_service.dart';
 import 'package:provider/provider.dart';
 
 class ProviderWrapper extends StatefulWidget {
@@ -46,6 +47,14 @@ class _ProviderWrapperState extends State<ProviderWrapper> {
               Provider<LastFMApi>(
                 create: (_) => LastFMApi(),
               ),
+              ProxyProvider2<LocalDatabaseService, LastFMApi, UpdaterService>(
+                update: (_, ldb, lfm, __) => UpdaterService(
+                  databaseService: ldb,
+                  lastFMApi: lfm
+                )..start(),
+                dispose: (_, d) => d.dispose(),
+                lazy: false,
+              )
             ],
             child: widget.child,
           );

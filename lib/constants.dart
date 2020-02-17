@@ -5,3 +5,9 @@ class LocalDatabaseInfo {
   static const String tracksPath = 'tracks';
   static const String trackScrobblesPath = 'track_scrobbles';
 }
+
+class UpdaterConfig {
+  static const Duration period = Duration(
+    minutes: 30
+  );
+}

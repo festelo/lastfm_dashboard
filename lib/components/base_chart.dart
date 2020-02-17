@@ -25,7 +25,10 @@ class ChartEntity {
 }
 
 class BaseChart extends StatelessWidget {
-  static List<c.Series<ChartEntity, DateTime>> _convertChartSeries(List<ChartSeries> series) {
+
+  static List<c.Series<ChartEntity, DateTime>> _convertChartSeries(
+    List<ChartSeries> series
+  ) {
     return series.map((s) =>
       c.Series<ChartEntity, DateTime>(
         id: s.name,

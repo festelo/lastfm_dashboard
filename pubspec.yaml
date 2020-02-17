@@ -14,11 +14,12 @@ description: A new Flutter project.
 version: 1.0.0+1
 
 environment:
-  sdk: ">=2.2.2 <3.0.0"
+  sdk: ">=2.7.0 <3.0.0"
 
 dependencies:
   dio: ^3.0.8
   rxdart: ^0.23.1
+  synchronized: ^2.2.0
   provider: ^4.0.2
   path_provider: ^1.5.1
   charts_flutter: ^0.8.1

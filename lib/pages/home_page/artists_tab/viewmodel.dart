@@ -66,7 +66,9 @@ class ArtistsViewModel {
 
   final _artists = <String, _SingleArtistViewModelMutable>{}; 
 
-  final BehaviorSubject<List<_SingleArtistViewModelMutable>> _artistsSubject = BehaviorSubject.seeded(null);
+  final BehaviorSubject<List<_SingleArtistViewModelMutable>> _artistsSubject 
+    = BehaviorSubject.seeded(null);
+
   Stream<List<SingleArtistViewModel>> get artists => 
     _artistsSubject
       .stream

@@ -1,3 +1,4 @@
+import 'package:collection/collection.dart';
 import 'package:lastfm_dashboard/constants.dart';
 import 'package:meta/meta.dart';
 import 'package:path/path.dart';
@@ -74,20 +75,49 @@ class DatabaseEntity<T extends DatabaseMappedModel> {
 
   Future<T> get() async {
     final data = await record.get(database);
+    if (data == null) return null;
     return constructor(id, data);
   }
 
-  Future<bool> exist(String id) async {
+  Future<bool> exist() async {
     return await record.exists(database);
   }
 
-  Future<void> update(Map<String, dynamic> data, {bool createIfNotExist = false}) async {
+  Future<void> update(Map<String, dynamic> data, {
+    bool createIfNotExist = false
+  }) async {
     if (createIfNotExist) {
       await record.add(database, data);
     } else {
       await record.update(database, data);
     }
   }
+
+  /// Works slow, but updates only affected properties
+  /// If the object doesn't exist empty constructor will be 
+  /// sent to modificator as parameter
+  Future<T> writeSelective(T Function(T) modificator) async {
+    final gettedDoc = await record.get(database);
+    if(gettedDoc == null) {
+      final state = modificator(constructor(id, {}));
+      await record.put(database, state.toDbMap(), merge: true);
+      return state;
+    } 
+    final oldMap = gettedDoc;
+    final state = modificator(constructor(id, gettedDoc));
+    final newMap = state.toDbMap();
+    final map = <String, dynamic>{};
+
+    final eq = const DeepCollectionEquality().equals;
+    for(final key in newMap.keys) {
+      if (!eq(oldMap[key], newMap[key])) {
+        map[key] = newMap[key];
+      }
+    }
+    await record.put(database, map, merge: true);
+    return state;
+  }
+
 
   /// Create/add object to databse. If [id] is specified, then
   /// the object will be created with this Id, otherwise Id
@@ -103,7 +133,9 @@ class DatabaseEntity<T extends DatabaseMappedModel> {
   /// Returns Stream that will return object with this [id]
   /// after every change
   Stream<T> changes(String id) {
-    return record.onSnapshot(database).map((d) => d == null ? null : constructor(id, d.value));
+    return record
+      .onSnapshot(database)
+      .map((d) => d == null ? null : constructor(id, d.value));
   }
 
   Future<void> delete() async {
@@ -175,15 +207,19 @@ class _DatabaseCollection<T extends DatabaseMappedModel> {
   Stream<List<T>> changes() {
     return store.query()
       .onSnapshots(database)
-      .map((list) => list.map((d) => d == null || d.value == null ? null : constructor(d.key, d.value)).toList());
+      .map((list) => 
+        list.map((d) => d == null || d.value == null 
+          ? null 
+          : constructor(d.key, d.value)).toList()
+      );
   }
 
-  /// Create/add object to databse. If [id] is specified, then
+  /// Adds object to database. If [id] is specified, then
   /// the object will be created with this Id, otherwise Id
   /// will be generated. 
   /// 
   /// Returns object Id.
-  Future<String> create(T state, {Map<String, dynamic> additional}) async {
+  Future<String> add(T state, {Map<String, dynamic> additional}) async {
     final map = state.toDbMap();
     if(additional != null) { map.addAll(additional); }
     if (state.id != null) {
@@ -193,6 +229,39 @@ class _DatabaseCollection<T extends DatabaseMappedModel> {
       final id = await store.add(database, map);
       return id;
     }
+  }
+
+  /// Adds objects to database. If [id] is specified, then
+  /// the object will be created with this Id, otherwise Id
+  /// will be generated. 
+  /// 
+  /// Returns object Id.
+  Future<List<String>> addAll(Iterable<T> states) async {
+    final List<T> statesWithId = [];
+    final List<T> statesWithoutId = [];
+    final List<String> ids = [];
+    for(final s in states) {
+      if (s.id != null) {
+        statesWithId.add(s);
+      } else {
+        statesWithoutId.add(s);
+      }
+    }
+    if (statesWithoutId.isNotEmpty) {
+      final newIds = 
+        await store
+          .addAll(database, 
+            statesWithoutId
+              .map((s) => s.toDbMap())
+              .toList()
+          );
+      ids.addAll(newIds);
+    }
+    for(final s in statesWithId) {
+      await store.record(s.id).put(database, s.toDbMap());
+      ids.add(s.id);
+    }
+    return ids;
   }
 
   /// If [id] is specified deletes the object, otherwise deletes

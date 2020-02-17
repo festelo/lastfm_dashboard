@@ -11,6 +11,13 @@ class LastFMScrobble {
     this.track,
     this.date
   });
+  
+  TrackScrobble toTrackScrobble() =>
+    TrackScrobble(
+      artistId: artist.id,
+      trackId: track.id,
+      date: date
+    );
 }
 
 class LastFMApi {
@@ -26,7 +33,10 @@ class LastFMApi {
     )
   );
 
-  Future<dynamic> _request(String method, Map<String, String> parameters) async {
+  Future<dynamic> _request(
+    String method, 
+    Map<String, String> parameters
+  ) async {
     final response = await _dio.get('/', 
       queryParameters: {
         'method': method,
@@ -79,23 +89,32 @@ class LastFMApi {
     );
   }
 
-  Future<List<LastFMScrobble>> getUserScrobbles(String username) async {
+  Future<List<LastFMScrobble>> getUserScrobbles(String username, {
+    DateTime from
+  }) async {
     final scrobbles = <dynamic>[];
     for(var i = 1; ; i++) {
       final resp = await _request('user.getrecenttracks', {
         'user': username,
         'extended': '1',
         'limit': '200',
-        'page': i.toString()
+        'page': i.toString(),
+        if (from != null)
+          'from': (from.millisecondsSinceEpoch / 1000).toStringAsFixed(0)
       });
       scrobbles.addAll(resp['recenttracks']['track']);
-      final totalPages = int.tryParse(resp['recenttracks']['@attr']['totalPages']);
+      final totalPages = int.tryParse(
+        resp['recenttracks']['@attr']['totalPages']
+      );
       if (i >= totalPages) break;
       print('$i/$totalPages');
     }
     final res = <LastFMScrobble>[];
     for (final scrobble in scrobbles) {
-      if (scrobble['@attr'] != null && scrobble['@attr']['nowplaying'] == 'true') continue;
+      if (
+        scrobble['@attr'] != null && 
+        scrobble['@attr']['nowplaying'] == 'true'
+      ) continue;
       final artist = Artist(
         imageInfo: _deserializeImage(scrobble['image']), // bypass
         name: scrobble['artist']['name'],
