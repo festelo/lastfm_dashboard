@@ -32,7 +32,7 @@ class HomePageViewModel {
 
   Future<void> addAccountAndSwitch(String username) async {
     final user = await lastFMApi.getUser(username);
-    db.users[username].create(user);
+    await db.users[username].create(user);
     await updaterService.updateUser(username);
     await switchAccount(user.username);
   }
