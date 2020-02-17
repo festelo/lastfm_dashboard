@@ -1,10 +1,40 @@
 import 'package:flutter/material.dart';
-import 'package:lastfm_dashboard/components/loading_screen.dart';
-import 'package:lastfm_dashboard/provider.dart';
+import 'package:lastfm_dashboard/services/auth/auth_service.dart';
+import 'package:lastfm_dashboard/services/lastfm/lastfm_api.dart';
+import 'package:lastfm_dashboard/services/local_database/database_service.dart';
+import 'package:lastfm_dashboard/services/updater/updater_service.dart';
+import 'package:provider/provider.dart';
 
 import 'pages/home_page/home_page.dart';
 
-void main() => runApp(DashboardApp());
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  final auth = await AuthService.load();
+  final dbb = await DatabaseBuilder().build();
+  final widget = MultiProvider(
+    providers: [
+      Provider<AuthService>(
+        create: (_) => auth,
+      ),
+      Provider<LocalDatabaseService>(
+        create: (_) => dbb,
+      ),
+      Provider<LastFMApi>(
+        create: (_) => LastFMApi(),
+      ),
+      ProxyProvider2<LocalDatabaseService, LastFMApi, UpdaterService>(
+        update: (_, ldb, lfm, __) => UpdaterService(
+          databaseService: ldb,
+          lastFMApi: lfm
+        )..start(),
+        dispose: (_, d) => d.dispose(),
+        lazy: false,
+      ),
+    ],
+    child: DashboardApp(),
+  );
+  runApp(widget);
+}
 
 class DashboardApp extends StatelessWidget {
   // This widget is the root of your application.
@@ -67,14 +97,11 @@ class DashboardApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      title: 'Last.fm Dashboard',
       debugShowCheckedModeBanner: false,
       theme: theme(),
       darkTheme: darkTheme(),
-      home: ProviderWrapper(
-        child: HomePage(),
-        loadingChild: LoadingScreen()
-      )
+      home: HomePage()
     );
   }
 }
