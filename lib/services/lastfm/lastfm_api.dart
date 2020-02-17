@@ -70,10 +70,10 @@ class LastFMApi {
       }
     }
     return ImageInfo(
-      extraLarge: extraLargeImage,
-      large: largeImage,
-      medium: mediumImage,
-      small: smallImage
+      extraLarge: extraLargeImage.isNotEmpty ? extraLargeImage : null,
+      large: largeImage.isNotEmpty ? largeImage : null,
+      medium: mediumImage.isNotEmpty ? mediumImage : null,
+      small: smallImage.isNotEmpty ? smallImage : null,
     );
   }
 

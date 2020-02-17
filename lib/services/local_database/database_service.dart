@@ -8,6 +8,8 @@ import 'package:path_provider/path_provider.dart';
 import 'package:lastfm_dashboard/models/models.dart';
 import 'package:lastfm_dashboard/models/database_mapped_model.dart';
 
+import 'migrations.dart';
+
 typedef Constructor<T> = T Function(String id, Map<String, dynamic> data);
 
 class DatabaseBuilder {
@@ -17,6 +19,7 @@ class DatabaseBuilder {
     this.artistsStorePath = LocalDatabaseInfo.artistsPath,
     this.tracksStorePath = LocalDatabaseInfo.tracksPath,
     this.trackScrobblesStorePath = LocalDatabaseInfo.trackScrobblesPath,
+    this.databaseVersion = LocalDatabaseInfo.databaseVersion
   });
 
   final String usersStorePath;
@@ -24,6 +27,7 @@ class DatabaseBuilder {
   final String tracksStorePath;
   final String trackScrobblesStorePath;
   final String path;
+  final int databaseVersion;
 
   StoreRef<String, Map<String, dynamic>> usersStore() =>
     StoreRef<String, Map<String, dynamic>>(usersStorePath);
@@ -34,15 +38,29 @@ class DatabaseBuilder {
   StoreRef<String, Map<String, dynamic>> tracksStore() =>
     StoreRef<String, Map<String, dynamic>>(tracksStorePath);
 
+  StoreRef<String, Map<String, dynamic>> scrobblesSubstore(String userId) =>
+    StoreRef<String, Map<String, dynamic>>(usersStorePath);
+
   Future<LocalDatabaseService> build() async {
     final directory = await getApplicationDocumentsDirectory();
     final fullPath = join(directory.path, path);
-    final db = await databaseFactoryIo.openDatabase(fullPath);
+    final db = await databaseFactoryIo.openDatabase(fullPath,
+      version: databaseVersion,
+      mode: DatabaseMode.neverFails,
+      onVersionChanged: (db, oldVersion, newVersion) async {
+        await migrate(
+          database: db,
+          databaseBuilder: this,
+          current: oldVersion,
+          expected: newVersion
+        );
+      },
+    );
     return LocalDatabaseService(db,
       usersStore: usersStore(),
       artistsStore: artistsStore(),
       tracksStore: tracksStore(),
-      trackScrobblesSubpath: trackScrobblesStorePath
+      trackScrobblesSubstore: scrobblesSubstore
     );
   }
 }
@@ -58,9 +76,10 @@ class LocalDatabaseService {
     @required StoreRef<String, Map<String, dynamic>> usersStore,
     @required StoreRef<String, Map<String, dynamic>> artistsStore,
     @required StoreRef<String, Map<String, dynamic>> tracksStore,
-    @required String trackScrobblesSubpath
+    @required StoreRef<String, Map<String, dynamic>> 
+      Function(String userId) trackScrobblesSubstore
   }) : 
-    users = UsersCollection(database, usersStore, trackScrobblesSubpath),
+    users = UsersCollection(database, usersStore, trackScrobblesSubstore),
     artists = ArtistsCollection(database, artistsStore),
     tracks = TracksCollection(database, tracksStore);
 }
@@ -143,10 +162,11 @@ class DatabaseEntity<T extends DatabaseMappedModel> {
   }
 }
 class UserEntity extends DatabaseEntity<User> {
-  final String scrobblesSubpath;
+  final StoreRef<String, Map<String, dynamic>> 
+    Function(String userId) scrobblesSubstore;
 
   UserEntity({
-    @required this.scrobblesSubpath,
+    @required this.scrobblesSubstore,
     String id, 
     RecordRef<String, Map<String, dynamic>> record,
     Database database, 
@@ -159,7 +179,7 @@ class UserEntity extends DatabaseEntity<User> {
   );
 
   StoreRef<String, Map<String, dynamic>> _scrobblesStoreRef(String userId) =>
-    StoreRef<String, Map<String, dynamic>>(scrobblesSubpath + '_' + userId);
+    scrobblesSubstore(userId);
 
   TrackScrobblesCollection get scrobbles {
     return TrackScrobblesCollection(
@@ -275,10 +295,11 @@ class UsersCollection extends _DatabaseCollection<User> {
   UsersCollection(
     Database database, 
     StoreRef<String, Map<String, dynamic>> store,
-    this.scrobblesSubpath
+    this.scrobblesSubstore
   ) : super(database, store, (id, data) => User.deserialize(id, data));
   
-  final String scrobblesSubpath;
+  final StoreRef<String, Map<String, dynamic>> 
+    Function(String userId) scrobblesSubstore;
 
   @override
   UserEntity operator [](String id) => UserEntity(
@@ -286,7 +307,7 @@ class UsersCollection extends _DatabaseCollection<User> {
     database: database,
     constructor: constructor,
     record: record(id),
-    scrobblesSubpath: scrobblesSubpath
+    scrobblesSubstore: scrobblesSubstore
   );
 
   @override
