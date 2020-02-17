@@ -83,7 +83,6 @@ class LastFMApi {
     });
     return User(
       imageInfo: _deserializeImage(resp['user']['image']),
-      lastSync: DateTime.now(),
       playCount: int.tryParse(resp['user']['playcount']),
       username: username,
     );
@@ -102,7 +101,12 @@ class LastFMApi {
         if (from != null)
           'from': (from.millisecondsSinceEpoch / 1000).toStringAsFixed(0)
       });
-      scrobbles.addAll(resp['recenttracks']['track']);
+      if (resp['recenttracks']['track'].isEmpty) break;
+      if (resp['recenttracks']['track'] is Map) {
+        scrobbles.add(resp['recenttracks']['track']);
+      } else {
+        scrobbles.addAll(resp['recenttracks']['track']);
+      }
       final totalPages = int.tryParse(
         resp['recenttracks']['@attr']['totalPages']
       );

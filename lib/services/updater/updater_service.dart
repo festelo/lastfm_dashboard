@@ -30,6 +30,7 @@ class UpdaterService {
     await _update();
   }
   final _updateLock = Lock();
+  bool _disposed = false;
   
   Future<void> _updateUser(User user, {bool silent = true}) async {
     final db = _databaseService;
@@ -38,6 +39,7 @@ class UpdaterService {
         user.username, 
         from: user.lastSync
       );
+      if(_disposed) return;
       final artists = scrobbles.map((a) => a.artist).toSet();
       final tracks = scrobbles.map((a) => a.track).toSet().toList();
 
@@ -58,6 +60,7 @@ class UpdaterService {
           lastSync: DateTime.now()
         )
       );
+      if(_disposed) return;
     } catch (e) {
       if (!silent) rethrow;
       print('Error updating user ${user.username}.\n${e.toString()}');
@@ -86,6 +89,7 @@ class UpdaterService {
   }
 
   Future<void> dispose() async {
+    _disposed = true;
     _timer?.cancel();
   }
 }

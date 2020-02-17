@@ -152,19 +152,20 @@ class _TrackScrobbleProperties {
 class TrackScrobble extends DatabaseMappedModel {
   static const properties = _TrackScrobbleProperties();
 
-  @override final String id;
+  @override String get id => 
+    '${trackId.hashCode}#${artistId.hashCode}#${date.hashCode}';
+
   final String trackId;
   final String artistId;
   final DateTime date;
 
   TrackScrobble({
-    this.id,
     this.trackId,
     this.artistId,
     this.date
   });
 
-  TrackScrobble.deserialize(this.id, Map<String, dynamic> map):
+  TrackScrobble.deserialize(Map<String, dynamic> map):
     artistId = map[properties.artistId],
     trackId = map[properties.trackId],
     date = map[properties.date] == null 

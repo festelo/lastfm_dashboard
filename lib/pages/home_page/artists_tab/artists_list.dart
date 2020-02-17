@@ -46,7 +46,9 @@ class _ArtistsListState extends State<ArtistsList> {
                 Center(
                   child: CircleAvatar(
                     radius: 20,
-                    backgroundImage: NetworkImage(image),
+                    backgroundImage: image != null
+                      ? NetworkImage(image)
+                      : null,
                   ),
                 ),
                 if (selectionColor != null)

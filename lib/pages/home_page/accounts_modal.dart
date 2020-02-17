@@ -34,7 +34,7 @@ class _AccountsModalState extends State<AccountsModal> {
             ),
           ),
           Text(
-            user.lastSync?.toHumanable()
+            user.lastSync?.toHumanable() ?? ''
           ),
           IconButton(
             onPressed: () { remove(user.username); },

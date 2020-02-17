@@ -13,14 +13,14 @@ Future<void> main() async {
   final dbb = await DatabaseBuilder().build();
   final widget = MultiProvider(
     providers: [
-      Provider<AuthService>(
-        create: (_) => auth,
+      Provider<AuthService>.value(
+        value: auth,
       ),
-      Provider<LocalDatabaseService>(
-        create: (_) => dbb,
+      Provider<LocalDatabaseService>.value(
+        value: dbb,
       ),
-      Provider<LastFMApi>(
-        create: (_) => LastFMApi(),
+      Provider<LastFMApi>.value(
+        value: LastFMApi(),
       ),
       ProxyProvider2<LocalDatabaseService, LastFMApi, UpdaterService>(
         update: (_, ldb, lfm, __) => UpdaterService(

@@ -39,7 +39,9 @@ class DatabaseBuilder {
     StoreRef<String, Map<String, dynamic>>(tracksStorePath);
 
   StoreRef<String, Map<String, dynamic>> scrobblesSubstore(String userId) =>
-    StoreRef<String, Map<String, dynamic>>(usersStorePath);
+    StoreRef<String, Map<String, dynamic>>(
+      trackScrobblesStorePath + '_' + userId
+    );
 
   Future<LocalDatabaseService> build() async {
     final directory = await getApplicationDocumentsDirectory();
@@ -339,7 +341,7 @@ class TrackScrobblesCollection extends _DatabaseCollection<TrackScrobble> {
   TrackScrobblesCollection(
     Database database, 
     StoreRef<String, Map<String, dynamic>> store,
-  ) : super(database, store, (id, data) => TrackScrobble.deserialize(id, data));
+  ) : super(database, store, (id, data) => TrackScrobble.deserialize(data));
 
   Stream<int> countByArtistStream(String artistId) {
     return store
