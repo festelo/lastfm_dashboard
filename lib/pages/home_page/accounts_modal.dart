@@ -30,7 +30,7 @@ class _AccountsModalState extends State<AccountsModal> {
           SizedBox(width: 20,),
           Expanded(
             child: Text(user.username,
-              style: Theme.of(context).textTheme.subtitle1,
+              style: Theme.of(context).textTheme.subtitle,
             ),
           ),
           Text(
@@ -80,7 +80,7 @@ class _AccountsModalState extends State<AccountsModal> {
               Expanded(
                 child: Text(
                   'Accounts management',
-                  style: Theme.of(context).textTheme.subtitle1
+                  style: Theme.of(context).textTheme.subtitle
                 ),
               ),
               IconButton(
@@ -109,7 +109,7 @@ class _AccountsModalState extends State<AccountsModal> {
                       padding: EdgeInsets.all(20),
                       child: Text(
                         'There\'s no accounts yet',
-                        style: Theme.of(context).textTheme.bodyText2,
+                        style: Theme.of(context).textTheme.body2,
                       ),
                     );
                   return ListView.builder(

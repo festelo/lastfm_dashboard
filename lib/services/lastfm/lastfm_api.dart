@@ -6,6 +6,7 @@ class LastFMScrobble {
   final Artist artist;
   final Track track;
   final DateTime date;
+  
   LastFMScrobble({
     this.artist,
     this.track,

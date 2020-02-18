@@ -23,10 +23,8 @@ Future<void> main() async {
         value: LastFMApi(),
       ),
       ProxyProvider2<LocalDatabaseService, LastFMApi, UpdaterService>(
-        update: (_, ldb, lfm, __) => UpdaterService(
-          databaseService: ldb,
-          lastFMApi: lfm
-        )..start(),
+        update: (_, ldb, lfm, __) =>
+            UpdaterService(databaseService: ldb, lastFMApi: lfm)..start(),
         dispose: (_, d) => d.dispose(),
         lazy: false,
       ),
@@ -38,28 +36,26 @@ Future<void> main() async {
 
 class DashboardApp extends StatelessWidget {
   // This widget is the root of your application.
-  
-  ThemeData theme() { 
+
+  ThemeData theme() {
     return ThemeData(
       brightness: Brightness.light,
       primarySwatch: Colors.red,
       appBarTheme: AppBarTheme(
-        color: Colors.grey[350],
-        elevation: 6,
-        textTheme: TextTheme(
-          headline6: TextStyle(
-            color: Colors.red,
-            fontWeight: FontWeight.w500,
-            fontSize: 18
-          ),
-        )
-      ),
+          color: Colors.grey[350],
+          elevation: 6,
+          textTheme: TextTheme(
+            headline: TextStyle(
+              color: Colors.red,
+              fontWeight: FontWeight.w500,
+              fontSize: 18,
+            ),
+          )),
       cardColor: Colors.grey[350],
-      cardTheme: CardTheme(
-        elevation: 3
-      ),
+      cardTheme: CardTheme(elevation: 3),
       canvasColor: Colors.grey[350],
       scaffoldBackgroundColor: Colors.grey[200],
+      fontFamily: 'Google Sans',
     );
   }
 
@@ -70,38 +66,33 @@ class DashboardApp extends StatelessWidget {
       primaryColor: Colors.grey[900],
       accentColor: Colors.redAccent,
       appBarTheme: AppBarTheme(
-        color: Colors.grey[900],
-        textTheme: TextTheme(
-          headline6: TextStyle(
-            color: Colors.red,
-            fontWeight: FontWeight.w500,
-            fontSize: 18
-          ),
-        )
-      ),
-      textTheme: TextTheme(
-        bodyText2: TextStyle(
-          color: Colors.white60
-        )
-      ),
+          color: Colors.grey[900],
+          textTheme: TextTheme(
+            headline: TextStyle(
+              color: Colors.red,
+              fontWeight: FontWeight.w500,
+              fontSize: 18,
+            ),
+          )),
+      textTheme: TextTheme(body2: TextStyle(color: Colors.white60)),
       scaffoldBackgroundColor: Colors.black,
       cardColor: Colors.grey[850],
       bottomSheetTheme: BottomSheetThemeData(
         backgroundColor: Colors.grey[900],
       ),
       dividerColor: Colors.grey[800],
-      canvasColor: Colors.grey[900]
+      canvasColor: Colors.grey[900],
+      fontFamily: 'Google Sans',
     );
   }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Last.fm Dashboard',
-      debugShowCheckedModeBanner: false,
-      theme: theme(),
-      darkTheme: darkTheme(),
-      home: HomePage()
-    );
+        title: 'Last.fm Dashboard',
+        debugShowCheckedModeBanner: false,
+        theme: theme(),
+        darkTheme: darkTheme(),
+        home: HomePage());
   }
 }

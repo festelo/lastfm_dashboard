@@ -69,7 +69,7 @@ class _ArtistsListState extends State<ArtistsList> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: <Widget>[
                 Text(name,
-                  style: Theme.of(context).textTheme.subtitle1,
+                  style: Theme.of(context).textTheme.subtitle,
                 ),
                 Text('$scrobbles scrobbles',
                   style: Theme.of(context).textTheme.caption,
