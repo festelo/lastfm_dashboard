@@ -36,10 +36,25 @@ class _AccountsModalState extends State<AccountsModal> {
           Text(
             user.lastSync?.toHumanable() ?? ''
           ),
-          IconButton(
-            onPressed: () { remove(user.username); },
-            icon: Icon(Icons.delete),
-          )
+          StreamBuilder(
+            stream: Provider.of<HomePageViewModel>(context).currentUpdates,
+            builder: (ctx, v) {
+              if (v.data == null) {
+                return Container();
+              }
+              if (v.data[user.username] == null) {
+                return IconButton(
+                  onPressed: () { remove(user.username); },
+                  icon: Icon(Icons.delete),
+                );
+              }
+              return SizedBox(
+                height: 24,
+                width: 24,
+                child: CircularProgressIndicator()
+              );
+            }
+          ),
         ],
       ),
       onTap: () {

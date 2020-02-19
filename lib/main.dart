@@ -11,6 +11,8 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final auth = await AuthService.load();
   final dbb = await DatabaseBuilder().build();
+  final lfm = LastFMApi();
+
   final widget = MultiProvider(
     providers: [
       Provider<AuthService>.value(
@@ -20,13 +22,10 @@ Future<void> main() async {
         value: dbb,
       ),
       Provider<LastFMApi>.value(
-        value: LastFMApi(),
+        value: lfm,
       ),
-      ProxyProvider2<LocalDatabaseService, LastFMApi, UpdaterService>(
-        update: (_, ldb, lfm, __) =>
-            UpdaterService(databaseService: ldb, lastFMApi: lfm)..start(),
-        dispose: (_, d) => d.dispose(),
-        lazy: false,
+      Provider<UpdaterService>.value(
+        value: UpdaterService(databaseService: dbb, lastFMApi: lfm)..start(),
       ),
     ],
     child: DashboardApp(),

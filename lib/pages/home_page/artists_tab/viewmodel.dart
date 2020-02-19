@@ -41,6 +41,7 @@ class ArtistsViewModel {
   }) {
     _authSubscription = authService.currentUser.listen((username) {
       _scrobblesSubscription?.cancel();
+      if (username == null) return;
       _scrobblesSubscription = db.users[username].scrobbles.changes().listen(
         (d) => _updateArtists(d)
       );

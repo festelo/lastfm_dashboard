@@ -10,6 +10,7 @@ import 'package:lastfm_dashboard/services/updater/updater_service.dart';
 import 'package:provider/provider.dart';
 
 import 'artists_tab/artists_tab.dart';
+import 'artists_tab/loading_bar.dart';
 
 /// Providers: 
 /// - LocalDatabaseService
@@ -86,6 +87,7 @@ class _HomePageContent extends StatelessWidget {
             Expanded(child: ArtistsTab()),
             // Not in bottomNavigationBar property to let bottom sheet 
             // be over the bottom nav bar
+            LoadingBar(),
             BottomNavigationBar(
               items: [
                 BottomNavigationBarItem(

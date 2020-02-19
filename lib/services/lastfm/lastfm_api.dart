@@ -1,6 +1,7 @@
 import 'package:lastfm_dashboard/models/models.dart';
 import 'package:dio/dio.dart';
 import 'package:lastfm_dashboard/sensitive.dart' as sensitive;
+import 'package:lastfm_dashboard/shared/progressable_future.dart';
 
 class LastFMScrobble {
   final Artist artist;
@@ -89,59 +90,64 @@ class LastFMApi {
     );
   }
 
-  Future<List<LastFMScrobble>> getUserScrobbles(String username, {
-    DateTime from
-  }) async {
-    final scrobbles = <dynamic>[];
-    for(var i = 1; ; i++) {
-      final resp = await _request('user.getrecenttracks', {
-        'user': username,
-        'extended': '1',
-        'limit': '200',
-        'page': i.toString(),
-        if (from != null)
-          'from': (from.millisecondsSinceEpoch / 1000).toStringAsFixed(0)
-      });
-      if (resp['recenttracks']['track'].isEmpty) break;
-      if (resp['recenttracks']['track'] is Map) {
-        scrobbles.add(resp['recenttracks']['track']);
-      } else {
-        scrobbles.addAll(resp['recenttracks']['track']);
+  ProgressableFuture<List<LastFMScrobble>, int> 
+    getUserScrobbles(String username, {
+      DateTime from
+  }) {
+    return ProgressableFuture((p, c) async {
+      final scrobbles = <dynamic>[];
+      for(var i = 1; ; i++) {
+        final resp = await _request('user.getrecenttracks', {
+          'user': username,
+          'extended': '1',
+          'limit': '200',
+          'page': i.toString(),
+          if (from != null)
+            'from': (from.millisecondsSinceEpoch / 1000).toStringAsFixed(0)
+        });
+        if (resp['recenttracks']['track'].isEmpty) break;
+        if (resp['recenttracks']['track'] is Map) {
+          scrobbles.add(resp['recenttracks']['track']);
+        } else {
+          scrobbles.addAll(resp['recenttracks']['track']);
+        }
+        final totalPages = int.tryParse(
+          resp['recenttracks']['@attr']['totalPages']
+        );
+        p(i, totalPages);
+        print('$i/$totalPages');
+        if (c.value) throw CancelledException();
+        if (i >= totalPages) break;
       }
-      final totalPages = int.tryParse(
-        resp['recenttracks']['@attr']['totalPages']
-      );
-      if (i >= totalPages) break;
-      print('$i/$totalPages');
-    }
-    final res = <LastFMScrobble>[];
-    for (final scrobble in scrobbles) {
-      if (
-        scrobble['@attr'] != null && 
-        scrobble['@attr']['nowplaying'] == 'true'
-      ) continue;
-      final artist = Artist(
-        imageInfo: _deserializeImage(scrobble['image']), // bypass
-        name: scrobble['artist']['name'],
-        mbid: scrobble['artist']['mbid'],
-        url: scrobble['artist']['url']
-      );
-      final track = Track(
-        imageInfo: _deserializeImage(scrobble['image']),
-        artistId: artist.id,
-        mbid: scrobble['mbid'],
-        name: scrobble['name'],
-        url: scrobble['url'],
-        loved: scrobble['loved'] == '1'
-      );
-      res.add(
-        LastFMScrobble(
-          artist: artist,
-          track: track,
-          date: DateTime.now()
-        )
-      );
-    }
-    return res;
+      final res = <LastFMScrobble>[];
+      for (final scrobble in scrobbles) {
+        if (
+          scrobble['@attr'] != null && 
+          scrobble['@attr']['nowplaying'] == 'true'
+        ) continue;
+        final artist = Artist(
+          imageInfo: _deserializeImage(scrobble['image']), // bypass
+          name: scrobble['artist']['name'],
+          mbid: scrobble['artist']['mbid'],
+          url: scrobble['artist']['url']
+        );
+        final track = Track(
+          imageInfo: _deserializeImage(scrobble['image']),
+          artistId: artist.id,
+          mbid: scrobble['mbid'],
+          name: scrobble['name'],
+          url: scrobble['url'],
+          loved: scrobble['loved'] == '1'
+        );
+        res.add(
+          LastFMScrobble(
+            artist: artist,
+            track: track,
+            date: DateTime.now()
+          )
+        );
+      }
+      return res;
+    });
   }
 }
