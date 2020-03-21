@@ -8,9 +8,12 @@ import 'package:provider/provider.dart';
 import 'pages/home_page/home_page.dart';
 
 Future<void> main() async {
+  print('ok, let\'s start');
   WidgetsFlutterBinding.ensureInitialized();
   final auth = await AuthService.load();
+  print('auth service loaded');
   final dbb = await DatabaseBuilder().build();
+  print('db configured');
   final lfm = LastFMApi();
 
   final widget = MultiProvider(
@@ -30,6 +33,7 @@ Future<void> main() async {
     ],
     child: DashboardApp(),
   );
+  print('ready to launch');
   runApp(widget);
 }
 

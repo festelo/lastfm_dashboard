@@ -1,8 +1,12 @@
+import 'dart:io';
+
 import 'package:collection/collection.dart';
+import 'package:flutter/foundation.dart';
 import 'package:lastfm_dashboard/constants.dart';
 import 'package:meta/meta.dart';
 import 'package:path/path.dart';
 import 'package:sembast/sembast.dart';
+import 'package:sembast_web/sembast_web.dart';
 import 'package:sembast/sembast_io.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:lastfm_dashboard/models/models.dart';
@@ -44,9 +48,17 @@ class DatabaseBuilder {
     );
 
   Future<LocalDatabaseService> build() async {
-    final directory = await getApplicationDocumentsDirectory();
-    final fullPath = join(directory.path, path);
-    final db = await databaseFactoryIo.openDatabase(fullPath,
+    String fullPath;
+    DatabaseFactory dbFactory;
+    if (kIsWeb) {
+      fullPath = './' + path;
+      dbFactory = databaseFactoryWeb;
+    } else {
+      final directory = await getApplicationDocumentsDirectory();
+      fullPath = join(directory.path, path);
+      dbFactory = databaseFactoryIo;
+    }
+    final db = await dbFactory.openDatabase(fullPath,
       version: databaseVersion,
       mode: DatabaseMode.neverFails,
       onVersionChanged: (db, oldVersion, newVersion) async {
