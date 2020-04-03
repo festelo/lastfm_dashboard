@@ -19,7 +19,7 @@ typedef FutureCallback<T, TCounter> = Future<T> Function(
   ValueStream<bool> cancelled
 );
 
-class ProgressableFuture<T, TCounter> implements Future {
+class ProgressableFuture<T, TCounter> implements Future<T> {
   Future<T> _futureSource;
   Future<T> get future => _futureSource;
   // void Function(TCounter current, TCounter total) progressChanged;
@@ -66,10 +66,10 @@ class ProgressableFuture<T, TCounter> implements Future {
   }
 
   @override
-  Stream asStream() => future.asStream();
+  Stream<T> asStream() => future.asStream();
 
   @override
-  Future catchError(Function onError, {bool Function(Object error) test})
+  Future<T> catchError(Function onError, {bool Function(Object error) test})
     => future.catchError(onError, test: test);
 
   @override
@@ -77,10 +77,10 @@ class ProgressableFuture<T, TCounter> implements Future {
     => future.then(onValue, onError: onError);
 
   @override
-  Future timeout(Duration timeLimit, {FutureOr Function() onTimeout})
+  Future<T> timeout(Duration timeLimit, {FutureOr Function() onTimeout})
     => future.timeout(timeLimit, onTimeout: onTimeout);
 
   @override
-  Future whenComplete(FutureOr Function() action)
+  Future<T> whenComplete(FutureOr Function() action)
     => future.whenComplete(action);
 }

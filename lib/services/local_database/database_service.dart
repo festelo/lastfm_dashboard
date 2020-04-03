@@ -6,7 +6,7 @@ import 'package:lastfm_dashboard/constants.dart';
 import 'package:meta/meta.dart';
 import 'package:path/path.dart';
 import 'package:sembast/sembast.dart';
-import 'package:sembast_web/sembast_web.dart';
+//import 'package:sembast_web/sembast_web.dart';
 import 'package:sembast/sembast_io.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:lastfm_dashboard/models/models.dart';
@@ -52,7 +52,7 @@ class DatabaseBuilder {
     DatabaseFactory dbFactory;
     if (kIsWeb) {
       fullPath = './' + path;
-      dbFactory = databaseFactoryWeb;
+      dbFactory = null; //databaseFactoryWeb;
     } else {
       final directory = await getApplicationDocumentsDirectory();
       fullPath = join(directory.path, path);

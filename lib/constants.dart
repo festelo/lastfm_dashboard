@@ -9,6 +9,6 @@ class LocalDatabaseInfo {
 
 class UpdaterConfig {
   static const Duration period = Duration(
-    minutes: 30
+    minutes: 5
   );
 }

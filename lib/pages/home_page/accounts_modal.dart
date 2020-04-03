@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:lastfm_dashboard/blocs/users_bloc.dart';
 import 'package:lastfm_dashboard/components/no_glow_scroll_behavior.dart';
+import 'package:lastfm_dashboard/events/user_events.dart';
 import 'package:lastfm_dashboard/models/models.dart';
 import 'package:lastfm_dashboard/extensions.dart';
-import 'package:lastfm_dashboard/pages/home_page/viewmodel.dart';
+import 'package:lastfm_dashboard/services/auth/auth_service.dart';
+import 'package:lastfm_dashboard/services/lastfm/lastfm_api.dart';
+import 'package:lastfm_dashboard/services/local_database/database_service.dart';
 import 'package:provider/provider.dart';
 
 class AccountsModal extends StatefulWidget {
@@ -36,25 +40,16 @@ class _AccountsModalState extends State<AccountsModal> {
           Text(
             user.lastSync?.toHumanable() ?? ''
           ),
-          StreamBuilder(
-            stream: Provider.of<HomePageViewModel>(context).currentUpdates,
-            builder: (ctx, v) {
-              if (v.data == null) {
-                return Container();
-              }
-              if (v.data[user.username] == null) {
-                return IconButton(
-                  onPressed: () { remove(user.username); },
-                  icon: Icon(Icons.delete),
-                );
-              }
-              return SizedBox(
-                height: 24,
-                width: 24,
-                child: CircularProgressIndicator()
-              );
-            }
-          ),
+          if (Provider.of<UsersBloc>(context).userRefreshing(user.id))
+            SizedBox(
+              height: 24,
+              width: 24,
+              child: CircularProgressIndicator()
+            )
+          else IconButton(
+            onPressed: () { remove(user.username); },
+            icon: Icon(Icons.delete),
+          )
         ],
       ),
       onTap: () {
@@ -65,21 +60,36 @@ class _AccountsModalState extends State<AccountsModal> {
   );
 
   void add(String username) {
-    Provider.of<HomePageViewModel>(context, listen: false)
-      .addAccountAndSwitch(username);
+    Provider.of<UsersBloc>(context, listen: false)
+      .push(
+        AddUserEventInfo(
+          db: Provider.of<LocalDatabaseService>(context, listen: false),
+          lastFMApi: Provider.of<LastFMApi>(context, listen: false),
+          username: username,
+        ), 
+        addUser
+      );
   }
 
   void remove(String username) {
-    Provider.of<HomePageViewModel>(context, listen: false)
-      .removeAccount(
-        username
+    Provider.of<UsersBloc>(context, listen: false)
+      .push(
+        RemoveUserEventInfo(
+          db: Provider.of<LocalDatabaseService>(context, listen: false),
+          username: username,
+        ),
+        removeUser
       );
   }
 
   void switchAccount(String username) {
-    Provider.of<HomePageViewModel>(context, listen: false)
-      .switchAccount(
-        username
+    Provider.of<UsersBloc>(context, listen: false)
+      .push(
+        SwitchUserEventInfo(
+          authService: Provider.of<AuthService>(context, listen: false),
+          username: username,
+        ),
+        switchUser
       );
   }
 
@@ -109,30 +119,22 @@ class _AccountsModalState extends State<AccountsModal> {
           Flexible(
             child: ScrollConfiguration(
               behavior: NoGlowScrollBehavior(),
-              child: StreamBuilder<List<User>>(
-                stream: Provider.of<HomePageViewModel>(context).currentUsers,
-                builder: (_, snap) {
-                  if (snap.connectionState == ConnectionState.waiting)
-                    return CircularProgressIndicator();
-                  if (snap.error != null) 
-                    return Padding(
-                      padding: EdgeInsets.all(30),
-                      child: Text('There\'s some problems'),
-                    );
-                  if (snap.data.isEmpty)
-                    return Padding(
-                      padding: EdgeInsets.all(20),
-                      child: Text(
-                        'There\'s no accounts yet',
-                        style: Theme.of(context).textTheme.body2,
-                      ),
-                    );
-                  return ListView.builder(
+              child: Consumer<UsersViewModel>(
+                builder: (ctx, d, _) =>  d.users.isEmpty
+                  ? Padding(
+                    padding: EdgeInsets.all(20),
+                    child: Text(
+                      'There\'s no accounts yet',
+                      style: Theme.of(context).textTheme.body2,
+                    ),
+                  )
+                  : ListView.builder(
                     shrinkWrap: true,
-                    itemCount: snap.data.length,
-                    itemBuilder: (_, i) => userWidget(snap.data[i])
-                  );
-                }
+                    itemCount: Provider.of<UsersViewModel>(context)
+                      .users
+                      .length,
+                    itemBuilder: (_, i) => userWidget(d.users[i])
+                  )
               )
             )
           ),

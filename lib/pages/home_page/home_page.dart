@@ -1,16 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:lastfm_dashboard/components/loading_screen.dart';
+import 'package:lastfm_dashboard/blocs/users_bloc.dart';
 import 'package:lastfm_dashboard/models/models.dart';
 import 'package:lastfm_dashboard/pages/home_page/accounts_modal.dart';
-import 'package:lastfm_dashboard/pages/home_page/viewmodel.dart';
-import 'package:lastfm_dashboard/services/auth/auth_service.dart';
-import 'package:lastfm_dashboard/services/lastfm/lastfm_api.dart';
-import 'package:lastfm_dashboard/services/local_database/database_service.dart';
-import 'package:lastfm_dashboard/services/updater/updater_service.dart';
 import 'package:provider/provider.dart';
 
 import 'artists_tab/artists_tab.dart';
-import 'artists_tab/loading_bar.dart';
 
 /// Providers: 
 /// - LocalDatabaseService
@@ -19,15 +13,7 @@ import 'artists_tab/loading_bar.dart';
 class HomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Provider<HomePageViewModel>(
-      create: (_) => HomePageViewModel(
-        authService: Provider.of<AuthService>(context),
-        updaterService: Provider.of<UpdaterService>(context),
-        db: Provider.of<LocalDatabaseService>(context),
-        lastFMApi: Provider.of<LastFMApi>(context)
-      ),
-      child: _HomePageContent(),
-    );
+    return _HomePageContent();
   }
 }
 
@@ -87,7 +73,6 @@ class _HomePageContent extends StatelessWidget {
             Expanded(child: ArtistsTab()),
             // Not in bottomNavigationBar property to let bottom sheet 
             // be over the bottom nav bar
-            LoadingBar(),
             BottomNavigationBar(
               items: [
                 BottomNavigationBarItem(
@@ -111,15 +96,6 @@ class _HomePageContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final userStream = Provider.of<HomePageViewModel>(context).currentUser();
-    return StreamBuilder<User>(
-      stream: userStream,
-      initialData: null,
-      builder: (_, snap) {
-        return snap.connectionState == ConnectionState.waiting
-          ? LoadingScreen()
-          : content(context, snap.data);
-      }
-    );
+    return content(context, Provider.of<UsersViewModel>(context).currentUser);
   }
 }

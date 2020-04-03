@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lastfm_dashboard/blocs/users_bloc.dart';
 import 'package:lastfm_dashboard/services/auth/auth_service.dart';
 import 'package:lastfm_dashboard/services/lastfm/lastfm_api.dart';
 import 'package:lastfm_dashboard/services/local_database/database_service.dart';
@@ -16,6 +17,11 @@ Future<void> main() async {
   print('db configured');
   final lfm = LastFMApi();
 
+  final usersBloc = await UsersBloc.load(
+    dbb, auth
+  );
+  print('usersBloc initialized');
+
   final widget = MultiProvider(
     providers: [
       Provider<AuthService>.value(
@@ -28,8 +34,17 @@ Future<void> main() async {
         value: lfm,
       ),
       Provider<UpdaterService>.value(
-        value: UpdaterService(databaseService: dbb, lastFMApi: lfm)..start(),
+        value: UpdaterService(
+          databaseService: dbb, 
+          lastFMApi: lfm,
+          usersBloc: usersBloc
+        )..start(),
       ),
+      Provider<UsersBloc>.value(value: usersBloc),
+      StreamProvider<UsersViewModel>.value(
+        value: usersBloc.model,
+        initialData: usersBloc.model.value,
+      )
     ],
     child: DashboardApp(),
   );
