@@ -28,7 +28,7 @@ Future<void> main() async {
   print('appBloc initialized');
 
   final eventsContext = EventsContext(
-    pushers: appBloc.flatPushers(),
+    blocs: appBloc.flatBlocs(),
     streams: appBloc.flatStreams(),
     models: appBloc.flatModels(),
     singletones: [

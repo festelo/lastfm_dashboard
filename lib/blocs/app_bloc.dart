@@ -16,7 +16,7 @@ class AppViewModel {
   }) => AppViewModel(currentUserId ?? this.currentUserId);
 }
 
-class AppBloc extends Bloc<AppViewModel, AppEventInfo> {
+class AppBloc extends Bloc<AppViewModel> {
   final UsersBloc usersBloc;
 
   @override

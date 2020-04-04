@@ -6,8 +6,8 @@ typedef Returner<T> = T Function(T);
 typedef Updater<T> = T Function(T Function(T));
 typedef Cancelled = bool Function();
 
-typedef Pusher<ST extends EventInfo, TE extends ST, VMT> = 
-  void Function<TE extends ST>(TE, Event<VMT, TE>, EventsContext);
+typedef Pusher<TE extends EventInfo, VMT> = 
+  void Function<TE extends EventInfo>(TE, Event<VMT, TE>, EventsContext);
 
 typedef Event<T, TEventInfo extends EventInfo> = 
   Future<Returner<T>> Function(
@@ -35,7 +35,7 @@ class EventConfiguration<T> {
   });
 }
 
-abstract class Bloc<T, TSuperEventInfo extends EventInfo> {
+abstract class Bloc<T> {
   List<RunnedEvent> working = [];
   Stream<EventInfo> get completedEvents => _cCompletedEvents.stream;
   final StreamController<EventInfo> _cCompletedEvents 
@@ -73,7 +73,7 @@ abstract class Bloc<T, TSuperEventInfo extends EventInfo> {
     return pushers;
   }
 
-  void push<TEventInfo extends TSuperEventInfo>(
+  void push<TEventInfo extends EventInfo>(
     TEventInfo info, 
     Event<T, TEventInfo> event,
     EventsContext context
@@ -113,27 +113,27 @@ abstract class Bloc<T, TSuperEventInfo extends EventInfo> {
 class CancelledException implements Exception {}
 
 class EventsContext {
-  final List<dynamic> _pushers;
+  final List<dynamic> _blocs;
   final List<ValueStream> _models;
   final List<ValueStream> _streams;
   final List<dynamic> _singletones;
 
   EventsContext({
-    List<dynamic> pushers,
+    List<dynamic> blocs,
     List<ValueStream> streams,
     List<dynamic> singletones,
     List<ValueStream> models,
   }): 
-    _pushers = pushers, 
+    _blocs = blocs, 
     _streams = streams,
     _singletones = singletones,
     _models = models;
   
-  void push<ST extends EventInfo, TEventInfo extends ST, TVM>(
-    TEventInfo eventInfo, Event<TVM, TEventInfo> event, ST Function() fun) {
-    for(final p in _pushers) {
-      if (p is Pusher<ST, TEventInfo, TVM>) {
-        p(eventInfo, event, this);
+  void push<TEventInfo extends EventInfo, TVM>(
+    TEventInfo eventInfo, Event<TVM, TEventInfo> event) {
+    for(final p in _blocs) {
+      if (p is Bloc<TVM>) {
+        p.push(eventInfo, event, this);
         return;
       }
     }

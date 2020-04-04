@@ -14,7 +14,7 @@ class UsersViewModel {
   }) => UsersViewModel(users ?? this.users);
 }
 
-class UsersBloc extends Bloc<UsersViewModel, UsersEventInfo> {
+class UsersBloc extends Bloc<UsersViewModel> {
   @override
   final BehaviorSubject<UsersViewModel> model;
 

@@ -48,8 +48,7 @@ Future<Returner<UsersViewModel>> addUser(
     RefreshUserEventInfo(
       user: user
     ), 
-    refreshUser,
-    () => UsersEventInfo()
+    refreshUser
   );
 
   await db.users[i.username].create(user);

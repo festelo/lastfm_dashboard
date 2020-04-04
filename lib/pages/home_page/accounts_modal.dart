@@ -65,8 +65,7 @@ class _AccountsModalState extends State<AccountsModal> {
         AddUserEventInfo(
           username: username,
         ), 
-        addUser,
-        () => UsersEventInfo()
+        addUser
       );
   }
 
@@ -76,8 +75,7 @@ class _AccountsModalState extends State<AccountsModal> {
         RemoveUserEventInfo(
           username: username,
         ),
-        removeUser,
-        () => UsersEventInfo()
+        removeUser
       );
   }
 
@@ -88,8 +86,7 @@ class _AccountsModalState extends State<AccountsModal> {
           authService: Provider.of<AuthService>(context, listen: false),
           username: username,
         ),
-        switchUser,
-        () => AppEventInfo()
+        switchUser
       );
   }
 

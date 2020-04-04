@@ -52,8 +52,7 @@ class UpdaterService {
           RefreshUserEventInfo(
             user: u
           ), 
-          refreshUser,
-          () => const UsersEventInfo()
+          refreshUser
         );
       }
     }
