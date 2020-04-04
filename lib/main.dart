@@ -6,45 +6,58 @@ import 'package:lastfm_dashboard/services/local_database/database_service.dart';
 import 'package:lastfm_dashboard/services/updater/updater_service.dart';
 import 'package:provider/provider.dart';
 
+import 'bloc.dart';
+import 'blocs/app_bloc.dart';
+import 'blocs/users_bloc.dart';
+import 'models/models.dart';
 import 'pages/home_page/home_page.dart';
+import 'providers.dart';
 
 Future<void> main() async {
   print('ok, let\'s start');
   WidgetsFlutterBinding.ensureInitialized();
-  final auth = await AuthService.load();
+  final authService = await AuthService.load();
   print('auth service loaded');
-  final dbb = await DatabaseBuilder().build();
+  final dbService = await DatabaseBuilder().build();
   print('db configured');
-  final lfm = LastFMApi();
+  final lastFmApi = LastFMApi();
 
-  final usersBloc = await UsersBloc.load(
-    dbb, auth
+  final appBloc = await AppBloc.load(
+    dbService, authService
   );
-  print('usersBloc initialized');
+  print('appBloc initialized');
+
+  final eventsContext = EventsContext(
+    pushers: appBloc.flatPushers(),
+    streams: appBloc.flatStreams(),
+    models: appBloc.flatModels(),
+    singletones: [
+      authService,
+      dbService,
+      lastFmApi,
+    ]
+  );
 
   final widget = MultiProvider(
     providers: [
       Provider<AuthService>.value(
-        value: auth,
+        value: authService,
       ),
       Provider<LocalDatabaseService>.value(
-        value: dbb,
+        value: dbService,
       ),
       Provider<LastFMApi>.value(
-        value: lfm,
+        value: lastFmApi,
       ),
       Provider<UpdaterService>.value(
         value: UpdaterService(
-          databaseService: dbb, 
-          lastFMApi: lfm,
-          usersBloc: usersBloc
+          databaseService: dbService, 
+          lastFMApi: lastFmApi,
+          usersBloc: appBloc.usersBloc,
+          eventPusher: eventsContext
         )..start(),
       ),
-      Provider<UsersBloc>.value(value: usersBloc),
-      StreamProvider<UsersViewModel>.value(
-        value: usersBloc.model,
-        initialData: usersBloc.model.value,
-      )
+      ...getProviders(appBloc, eventsContext)
     ],
     child: DashboardApp(),
   );

@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:lastfm_dashboard/bloc.dart';
 import 'package:lastfm_dashboard/blocs/users_bloc.dart';
 import 'package:lastfm_dashboard/components/no_glow_scroll_behavior.dart';
-import 'package:lastfm_dashboard/events/user_events.dart';
+import 'package:lastfm_dashboard/events/app_events.dart';
+import 'package:lastfm_dashboard/events/users_events.dart';
 import 'package:lastfm_dashboard/models/models.dart';
 import 'package:lastfm_dashboard/extensions.dart';
 import 'package:lastfm_dashboard/services/auth/auth_service.dart';
-import 'package:lastfm_dashboard/services/lastfm/lastfm_api.dart';
-import 'package:lastfm_dashboard/services/local_database/database_service.dart';
 import 'package:provider/provider.dart';
 
 class AccountsModal extends StatefulWidget {
@@ -60,36 +60,36 @@ class _AccountsModalState extends State<AccountsModal> {
   );
 
   void add(String username) {
-    Provider.of<UsersBloc>(context, listen: false)
+    Provider.of<EventsContext>(context, listen: false)
       .push(
         AddUserEventInfo(
-          db: Provider.of<LocalDatabaseService>(context, listen: false),
-          lastFMApi: Provider.of<LastFMApi>(context, listen: false),
           username: username,
         ), 
-        addUser
+        addUser,
+        () => UsersEventInfo()
       );
   }
 
   void remove(String username) {
-    Provider.of<UsersBloc>(context, listen: false)
+    Provider.of<EventsContext>(context, listen: false)
       .push(
         RemoveUserEventInfo(
-          db: Provider.of<LocalDatabaseService>(context, listen: false),
           username: username,
         ),
-        removeUser
+        removeUser,
+        () => UsersEventInfo()
       );
   }
 
   void switchAccount(String username) {
-    Provider.of<UsersBloc>(context, listen: false)
+    Provider.of<EventsContext>(context, listen: false)
       .push(
         SwitchUserEventInfo(
           authService: Provider.of<AuthService>(context, listen: false),
           username: username,
         ),
-        switchUser
+        switchUser,
+        () => AppEventInfo()
       );
   }
 

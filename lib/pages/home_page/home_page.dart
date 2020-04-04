@@ -96,6 +96,6 @@ class _HomePageContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return content(context, Provider.of<UsersViewModel>(context).currentUser);
+    return content(context, Provider.of<User>(context));
   }
 }

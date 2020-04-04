@@ -1,8 +1,9 @@
 import 'dart:async';
 
+import 'package:lastfm_dashboard/bloc.dart';
 import 'package:lastfm_dashboard/blocs/users_bloc.dart';
 import 'package:lastfm_dashboard/constants.dart';
-import 'package:lastfm_dashboard/events/user_events.dart';
+import 'package:lastfm_dashboard/events/users_events.dart';
 import 'package:lastfm_dashboard/services/lastfm/lastfm_api.dart';
 import 'package:lastfm_dashboard/services/local_database/database_service.dart';
 
@@ -10,13 +11,15 @@ class UpdaterService {
   final LastFMApi _lastFMApi;
   final LocalDatabaseService _databaseService;
   final UsersBloc usersBloc;
+  final EventsContext eventPusher;
 
   Timer _timer;
 
   UpdaterService({
     LastFMApi lastFMApi,
     LocalDatabaseService databaseService,
-    this.usersBloc
+    this.usersBloc,
+    this.eventPusher
   }): 
     _lastFMApi = lastFMApi,
     _databaseService = databaseService;
@@ -45,13 +48,12 @@ class UpdaterService {
       final alreadySyncing = usersBloc.userRefreshing(u.id);
 
       if (syncNeeded && !alreadySyncing) {
-        usersBloc.push(
+        eventPusher.push(
           RefreshUserEventInfo(
-            db: _databaseService,
-            lastFMApi: _lastFMApi,
             user: u
-          ),
-          refreshUser
+          ), 
+          refreshUser,
+          () => const UsersEventInfo()
         );
       }
     }

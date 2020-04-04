@@ -6,24 +6,40 @@ extension DateTimeExtensions on DateTime {
     final sminute = _pad(minute);
     return '$sday.$smonth.$year $hour:$sminute';
   }
+
+  int get secondsSinceEpoch => (millisecondsSinceEpoch / 1000).round();
 }
+
+extension IterableExtensions<T> on Iterable<T> {
+  Iterable<T> replaceWhere(
+    bool Function(T) condition, 
+    T newValue
+  ) sync* {
+    for(final e in this) {
+      if (condition(e)) {
+        yield newValue;
+      }
+      yield e;
+    }
+  }
+
+  Iterable<T> changeWhere(
+    bool Function(T) condition, 
+    T Function(T) replacer
+  ) sync* {
+    for(final e in this) {
+      if (condition(e)) {
+        yield replacer(e);
+      } else {
+        yield e;
+      }
+    }
+  }
+}
+
 extension ListExtensions<T> on List<T> {
   List<T> replaceByIndex(int index, T newValue) {
     this[index] = newValue;
-    return this;
-  }
-  
-  List<T> replaceWhere(
-    bool Function(T) condition, 
-    T newValue, 
-    {bool first = false}
-  ) {
-    for(var i = 0; i < length; i++) {
-      if (condition(this[i])) {
-        this[i] = newValue;
-        if (first) break;
-      }
-    }
     return this;
   }
 

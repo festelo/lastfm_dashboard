@@ -1,36 +1,33 @@
 import 'package:lastfm_dashboard/bloc.dart';
-import 'package:lastfm_dashboard/events/user_events.dart';
+import 'package:lastfm_dashboard/events/users_events.dart';
 import 'package:lastfm_dashboard/models/models.dart';
-import 'package:lastfm_dashboard/services/auth/auth_service.dart';
 import 'package:lastfm_dashboard/services/local_database/database_service.dart';
 import 'package:rxdart/rxdart.dart';
 
 class UsersViewModel {
   final List<User> users;
-  final String currentUserId;
 
-  User get currentUser => currentUserId == null
-    ? null
-    : users.firstWhere((c) => c.id == currentUserId);
-
-  UsersViewModel(this.users, {
-    this.currentUserId
-  });
+  UsersViewModel(this.users);
 
   UsersViewModel copyWith({
-    List<User> users,
-    String currentUserId
-  }) => UsersViewModel(users ?? this.users, 
-    currentUserId: currentUserId ?? this.currentUserId
-  );
+    List<User> users
+  }) => UsersViewModel(users ?? this.users);
 }
 
-class UsersBloc extends Bloc<UsersViewModel> {
+class UsersBloc extends Bloc<UsersViewModel, UsersEventInfo> {
   @override
   final BehaviorSubject<UsersViewModel> model;
 
   UsersBloc._(UsersViewModel viewModel):
     model = BehaviorSubject.seeded(viewModel);
+
+  static Future<UsersBloc> load(
+    LocalDatabaseService db
+  ) async {
+    return UsersBloc._(
+      UsersViewModel(await db.users.getAll())
+    );
+  }
 
   bool userRefreshing(String uid) {
     return working
@@ -38,17 +35,5 @@ class UsersBloc extends Bloc<UsersViewModel> {
         c.info is RefreshUserEventInfo &&
         (c.info as RefreshUserEventInfo).user.id == uid
       );
-  }
-
-  static Future<UsersBloc> load(
-    LocalDatabaseService db, 
-    AuthService authService
-  ) async {
-    await authService.loadUser();
-    return UsersBloc._(
-      UsersViewModel(await db.users.getAll(),
-        currentUserId: authService.currentUser.value
-      )
-    );
   }
 }
