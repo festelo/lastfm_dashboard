@@ -1,20 +1,19 @@
-import 'dart:io';
-
-import 'package:collection/collection.dart';
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:lastfm_dashboard/constants.dart';
 import 'package:meta/meta.dart';
-import 'package:path/path.dart';
 import 'package:sembast/sembast.dart';
-//import 'package:sembast_web/sembast_web.dart';
-import 'package:sembast/sembast_io.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:lastfm_dashboard/models/models.dart';
 import 'package:lastfm_dashboard/models/database_mapped_model.dart';
+
+import 'db_setup.dart' 
+  if (dart.library.html) 'db_setup_web.dart'
+  if (dart.library.io) 'db_setup_io.dart';
 
 import 'migrations.dart';
 
 typedef Constructor<T> = T Function(String id, Map<String, dynamic> data);
+
 
 class DatabaseBuilder {
   DatabaseBuilder({
@@ -57,16 +56,8 @@ class DatabaseBuilder {
       );
 
   Future<LocalDatabaseService> build() async {
-    String fullPath;
-    DatabaseFactory dbFactory;
-    if (kIsWeb) {
-      fullPath = './' + path;
-      dbFactory = null; //databaseFactoryWeb;
-    } else {
-      final directory = await getApplicationDocumentsDirectory();
-      fullPath = join(directory.path, path);
-      dbFactory = databaseFactoryIo;
-    }
+    final fullPath = await getFullPath(path);
+    final dbFactory = getDatabaseFactory();
     final db = await dbFactory.openDatabase(fullPath,
       version: databaseVersion,
       mode: DatabaseMode.neverFails,
@@ -109,15 +100,27 @@ class LocalDatabaseService {
       trackScrobblesSubstore, artistSelectionsSubstore),
     artists = ArtistsCollection(database, artistsStore),
     tracks = TracksCollection(database, tracksStore);
+  
+  Future<T> transaction<T>(FutureOr<T> Function(Transaction) action) =>
+    database.transaction(action);
 }
 
 class DatabaseEntity<T extends DatabaseMappedModel> {
   final String id;
   final RecordRef<String, Map<String, dynamic>> record;
-  final Database database;
+  final DatabaseClient database;
   final Constructor<T> constructor;
 
   DatabaseEntity({this.id, this.record, this.database, this.constructor});
+
+  DatabaseEntity<T> through(DatabaseClient database) {
+    return DatabaseEntity(
+      id: id,
+      record: record,
+      database: database,
+      constructor: constructor
+    );
+  }
 
   Future<T> get() async {
     final data = await record.get(database);
@@ -186,7 +189,7 @@ class UserEntity extends DatabaseEntity<User> {
     @required this.artistSelectionsSubstore,
     String id, 
     RecordRef<String, Map<String, dynamic>> record,
-    Database database, 
+    DatabaseClient database, 
     User Function(String, Map<String, dynamic>) constructor
   }): super(
     id: id, 
@@ -200,6 +203,18 @@ class UserEntity extends DatabaseEntity<User> {
 
   StoreRef<String, Map<String, dynamic>> _artistSelectionsStoreRef
     (String userId) => artistSelectionsSubstore(userId);
+  
+  @override
+  UserEntity through(DatabaseClient database) {
+    return UserEntity(
+      id: id,
+      record: record,
+      database: database,
+      constructor: constructor,
+      artistSelectionsSubstore: artistSelectionsSubstore,
+      scrobblesSubstore: scrobblesSubstore
+    );
+  }
 
   TrackScrobblesCollection get scrobbles {
     return TrackScrobblesCollection(
@@ -223,12 +238,14 @@ class UserEntity extends DatabaseEntity<User> {
   }
 }
 
-class _DatabaseCollection<T extends DatabaseMappedModel> {
+abstract class _DatabaseCollection<T extends DatabaseMappedModel> {
   final StoreRef<String, Map<String, dynamic>> store;
-  final Database database;
+  final DatabaseClient database;
   final Constructor<T> constructor;
 
   _DatabaseCollection(this.database, this.store, this.constructor);
+
+  _DatabaseCollection<T> through(DatabaseClient database);
 
   DatabaseEntity<T> operator [](String id) => DatabaseEntity<T>(
     id: id,
@@ -321,7 +338,7 @@ class _DatabaseCollection<T extends DatabaseMappedModel> {
 
 class UsersCollection extends _DatabaseCollection<User> {
   UsersCollection(
-    Database database, 
+    DatabaseClient database, 
     StoreRef<String, Map<String, dynamic>> store,
     this.scrobblesSubstore,
     this.artistSelectionsSubstore
@@ -332,6 +349,16 @@ class UsersCollection extends _DatabaseCollection<User> {
 
   final StoreRef<String, Map<String, dynamic>> 
     Function(String userId) artistSelectionsSubstore;
+    
+  @override
+  UsersCollection through(DatabaseClient database) {
+    return UsersCollection(
+      database,
+      store,
+      scrobblesSubstore,
+      artistSelectionsSubstore
+    );
+  }
 
   @override
   UserEntity operator [](String id) => UserEntity(
@@ -356,23 +383,38 @@ class UsersCollection extends _DatabaseCollection<User> {
 
 class ArtistsCollection extends _DatabaseCollection<Artist> {
   ArtistsCollection(
-    Database database, 
+    DatabaseClient database, 
     StoreRef<String, Map<String, dynamic>> store,
   ) : super(database, store, (id, data) => Artist.deserialize(id, data));
+    
+  @override
+  ArtistsCollection through(DatabaseClient database) {
+    return ArtistsCollection(database, store);
+  }
 }
 
 class TracksCollection extends _DatabaseCollection<Track> {
   TracksCollection(
-    Database database, 
+    DatabaseClient database, 
     StoreRef<String, Map<String, dynamic>> store,
   ) : super(database, store, (id, data) => Track.deserialize(data));
+    
+  @override
+  TracksCollection through(DatabaseClient database) {
+    return TracksCollection(database, store);
+  }
 }
 
 class TrackScrobblesCollection extends _DatabaseCollection<TrackScrobble> {
   TrackScrobblesCollection(
-    Database database, 
+    DatabaseClient database, 
     StoreRef<String, Map<String, dynamic>> store,
   ) : super(database, store, (id, data) => TrackScrobble.deserialize(data));
+    
+  @override
+  TrackScrobblesCollection through(DatabaseClient database) {
+    return TrackScrobblesCollection(database, store);
+  }
 
   Stream<int> countByArtistStream(String artistId) {
     return store
@@ -389,7 +431,12 @@ class TrackScrobblesCollection extends _DatabaseCollection<TrackScrobble> {
 
 class ArtistSelectionsCollection extends _DatabaseCollection<ArtistSelection> {
   ArtistSelectionsCollection(
-    Database database, 
+    DatabaseClient database, 
     StoreRef<String, Map<String, dynamic>> store,
   ) : super(database, store, (id, data) => ArtistSelection.deserialize(data));
+    
+  @override
+  ArtistSelectionsCollection through(DatabaseClient database) {
+    return ArtistSelectionsCollection(database, store);
+  }
 }

@@ -8,8 +8,6 @@ import 'package:provider/provider.dart';
 
 import 'bloc.dart';
 import 'blocs/users_bloc.dart';
-import 'events/users_events.dart';
-import 'models/models.dart';
 import 'pages/home_page/home_page.dart';
 import 'providers.dart';
 

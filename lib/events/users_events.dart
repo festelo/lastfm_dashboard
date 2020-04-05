@@ -91,34 +91,52 @@ Stream<Returner<UsersViewModel>> refreshUser(
   final Set<Artist> artists = {};
   final Set<Track> tracks = {};
 
-  await for(final scrobble in scrobbles) {
+  await for(final scrobbles in scrobbles.bufferCount(200)) {
     if (c.cancelled()) throw CancelledException();
-    final isNewArtist = artists.add(scrobble.artist);
-    if (isNewArtist) {
-      await db.artists[scrobble.artist.id].update(
-        scrobble.artist.toDbMap(), 
-        createIfNotExist: true
-      );
-    }
 
-    final isNewTrack = tracks.add(scrobble.track);
-    if (isNewTrack) {
-      await db.tracks[scrobble.track.id].update(
-        scrobble.track.toDbMap(), 
-        createIfNotExist: true
-      );
-    }
+    final newAritsts = scrobbles
+      .where((s) => artists.add(s.artist))
+      .map((c) => c.artist);
 
-    await db.users[user.id].scrobbles.add(scrobble.toTrackScrobble());
+    final newTracks = scrobbles
+      .where((s) => tracks.add(s.track))
+      .map((c) => c.track);
 
     final updater = (User u) => u.copyWith(
       setupSync: u.setupSync.copyWith(
-        latestScrobble: scrobble.date
+        latestScrobble: scrobbles.last.date
       )
     );
 
-    await db.users[user.id]
-      .updateSelective(updater);
+    db.transaction((t) async {
+      for(final artist in newAritsts) {
+        await db.artists[artist.id]
+          .through(t)
+          .update(
+            artist.toDbMap(), 
+            createIfNotExist: true
+          );
+      }
+
+      for(final track in newTracks) {
+        await db.artists[track.id]
+          .through(t)
+          .update(
+            track.toDbMap(), 
+            createIfNotExist: true
+          );
+      }
+
+      await db.users[user.id].scrobbles
+        .through(t)
+        .addAll(
+          scrobbles.map((e) => e.toTrackScrobble())
+        );
+
+      await db.users[user.id]
+        .through(t)
+        .updateSelective(updater);
+    });
 
     yield (vm) => vm.copyWith(
       users: vm.users
