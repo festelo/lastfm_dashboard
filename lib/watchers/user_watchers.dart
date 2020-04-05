@@ -22,7 +22,7 @@ Stream<Returner<UsersViewModel>> usersUpdaterWatcher(
           DateTime.now().subtract(UpdaterConfig.period)
         );
         
-      final alreadySyncing = usersBloc.userRefreshing(u.id);
+      final alreadySyncing = usersBloc.isUserRefreshing(u.id);
 
       if (syncNeeded && !alreadySyncing) {
         c.context.push(

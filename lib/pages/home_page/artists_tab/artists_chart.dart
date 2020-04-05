@@ -5,7 +5,7 @@ class ArtistsChart extends StatelessWidget {
   
   @override
   Widget build(BuildContext context) {
-    return Padding(
+    return const Padding(
       padding: EdgeInsets.all(10),
       child: BaseChart([
         ChartSeries(

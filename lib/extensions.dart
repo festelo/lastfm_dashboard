@@ -11,11 +11,8 @@ extension DateTimeExtensions on DateTime {
 }
 
 extension IterableExtensions<T> on Iterable<T> {
-  Iterable<T> replaceWhere(
-    bool Function(T) condition, 
-    T newValue
-  ) sync* {
-    for(final e in this) {
+  Iterable<T> replaceWhere(bool Function(T) condition, T newValue) sync* {
+    for (final e in this) {
       if (condition(e)) {
         yield newValue;
       }
@@ -24,10 +21,10 @@ extension IterableExtensions<T> on Iterable<T> {
   }
 
   Iterable<T> changeWhere(
-    bool Function(T) condition, 
-    T Function(T) replacer
+    bool Function(T) condition,
+    T Function(T) replacer,
   ) sync* {
-    for(final e in this) {
+    for (final e in this) {
       if (condition(e)) {
         yield replacer(e);
       } else {
@@ -43,10 +40,8 @@ extension ListExtensions<T> on List<T> {
     return this;
   }
 
-  List<T> removeFirstWhere(
-    bool Function(T) condition
-  ) {
-    for(var i = 0; i < length; i++) {
+  List<T> removeFirstWhere(bool Function(T) condition) {
+    for (var i = 0; i < length; i++) {
       if (condition(this[i])) {
         removeAt(i);
         break;
