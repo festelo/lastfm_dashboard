@@ -12,6 +12,19 @@ typedef Event<T, TEventInfo> =
   Stream<Returner<T>> Function(
     TEventInfo info, EventConfiguration<T> configuration);
 
+Future<void> initializeBlocs(
+  EventsContext context, List<Bloc> blocs) async {
+  final blocsToInitialize = blocs
+    .whereType<BlocWithInitializationEvent>()
+    .toList();
+  for(var i = 0; i < blocsToInitialize.length; i++) {
+    final bloc = blocsToInitialize[i];
+    print('Initalizing ${bloc.runtimeType.toString()} (${i+1}/${blocsToInitialize.length})');
+    await bloc.pushInitializationEvent(context).future;
+    print('done');
+  }
+}
+
 class RunnedEvent<T> {
   final T info;
   final void Function() cancel;
@@ -129,18 +142,18 @@ abstract class Bloc<T> {
     final runnedEvent = RunnedEvent(info, 
       () => cancelled = true, 
       completer.future);
-    StreamSubscription subscription;
 
     working.add(runnedEvent);
     final remove = ([dynamic error]) {
-      subscription.cancel();
       if (completer.isCompleted) return;
       if (error != null) {
         print(error);
         debugPrintStack(stackTrace: StackTrace.current);
         completer.completeError(error);
+        _cCompletedEvents.addError(error);
       } else {
         completer.complete();
+        _cCompletedEvents.add(info);
       }
       working.remove(runnedEvent);
     };
@@ -148,24 +161,18 @@ abstract class Bloc<T> {
       cancelled: () => cancelled,
       context: context
     );
-    runZoned(
-      () => subscription = event(info, configuration)
-        .listen((modifier) {
-          if (modifier != null)
-            model.value = modifier(model.value);
-        }, 
-        onDone: () {
+    Future.microtask(
+      () async {
+        try {
+          await for (final c in event(info, configuration)) {
+            if (c != null)
+              model.value = c(model.value);
+          }
           remove();
-          _cCompletedEvents.add(info);
-        },
-        onError: (e) {
+        } catch (e) {
           remove(e);
-          _cCompletedEvents.addError(e);
-        }),
-      onError: (e) { 
-        remove(e); 
-        print('interesting behavior');
-      }
+        }
+      },
     );
     return runnedEvent;
   }
