@@ -232,6 +232,10 @@ class UserEntity extends DatabaseEntity<User> {
   
   @override
   Future<void> delete() async {
+    final db = database;
+    if (db is Database) {
+      return await db.transaction((t) => through(t).delete());
+    }
     await artistSelections.delete();
     await scrobbles.delete();
     await super.delete();
@@ -372,6 +376,10 @@ class UsersCollection extends _DatabaseCollection<User> {
 
   @override
   Future<void> delete() async {
+    final db = database;
+    if (db is Database) {
+      return await db.transaction((t) => through(t).delete());
+    }
     final users = await getAll();
     final futures = users
       .map((v) => this[v.id].scrobbles.delete());

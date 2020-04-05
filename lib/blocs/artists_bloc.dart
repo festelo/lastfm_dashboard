@@ -1,7 +1,6 @@
 import 'package:lastfm_dashboard/bloc.dart';
 import 'package:lastfm_dashboard/models/models.dart';
 import 'package:lastfm_dashboard/services/auth/auth_service.dart';
-import 'package:lastfm_dashboard/services/local_database/database_service.dart';
 import 'package:lastfm_dashboard/watchers/artists_watchers.dart';
 import 'package:rxdart/rxdart.dart';
 
@@ -27,8 +26,8 @@ class ArtistsViewModel {
     List<ArtistWithListenInfo> artistsWithListens,
     List<ArtistSelection> artistSelections
   }) => ArtistsViewModel(
-    artistsWithListens: artistsWithListens,
-    artistSelections: artistSelections
+    artistsWithListens: artistsWithListens ?? this.artistsWithListens,
+    artistSelections: artistSelections ?? this.artistSelections
   );
 }
 

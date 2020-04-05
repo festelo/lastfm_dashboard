@@ -3,6 +3,7 @@ import 'package:lastfm_dashboard/blocs/artists_bloc.dart';
 import 'package:lastfm_dashboard/blocs/users_bloc.dart';
 import 'package:lastfm_dashboard/services/auth/auth_service.dart';
 import 'package:lastfm_dashboard/services/lastfm/lastfm_api.dart';
+import 'package:lastfm_dashboard/services/lastfm/lastfm_api_mock.dart';
 import 'package:lastfm_dashboard/services/local_database/database_service.dart';
 import 'package:provider/provider.dart';
 
@@ -18,7 +19,7 @@ Future<void> main() async {
   print('auth service loaded');
   final dbService = await DatabaseBuilder().build();
   print('db configured');
-  final lastFmApi = LastFMApi();
+  final lastFmApi = LastFMApiMock();
 
 
   final blocCombiner = BlocCombiner([
@@ -38,13 +39,7 @@ Future<void> main() async {
   );
   print('eventsContext initialized');
 
-  final futures = blocCombiner.flatBlocs()
-    .whereType<BlocWithInitializationEvent>()
-    .map((c) => c.pushInitializationEvent(eventsContext))
-    .map((c) => c.future)
-    .toList();
-  
-  await Future.wait(futures);
+  await initializeBlocs(eventsContext, blocCombiner.flatBlocs());
   print('blocs initialized');
 
   final widget = MultiProvider(
