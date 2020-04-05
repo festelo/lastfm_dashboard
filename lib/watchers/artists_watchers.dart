@@ -48,7 +48,7 @@ Stream<Returner<ArtistsViewModel>> artistsWatcher(
 
   final combinedStream = Rx.combineLatest2(scrobblesStream, artistsStream,
     (a, b) => _ArtistsWithScrobbles(b, a)
-  ).debounceTime(Duration(seconds: 10));
+  ).throttleTime(Duration(seconds: 10), trailing: true);
       
   await for(final m in combinedStream) {
     c.throwIfCancelled();
