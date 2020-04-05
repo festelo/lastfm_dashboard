@@ -45,14 +45,8 @@ Stream<Returner<ArtistsViewModel>> artistsWatcher(
       db.users[userId].scrobbles.changes());
 
   final changes = db.artists.changes();
-  final first = await changes.first;
 
-  final artistsStream = changes
-    .skipWhile((c) => c == first)
-    .throttleTime(Duration(seconds: 5), trailing: true)
-    .publishValueSeeded(first);
-
-  final combinedStream = Rx.combineLatest2(scrobblesStream, artistsStream,
+  final combinedStream = Rx.combineLatest2(scrobblesStream, changes,
     (a, b) => _ArtistsWithScrobbles(b, a)
   );
       

@@ -95,6 +95,7 @@ Stream<Returner<UsersViewModel>> refreshUser(
   final lastFMApi = c.context.get<LastFMApi>();
   final user = i.user;
   
+  
   final scrobbles = lastFMApi.getUserScrobbles(
     user.username,
     cancelled: c.cancelled,
@@ -111,7 +112,9 @@ Stream<Returner<UsersViewModel>> refreshUser(
   final Set<Artist> artists = {};
   final Set<Track> tracks = {};
 
-  await for(final scrobbles in scrobbles.bufferCount(200)) {
+  await for(final scrobbles in scrobbles.bufferTime(
+    Duration(milliseconds: 10)
+  )) {
     if (c.cancelled()) throw CancelledException();
 
     final newAritsts = scrobbles
