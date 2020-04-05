@@ -23,71 +23,74 @@ class _AccountsModalState extends State<AccountsModal> {
     final refreshing = Provider.of<UsersBloc>(context).userRefreshing(user.id);
     final removing = Provider.of<UsersBloc>(context).userRemoving(user.id);
     final current = Provider.of<User>(context)?.id == user.id;
-    return FlatButton(
+    return Padding(
       padding: EdgeInsets.symmetric(
         vertical: 5
       ),
-      child: Row(
-        children: <Widget>[
-          Stack(
-            children: [
-              Container(
-                height: 40,
-                width: 40,
-                decoration: BoxDecoration(
-                  image: DecorationImage(
-                    image: NetworkImage(user.imageInfo?.small,),
-                    colorFilter: !current
-                      ? null
-                      : ColorFilter.mode(
-                        Colors.black.withOpacity(0.6), 
-                        BlendMode.srcOver
-                      ),
-                    fit: BoxFit.cover
+      child: InkWell(
+        child: Row(
+          children: <Widget>[
+            Stack(
+              children: [
+                Container(
+                  height: 40,
+                  width: 40,
+                  decoration: BoxDecoration(
+                    image: DecorationImage(
+                      image: NetworkImage(user.imageInfo?.small,),
+                      colorFilter: !current
+                        ? null
+                        : ColorFilter.mode(
+                          Colors.black.withOpacity(0.6), 
+                          BlendMode.srcOver
+                        ),
+                      fit: BoxFit.cover
+                    ),
+                    shape: BoxShape.circle,
+                    border: !current ? null : Border.all(
+                      color: Theme.of(context).accentColor,
+                      width: 1
+                    )
                   ),
-                  shape: BoxShape.circle,
-                  border: !current ? null : Border.all(
-                    color: Theme.of(context).accentColor,
-                    width: 1
-                  )
+                  child: !current
+                    ? null 
+                    : Icon(Icons.check,
+                      color: Theme.of(context).accentColor,
+                    ),
                 ),
-                child: !current
-                  ? null 
-                  : Icon(Icons.check,
-                    color: Theme.of(context).accentColor,
-                  ),
+              ],
+            ),
+            SizedBox(width: 20,),
+            Expanded(
+              child: Text(user.username,
+                style: Theme.of(context).textTheme.subtitle,
               ),
-            ],
-          ),
-          SizedBox(width: 20,),
-          Expanded(
-            child: Text(user.username,
-              style: Theme.of(context).textTheme.subtitle,
             ),
-          ),
-          Text(
-            user.lastSync?.toHumanable() ?? ''
-          ),
-          if (refreshing || removing)
-            SizedBox(
-              height: 24,
-              width: 24,
-              child: CircularProgressIndicator()
+            Text(
+              user.lastSync?.toHumanable() ?? ''
+            ),
+            if (refreshing || removing)
+              Padding(
+                padding: EdgeInsets.only(right: 11),
+                child: SizedBox(
+                  height: 24,
+                  width: 24,
+                  child: CircularProgressIndicator()
+                )
+              )
+            else IconButton(
+              onPressed: () { remove(user.username); },
+              icon: Icon(Icons.delete, ),
             )
-          else IconButton(
-            onPressed: () { remove(user.username); },
-            icon: Icon(Icons.delete, 
-              color: Theme.of(context).iconTheme.color,
-            ),
-          )
-        ],
+          ],
+        ),
+        onTap: current || removing
+          ? null
+          : () {
+            switchAccount(user.username);
+            Navigator.of(context).pop();
+          }
       ),
-      onPressed: current || removing
-        ? null
-        : () {
-          switchAccount(user.username);
-          Navigator.of(context).pop();
-        }
     );
   }
 
