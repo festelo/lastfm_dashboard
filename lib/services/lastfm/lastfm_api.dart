@@ -147,7 +147,6 @@ class LastFMApi {
       );
 
       if (cancelled != null && cancelled()) throw CancelledException();
-      
       for (final scrobble in scrobbles) {
         yield _deserializeScrobble(scrobble);
       }

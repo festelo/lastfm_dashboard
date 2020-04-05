@@ -2,49 +2,53 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'bloc.dart';
-import 'blocs/app_bloc.dart';
+import 'blocs/artists_bloc.dart';
 import 'blocs/users_bloc.dart';
 import 'models/models.dart';
 
-List<Widget> _blocProviders(AppBloc appBloc) {
+List<Widget> _blocProviders(EventsContext context) {
   return [
-    Provider<AppBloc>.value(
-      value: appBloc
+    Provider<ArtistsBloc>.value(
+      value: context.get<ArtistsBloc>()
     ),  
     Provider<UsersBloc>.value(
-      value: appBloc.usersBloc
+      value: context.get<UsersBloc>()
     )
   ];
 }
 
-List<Widget> _modelProviders(AppBloc appBloc) {
+List<Widget> _modelProviders(EventsContext context) {
   return [
-    Provider<AppBloc>.value(
-      value: appBloc
+    StreamProvider<ArtistsViewModel>.value(
+      value: context.subscribe<ArtistsViewModel>(),
+      initialData: context.get<ArtistsViewModel>(),
     ),  
-    Provider<UsersBloc>.value(
-      value: appBloc.usersBloc
+    StreamProvider<UsersViewModel>.value(
+      value: context.subscribe<UsersViewModel>(),
+      initialData: context.get<UsersViewModel>()
     )
   ];
 }
 
-List<Widget> _streamProviders(AppBloc appBloc) {
+List<Widget> _streamProviders(EventsContext context) {
   return [
     StreamProvider<User>.value(
-      value: appBloc.currentUser,
+      value: context.subscribe<User>(),
+      initialData: context.get<User>(),
+      lazy: false,
     )
   ];
 }
 
-List<Widget> getProviders(AppBloc appBloc, EventsContext eventsContext) {
-  final blocProviders = _blocProviders(appBloc);
-  assert(blocProviders.length == appBloc.flatBlocs().length);
+List<Widget> getProviders(BlocCombiner combiner, EventsContext eventsContext) {
+  final blocProviders = _blocProviders(eventsContext);
+  assert(blocProviders.length == combiner.flatBlocs().length);
 
-  final modelProviders = _modelProviders(appBloc);
-  assert(blocProviders.length == appBloc.flatBlocs().length);
+  final modelProviders = _modelProviders(eventsContext);
+  assert(modelProviders.length == combiner.flatModels().length);
 
-  final streamProviders = _streamProviders(appBloc);
-  assert(blocProviders.length == appBloc.flatBlocs().length);
+  final streamProviders = _streamProviders(eventsContext);
+  assert(streamProviders.length == combiner.flatStreams().length);
 
   return [
       Provider<EventsContext>.value(

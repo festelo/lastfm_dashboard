@@ -2,15 +2,12 @@ import 'package:lastfm_dashboard/bloc.dart';
 import 'package:lastfm_dashboard/blocs/users_bloc.dart';
 import 'package:lastfm_dashboard/models/models.dart';
 import 'package:lastfm_dashboard/extensions.dart';
+import 'package:lastfm_dashboard/services/auth/auth_service.dart';
 import 'package:lastfm_dashboard/services/lastfm/lastfm_api.dart';
 import 'package:lastfm_dashboard/services/local_database/database_service.dart';
+import 'package:rxdart/rxdart.dart';
 
-
-class UsersEventInfo extends EventInfo { 
-  const UsersEventInfo(); 
-}
-
-class AddUserEventInfo extends UsersEventInfo {
+class AddUserEventInfo {
   final String username;
 
   const AddUserEventInfo({
@@ -18,7 +15,7 @@ class AddUserEventInfo extends UsersEventInfo {
   });
 }
 
-class RemoveUserEventInfo extends UsersEventInfo {
+class RemoveUserEventInfo {
   final String username;
 
   const RemoveUserEventInfo({
@@ -26,7 +23,7 @@ class RemoveUserEventInfo extends UsersEventInfo {
   });
 }
 
-class RefreshUserEventInfo extends UsersEventInfo {
+class RefreshUserEventInfo {
   final User user;
 
   const RefreshUserEventInfo({
@@ -34,10 +31,10 @@ class RefreshUserEventInfo extends UsersEventInfo {
   });
 }
 
-Future<Returner<UsersViewModel>> addUser(
+Stream<Returner<UsersViewModel>> addUser(
   AddUserEventInfo i, 
   EventConfiguration<UsersViewModel> c,
-) async {
+) async* {
   final lastFMApi = c.context.get<LastFMApi>();
   final db = c.context.get<LocalDatabaseService>();
 
@@ -52,28 +49,28 @@ Future<Returner<UsersViewModel>> addUser(
   );
 
   await db.users[i.username].create(user);
-  return (UsersViewModel c) => c.copyWith(
+  yield (UsersViewModel c) => c.copyWith(
     users: [...c.users, user]
   );
 }
 
-Future<Returner<UsersViewModel>> removeUser(
+Stream<Returner<UsersViewModel>> removeUser(
   RemoveUserEventInfo i, 
   EventConfiguration<UsersViewModel> c,
-) async {
+) async* {
   final db = c.context.get<LocalDatabaseService>();
   await db.users[i.username].delete();
-  return (UsersViewModel c) => c.copyWith(
+  yield (UsersViewModel c) => c.copyWith(
     users: [...c.users]..removeFirstWhere(
       (c) => c.username == i.username,
     )
   );
 }
 
-Future<Returner<UsersViewModel>> refreshUser(
+Stream<Returner<UsersViewModel>> refreshUser(
   RefreshUserEventInfo i, 
   EventConfiguration<UsersViewModel> c,
-) async {
+) async* {
   final db = c.context.get<LocalDatabaseService>();
   final lastFMApi = c.context.get<LastFMApi>();
   final user = i.user;
@@ -120,17 +117,34 @@ Future<Returner<UsersViewModel>> refreshUser(
       )
     );
 
-    final updatedUser = await db.users[user.id]
-      .writeSelective(updater);
+    await db.users[user.id]
+      .updateSelective(updater);
 
-    c.update((vm) => vm.copyWith(
+    yield (vm) => vm.copyWith(
       users: vm.users
         .changeWhere(
-          (u) => u.id == updatedUser.id, 
+          (u) => u.id == user.id, 
           updater
         )
         .toList()
-    ));
+    );
   }
-  return null;
+}
+
+class SwitchUserEventInfo {
+  final String username;
+
+  SwitchUserEventInfo({
+    this.username,
+  });
+}
+
+Stream<Returner<UsersViewModel>> switchUser(
+  SwitchUserEventInfo i, 
+  EventConfiguration<UsersViewModel> c,
+) async* {
+  c.context.get<AuthService>().switchUser(i.username);
+  yield (UsersViewModel c) => c.copyWith(
+    currentUserId: i.username
+  );
 }

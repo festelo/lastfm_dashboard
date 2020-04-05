@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:lastfm_dashboard/blocs/artists_bloc.dart';
 import 'package:provider/provider.dart';
-
-import 'viewmodel.dart';
 
 class ArtistsList extends StatefulWidget {
   @override
@@ -9,10 +8,6 @@ class ArtistsList extends StatefulWidget {
 }
 
 class _ArtistsListState extends State<ArtistsList> {
-  static const msiImage = 'https://lastfm.freetls.fastly.net/i/u/770x0/e9b435adf77c4cc2ac4d9ff6ce2d3b9e.webp#e9b435adf77c4cc2ac4d9ff6ce2d3b9e';
-  static const mansonImage = 'https://lastfm.freetls.fastly.net/i/u/770x0/cbf5083cc1244b36cb8ef0810528670f.webp#cbf5083cc1244b36cb8ef0810528670f';
-  
-  var counter = 0;
 
   Widget listItem({
     String name, 
@@ -93,13 +88,9 @@ class _ArtistsListState extends State<ArtistsList> {
       margin: EdgeInsets.all(10),
       child: Padding(
         padding: EdgeInsets.all(0),
-        child: StreamBuilder<List<SingleArtistViewModel>>(
-          stream: Provider.of<ArtistsViewModel>(context).artists,
-          builder: (_, snap) {
-            if (
-              snap.connectionState == ConnectionState.waiting || 
-              snap.data == null
-            )
+        child: Consumer<ArtistsViewModel>(
+          builder: (_, vm, snap) {
+            if (vm.artistsWithListens == null)
               return Center(
                 child: CircularProgressIndicator(),
               );
@@ -108,12 +99,12 @@ class _ArtistsListState extends State<ArtistsList> {
               padding: EdgeInsets.symmetric(
                 vertical: 10
               ),
-              itemCount: snap.data.length,
+              itemCount: vm.artistsWithListens.length,
               itemBuilder: (_, i) => listItem(
-                image: snap.data[i].artist.imageInfo.small,
-                name: snap.data[i].artist.name,
-                scrobbles: snap.data[i].scrobbles,
-                selectionColor: snap.data[i].selectionColor,
+                image: vm.artistsWithListens[i].artist.imageInfo.small,
+                name: vm.artistsWithListens[i].artist.name,
+                scrobbles: vm.artistsWithListens[i].scrobbles,
+                // selectionColor: vm.artistsWithListens[i].s,
                 // onPressed: () => setState(() => 
                 //   artistsArray[i].selectionColor = [
                 //     Colors.red,

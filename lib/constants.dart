@@ -4,6 +4,7 @@ class LocalDatabaseInfo {
   static const String artistsPath = 'artists';
   static const String tracksPath = 'tracks';
   static const String trackScrobblesPath = 'track_scrobbles';
+  static const String artistSelectionsStorePath = 'artist_selections';
   static const int databaseVersion = 2;
 }
 

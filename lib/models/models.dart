@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'database_mapped_model.dart';
 
 class ImageInfo {
@@ -119,7 +121,7 @@ class Artist extends DatabaseMappedModel {
     this.mbid,
     this.name,
     this.url,
-    this.imageInfo
+    this.imageInfo,
   });
 
   Artist.deserialize(this.name, Map<String, dynamic> map):
@@ -213,5 +215,27 @@ class TrackScrobble extends DatabaseMappedModel {
     properties.trackId: trackId,
     properties.artistId: artistId,
     properties.date: date?.millisecondsSinceEpoch
+  };
+}
+
+class ArtistSelection extends DatabaseMappedModel {
+  @override
+  String get id => artistId;
+  final String artistId;
+  final Color selectionColor;
+
+  ArtistSelection({
+    this.artistId,
+    this.selectionColor,
+  });
+
+  ArtistSelection.deserialize(Map<String, dynamic> map):
+    artistId = map['artistId'],
+    selectionColor = Color(map['selectionColor']);
+  
+  @override
+  Map<String, dynamic> toDbMap() => {
+    'artistId': artistId,
+    'selectionColor': selectionColor.value
   };
 }

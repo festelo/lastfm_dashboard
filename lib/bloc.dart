@@ -1,44 +1,90 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:rxdart/rxdart.dart';
 
 typedef Returner<T> = T Function(T);
-typedef Updater<T> = T Function(T Function(T));
 typedef Cancelled = bool Function();
 
-typedef Pusher<TE extends EventInfo, VMT> = 
-  void Function<TE extends EventInfo>(TE, Event<VMT, TE>, EventsContext);
+typedef Pusher<TE, VMT> = 
+  void Function<TE>(TE, Event<VMT, TE>, EventsContext);
 
-typedef Event<T, TEventInfo extends EventInfo> = 
-  Future<Returner<T>> Function(
+typedef Event<T, TEventInfo> = 
+  Stream<Returner<T>> Function(
     TEventInfo info, EventConfiguration<T> configuration);
 
-@immutable
-abstract class EventInfo { const EventInfo(); }
-
-class RunnedEvent {
-  final EventInfo info;
+class RunnedEvent<T> {
+  final T info;
   final void Function() cancel;
-  RunnedEvent(this.info, this.cancel);
+  final Future<void> future;
+  RunnedEvent(this.info, this.cancel, this.future);
 }
 
 class EventConfiguration<T> {
-  final Updater<T> update;
   final Cancelled cancelled;
 
   final EventsContext context;
 
+  void throwIfCancelled() {
+    if (cancelled())
+      throw CancelledException();
+  }
+
   EventConfiguration({
-    this.update,
     this.cancelled,
     this.context
   });
 }
 
+mixin BlocWithInitializationEvent<T> on Bloc<T> {
+  RunnedEvent<void> pushInitializationEvent(EventsContext context) {
+    return context.push(null, initializationEvent);
+  }
+
+  Stream<Returner<T>> initializationEvent(
+    void _, EventConfiguration<T> c);
+}
+
+class BlocCombiner {
+  final List<Bloc> _blocs;
+  BlocCombiner(this._blocs);
+  
+  List<Bloc> flatBlocs() {
+    final ret = <Bloc>[];
+    for(final f in _blocs) {
+      ret.addAll(f.flatBlocs());
+    } 
+    return ret;
+  } 
+
+  List<ValueStream<dynamic>> flatModels() {
+    final vms = <ValueStream<dynamic>>[];
+    for(final bloc in flatBlocs()) {
+      vms.addAll(bloc.flatModels());
+    }
+    return vms;
+  }
+  
+  List<ValueStream<dynamic>> flatStreams() {
+    final ret = <ValueStream<dynamic>>[];
+    for(final bloc in flatBlocs()) {
+      ret.addAll(bloc.flatStreams());
+    }
+    return ret;
+  }
+  
+  List<dynamic> flatPushers() {
+    final pushers = <dynamic>[];
+    for(final bloc in flatBlocs()) {
+      pushers.addAll(bloc.flatPushers());
+    }
+    return pushers;
+  }
+}
+
 abstract class Bloc<T> {
   List<RunnedEvent> working = [];
-  Stream<EventInfo> get completedEvents => _cCompletedEvents.stream;
-  final StreamController<EventInfo> _cCompletedEvents 
+  Stream<dynamic> get completedEvents => _cCompletedEvents.stream;
+  final StreamController<dynamic> _cCompletedEvents 
     = StreamController.broadcast();
 
   BehaviorSubject<T> get model;
@@ -73,36 +119,55 @@ abstract class Bloc<T> {
     return pushers;
   }
 
-  void push<TEventInfo extends EventInfo>(
+  RunnedEvent<TEventInfo> push<TEventInfo>(
     TEventInfo info, 
     Event<T, TEventInfo> event,
     EventsContext context
   ) {
     var cancelled = false;
-    final runnedEvent = RunnedEvent(info, () => cancelled = true);
+    final completer = Completer<void>();
+    final runnedEvent = RunnedEvent(info, 
+      () => cancelled = true, 
+      completer.future);
+    StreamSubscription subscription;
+
     working.add(runnedEvent);
-    final remove = () => working.remove(runnedEvent);
+    final remove = ([dynamic error]) {
+      subscription.cancel();
+      if (completer.isCompleted) return;
+      if (error != null) {
+        print(error);
+        debugPrintStack(stackTrace: StackTrace.current);
+        completer.completeError(error);
+      } else {
+        completer.complete();
+      }
+      working.remove(runnedEvent);
+    };
     final configuration = EventConfiguration<T>(
       cancelled: () => cancelled,
-      update: (a) => model.value = a(model.value),
       context: context
     );
     runZoned(
-      () => event(info, configuration)
-        .then((modifier) {
-          model.value = modifier(model.value);
+      () => subscription = event(info, configuration)
+        .listen((modifier) {
+          if (modifier != null)
+            model.value = modifier(model.value);
+        }, 
+        onDone: () {
           remove();
           _cCompletedEvents.add(info);
-        })
-        .catchError((e) {
-          remove();
+        },
+        onError: (e) {
+          remove(e);
           _cCompletedEvents.addError(e);
         }),
       onError: (e) { 
-        remove(); 
+        remove(e); 
         print('interesting behavior');
       }
     );
+    return runnedEvent;
   }
 
   Future<void> close() async {
@@ -119,22 +184,21 @@ class EventsContext {
   final List<dynamic> _singletones;
 
   EventsContext({
-    List<dynamic> blocs,
-    List<ValueStream> streams,
-    List<dynamic> singletones,
-    List<ValueStream> models,
+    @required List<dynamic> blocs,
+    List<ValueStream> streams  = const [],
+    List<dynamic> singletones = const [],
+    List<ValueStream> models = const [],
   }): 
     _blocs = blocs, 
     _streams = streams,
     _singletones = singletones,
     _models = models;
   
-  void push<TEventInfo extends EventInfo, TVM>(
+  RunnedEvent<TEventInfo> push<TEventInfo, TVM>(
     TEventInfo eventInfo, Event<TVM, TEventInfo> event) {
     for(final p in _blocs) {
       if (p is Bloc<TVM>) {
-        p.push(eventInfo, event, this);
-        return;
+        return p.push(eventInfo, event, this);
       }
     }
     throw Exception('Pusher not found');
@@ -153,6 +217,13 @@ class EventsContext {
     }
     for(final s in _singletones) {
       if (s is T) {
+        print('Subscribing to not changing value');
+        return Stream.value(s).publishValue();
+      }
+    }
+    for(final s in _blocs) {
+      if (s is T) {
+        print('Subscribing to not changing value');
         return Stream.value(s).publishValue();
       }
     }
@@ -160,6 +231,11 @@ class EventsContext {
   }
 
   T get<T>() {
+    for(final s in _blocs) {
+      if (s is T) {
+        return s;
+      }
+    }
     for(final s in _streams) {
       if (s is ValueStream<T>) {
         return s.value;

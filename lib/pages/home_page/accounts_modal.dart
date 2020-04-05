@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:lastfm_dashboard/bloc.dart';
 import 'package:lastfm_dashboard/blocs/users_bloc.dart';
 import 'package:lastfm_dashboard/components/no_glow_scroll_behavior.dart';
-import 'package:lastfm_dashboard/events/app_events.dart';
 import 'package:lastfm_dashboard/events/users_events.dart';
 import 'package:lastfm_dashboard/models/models.dart';
 import 'package:lastfm_dashboard/extensions.dart';
@@ -83,7 +82,6 @@ class _AccountsModalState extends State<AccountsModal> {
     Provider.of<EventsContext>(context, listen: false)
       .push(
         SwitchUserEventInfo(
-          authService: Provider.of<AuthService>(context, listen: false),
           username: username,
         ),
         switchUser

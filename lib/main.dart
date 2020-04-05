@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lastfm_dashboard/blocs/artists_bloc.dart';
 import 'package:lastfm_dashboard/blocs/users_bloc.dart';
 import 'package:lastfm_dashboard/services/auth/auth_service.dart';
 import 'package:lastfm_dashboard/services/lastfm/lastfm_api.dart';
@@ -7,8 +8,8 @@ import 'package:lastfm_dashboard/services/updater/updater_service.dart';
 import 'package:provider/provider.dart';
 
 import 'bloc.dart';
-import 'blocs/app_bloc.dart';
 import 'blocs/users_bloc.dart';
+import 'events/users_events.dart';
 import 'models/models.dart';
 import 'pages/home_page/home_page.dart';
 import 'providers.dart';
@@ -22,21 +23,32 @@ Future<void> main() async {
   print('db configured');
   final lastFmApi = LastFMApi();
 
-  final appBloc = await AppBloc.load(
-    dbService, authService
-  );
-  print('appBloc initialized');
+
+  final blocCombiner = BlocCombiner([
+    UsersBloc(),
+    ArtistsBloc()
+  ]);
 
   final eventsContext = EventsContext(
-    blocs: appBloc.flatBlocs(),
-    streams: appBloc.flatStreams(),
-    models: appBloc.flatModels(),
+    blocs: blocCombiner.flatBlocs(),
+    streams: blocCombiner.flatStreams(),
+    models: blocCombiner.flatModels(),
     singletones: [
       authService,
       dbService,
       lastFmApi,
     ]
   );
+  print('eventsContext initialized');
+
+  final futures = blocCombiner.flatBlocs()
+    .whereType<BlocWithInitializationEvent>()
+    .map((c) => c.pushInitializationEvent(eventsContext))
+    .map((c) => c.future)
+    .toList();
+  
+  await Future.wait(futures);
+  print('blocs initialized');
 
   final widget = MultiProvider(
     providers: [
@@ -53,11 +65,11 @@ Future<void> main() async {
         value: UpdaterService(
           databaseService: dbService, 
           lastFMApi: lastFmApi,
-          usersBloc: appBloc.usersBloc,
+          usersBloc: eventsContext.get<UsersBloc>(),
           eventPusher: eventsContext
         )..start(),
       ),
-      ...getProviders(appBloc, eventsContext)
+      ...getProviders(blocCombiner, eventsContext)
     ],
     child: DashboardApp(),
   );
