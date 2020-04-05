@@ -116,14 +116,19 @@ class LastFMApi {
   }
 
   Stream<LastFMScrobble>  getUserScrobbles (
-    String username, { DateTime from, DateTime to, Cancelled cancelled }
-  ) async* {
+    String username, { 
+    DateTime from, 
+    DateTime to, 
+    Cancelled cancelled, 
+    int requestLimit = 200
+  }) async* {
+    assert(requestLimit != null && requestLimit > 0 && requestLimit <= 200);
     for(var i = 1; ; i++) {
       var scrobbles = <dynamic>[];
       final resp = await _request('user.getrecenttracks', {
         'user': username,
         'extended': '1',
-        'limit': '200',
+        'limit': requestLimit.toString(),
         'page': i.toString(),
         if (from != null)
           'from': from.secondsSinceEpoch.toString(),

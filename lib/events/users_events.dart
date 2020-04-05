@@ -95,7 +95,7 @@ Stream<Returner<UsersViewModel>> refreshUser(
   final lastFMApi = c.context.get<LastFMApi>();
   final user = i.user;
   
-  
+  const limit = 200;
   final scrobbles = lastFMApi.getUserScrobbles(
     user.username,
     cancelled: c.cancelled,
@@ -106,16 +106,17 @@ Stream<Returner<UsersViewModel>> refreshUser(
 
     from: user.setupSync.passed
       ? user.lastSync
-      : null
+      : null,
+
+    requestLimit: 200
   );
 
   final Set<Artist> artists = {};
   final Set<Track> tracks = {};
 
-  await for(final scrobbles in scrobbles.bufferTime(
-    Duration(milliseconds: 10)
-  )) {
+  await for(final scrobbles in scrobbles.bufferCount(limit)) {
     if (c.cancelled()) throw CancelledException();
+    if (scrobbles.isEmpty) { continue; }
 
     final newAritsts = scrobbles
       .where((s) => artists.add(s.artist))
