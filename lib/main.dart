@@ -4,7 +4,6 @@ import 'package:lastfm_dashboard/blocs/users_bloc.dart';
 import 'package:lastfm_dashboard/services/auth/auth_service.dart';
 import 'package:lastfm_dashboard/services/lastfm/lastfm_api.dart';
 import 'package:lastfm_dashboard/services/local_database/database_service.dart';
-import 'package:lastfm_dashboard/services/updater/updater_service.dart';
 import 'package:provider/provider.dart';
 
 import 'bloc.dart';
@@ -60,14 +59,6 @@ Future<void> main() async {
       ),
       Provider<LastFMApi>.value(
         value: lastFmApi,
-      ),
-      Provider<UpdaterService>.value(
-        value: UpdaterService(
-          databaseService: dbService, 
-          lastFMApi: lastFmApi,
-          usersBloc: eventsContext.get<UsersBloc>(),
-          eventPusher: eventsContext
-        )..start(),
       ),
       ...getProviders(blocCombiner, eventsContext)
     ],

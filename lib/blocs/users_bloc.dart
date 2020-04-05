@@ -3,6 +3,7 @@ import 'package:lastfm_dashboard/events/users_events.dart';
 import 'package:lastfm_dashboard/models/models.dart';
 import 'package:lastfm_dashboard/services/auth/auth_service.dart';
 import 'package:lastfm_dashboard/services/local_database/database_service.dart';
+import 'package:lastfm_dashboard/watchers/user_watchers.dart';
 import 'package:rxdart/rxdart.dart';
 
 class UsersViewModel {
@@ -44,6 +45,8 @@ class UsersBloc extends Bloc<UsersViewModel> with BlocWithInitializationEvent {
       users: users,
       currentUserId: userId
     );
+    
+    c.context.push(UsersUpdaterWatcherInfo(), usersUpdaterWatcher);
   }
 
   bool userRefreshing(String uid) {
