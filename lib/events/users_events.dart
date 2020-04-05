@@ -132,7 +132,7 @@ Stream<Returner<UsersViewModel>> refreshUser(
       )
     );
 
-    db.transaction((t) async {
+    await db.transaction((t) async {
       for(final artist in newAritsts) {
         await db.artists[artist.id]
           .through(t)

@@ -40,7 +40,7 @@ Stream<Returner<ArtistsViewModel>> artistsWatcher(
   final auth = c.context.get<AuthService>();
 
   final scrobblesStream = auth.currentUser
-    .flatMap((userId) => 
+    .switchMap((userId) => 
       userId == null ? Stream.empty() :
       db.users[userId].scrobbles.changes());
 
