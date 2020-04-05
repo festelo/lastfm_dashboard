@@ -1,8 +1,9 @@
+import 'dart:convert';
 import 'package:lastfm_dashboard/bloc.dart';
 import 'package:lastfm_dashboard/models/models.dart';
-import 'package:dio/dio.dart';
 import 'package:lastfm_dashboard/sensitive.dart' as sensitive;
 import 'package:lastfm_dashboard/extensions.dart';
+import 'package:http/http.dart' as http;
 
 class LastFMScrobble {
   final Artist artist;
@@ -25,7 +26,8 @@ class LastFMScrobble {
 
 class LastFMApi {
   static const apiKey = sensitive.lastFmKey;
-  final _dio = Dio(
+  final _client = http.Client();
+  /*
     BaseOptions(
       baseUrl: 'http://ws.audioscrobbler.com/2.0/',
       queryParameters: {
@@ -33,23 +35,25 @@ class LastFMApi {
         'format': 'json'
       },
       receiveDataWhenStatusError: true,
-    )
-  );
+    )/
+    */
 
   Future<dynamic> _request(
     String method, 
     Map<String, String> parameters
   ) async {
-    final response = await _dio.get('/', 
-      queryParameters: {
-        'method': method,
-        ...parameters
-      },
-    );
-    if (response.data['error'] != null) {
-      throw Exception(response.data);
+    final uri = Uri.http('ws.audioscrobbler.com', '/2.0', {
+      'method': method,
+      'api_key': apiKey,
+      'format': 'json',
+      ...parameters
+    });
+    final response = await _client.get(uri);
+    final decoded = json.decode(response.body);
+    if (decoded['error'] != null) {
+      throw Exception(decoded);
     }
-    return response.data;
+    return decoded;
   }
 
   ImageInfo _deserializeImage(List<dynamic> list) {
