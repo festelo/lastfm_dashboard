@@ -17,11 +17,18 @@ class UsersViewModel {
 
   UsersViewModel copyWith({
     List<User> users,
-    String currentUserId
-  }) => UsersViewModel(
-    users: users ?? this.users,
-    currentUserId: currentUserId ?? this.currentUserId
-  );
+    String currentUserId,
+    bool logOut = false
+  }) {
+    assert(!logOut || (logOut && currentUserId == null));
+    return UsersViewModel(
+      users: users ?? this.users,
+      currentUserId: currentUserId ?? 
+        (logOut 
+          ? null 
+          : this.currentUserId)
+    );
+  }
 }
 
 class UsersBloc extends Bloc<UsersViewModel> with BlocWithInitializationEvent {
@@ -45,7 +52,6 @@ class UsersBloc extends Bloc<UsersViewModel> with BlocWithInitializationEvent {
       users: users,
       currentUserId: userId
     );
-    
     c.context.push(UsersUpdaterWatcherInfo(), usersUpdaterWatcher);
   }
 
@@ -54,6 +60,14 @@ class UsersBloc extends Bloc<UsersViewModel> with BlocWithInitializationEvent {
       .any((c) => 
         c.info is RefreshUserEventInfo &&
         (c.info as RefreshUserEventInfo).user.id == uid
+      );
+  }
+
+  bool userRemoving(String uid) {
+    return working
+      .any((c) => 
+        c.info is RemoveUserEventInfo &&
+        (c.info as RemoveUserEventInfo).username == uid
       );
   }
   

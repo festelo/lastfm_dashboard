@@ -39,7 +39,8 @@ class _AccountsModalState extends State<AccountsModal> {
           Text(
             user.lastSync?.toHumanable() ?? ''
           ),
-          if (Provider.of<UsersBloc>(context).userRefreshing(user.id))
+          if (Provider.of<UsersBloc>(context).userRefreshing(user.id) ||
+              Provider.of<UsersBloc>(context).userRemoving(user.id))
             SizedBox(
               height: 24,
               width: 24,
@@ -51,10 +52,12 @@ class _AccountsModalState extends State<AccountsModal> {
           )
         ],
       ),
-      onTap: () {
-        switchAccount(user.username);
-        Navigator.of(context).pop();
-      }
+      onTap: Provider.of<UsersBloc>(context).userRemoving(user.id)
+        ? null
+        : () {
+          switchAccount(user.username);
+          Navigator.of(context).pop();
+        }
     )
   );
 

@@ -9,9 +9,11 @@ import 'package:rxdart/rxdart.dart';
 
 class AddUserEventInfo {
   final String username;
+  final bool switchAfter;
 
   const AddUserEventInfo({
-    this.username
+    this.username,
+    this.switchAfter = true
   });
 }
 
@@ -52,6 +54,15 @@ Stream<Returner<UsersViewModel>> addUser(
   yield (UsersViewModel c) => c.copyWith(
     users: [...c.users, user]
   );
+
+  if(i.switchAfter) {
+    c.context.push(
+      SwitchUserEventInfo(
+        username: user.username
+      ), 
+      switchUser
+    );
+  }
 }
 
 Stream<Returner<UsersViewModel>> removeUser(
@@ -59,6 +70,15 @@ Stream<Returner<UsersViewModel>> removeUser(
   EventConfiguration<UsersViewModel> c,
 ) async* {
   final db = c.context.get<LocalDatabaseService>();
+  final currentUser = c.context.get<User>();
+  if (currentUser.username == i.username) {
+    c.context.push(
+      SwitchUserEventInfo(
+        username: null
+      ), 
+      switchUser
+    );
+  }
   await db.users[i.username].delete();
   yield (UsersViewModel c) => c.copyWith(
     users: [...c.users]..removeFirstWhere(
@@ -163,6 +183,9 @@ Stream<Returner<UsersViewModel>> switchUser(
 ) async* {
   c.context.get<AuthService>().switchUser(i.username);
   yield (UsersViewModel c) => c.copyWith(
-    currentUserId: i.username
+    currentUserId: i.username,
+    logOut: i.username == null
+      ? true
+      : false
   );
 }
