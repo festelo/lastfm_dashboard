@@ -21,11 +21,7 @@ Future<void> main() async {
   print('db configured');
   final lastFmApi = LastFMApiMock();
 
-
-  final blocCombiner = BlocCombiner([
-    UsersBloc(),
-    ArtistsBloc()
-  ]);
+  final blocCombiner = BlocCombiner([UsersBloc(), ArtistsBloc()]);
 
   final eventsContext = EventsContext(
     blocs: blocCombiner.flatBlocs(),
@@ -35,7 +31,7 @@ Future<void> main() async {
       authService,
       dbService,
       lastFmApi,
-    ]
+    ],
   );
   print('eventsContext initialized');
 
@@ -69,15 +65,16 @@ class DashboardApp extends StatelessWidget {
       brightness: Brightness.light,
       primarySwatch: Colors.red,
       appBarTheme: AppBarTheme(
-          color: Colors.grey[350],
-          elevation: 6,
-          textTheme: TextTheme(
-            headline: TextStyle(
-              color: Colors.red,
-              fontWeight: FontWeight.w500,
-              fontSize: 18,
-            ),
-          )),
+        color: Colors.grey[350],
+        elevation: 6,
+        textTheme: TextTheme(
+          headline5: TextStyle(
+            color: Colors.red,
+            fontWeight: FontWeight.w500,
+            fontSize: 18,
+          ),
+        ),
+      ),
       cardColor: Colors.grey[350],
       cardTheme: CardTheme(elevation: 3),
       canvasColor: Colors.grey[350],
@@ -95,13 +92,17 @@ class DashboardApp extends StatelessWidget {
       appBarTheme: AppBarTheme(
           color: Colors.grey[900],
           textTheme: TextTheme(
-            headline: TextStyle(
+            headline5: TextStyle(
               color: Colors.red,
               fontWeight: FontWeight.w500,
               fontSize: 18,
             ),
           )),
-      textTheme: TextTheme(body2: TextStyle(color: Colors.white60)),
+      textTheme: TextTheme(
+        bodyText2: TextStyle(
+          color: Colors.white60,
+        ),
+      ),
       scaffoldBackgroundColor: Colors.black,
       cardColor: Colors.grey[850],
       bottomSheetTheme: BottomSheetThemeData(

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:lastfm_dashboard/blocs/users_bloc.dart';
 import 'package:lastfm_dashboard/models/models.dart';
 import 'package:lastfm_dashboard/pages/home_page/accounts_modal.dart';
 import 'package:provider/provider.dart';

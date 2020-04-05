@@ -1,15 +1,15 @@
 name: lastfm_dashboard
-description: A new Flutter project.
+description: Last.fm Dashboard
 
 version: 1.0.0+1
 
 environment:
-  sdk: ">=2.8.0-dev.12 <3.0.0"
+  sdk: ">=2.8.0 <3.0.0"
 
 dependencies:
   flutter:
     sdk: flutter
-  
+
   dio: ^3.0.8
   rxdart: ^0.23.1
   synchronized: ^2.2.0

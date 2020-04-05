@@ -8,43 +8,28 @@ class LastFMScrobble {
   final Artist artist;
   final Track track;
   final DateTime date;
-  
-  LastFMScrobble({
-    this.artist,
-    this.track,
-    this.date
-  });
-  
+
+  const LastFMScrobble({this.artist, this.track, this.date});
+
   TrackScrobble toTrackScrobble() =>
-    TrackScrobble(
-      artistId: artist.id,
-      trackId: track.id,
-      date: date
-    );
+      TrackScrobble(artistId: artist.id, trackId: track.id, date: date);
 }
 
 class LastFMApi {
   static const apiKey = sensitive.lastFmKey;
-  final _dio = Dio(
-    BaseOptions(
-      baseUrl: 'http://ws.audioscrobbler.com/2.0/',
-      queryParameters: {
-        'api_key': apiKey,
-        'format': 'json'
-      },
-      receiveDataWhenStatusError: true,
-    )
-  );
+  final _dio = Dio(BaseOptions(
+    baseUrl: 'http://ws.audioscrobbler.com/2.0/',
+    queryParameters: {'api_key': apiKey, 'format': 'json'},
+    receiveDataWhenStatusError: true,
+  ));
 
   Future<dynamic> _request(
-    String method, 
-    Map<String, String> parameters
+    String method,
+    Map<String, String> parameters,
   ) async {
-    final response = await _dio.get('/', 
-      queryParameters: {
-        'method': method,
-        ...parameters
-      },
+    final response = await _dio.get(
+      '/',
+      queryParameters: {'method': method, ...parameters},
     );
     if (response.data['error'] != null) {
       throw Exception(response.data);
@@ -81,9 +66,7 @@ class LastFMApi {
   }
 
   Future<User> getUser(String username) async {
-    final resp = await _request('user.getinfo', {
-      'user': username
-    });
+    final resp = await _request('user.getinfo', {'user': username});
     return User(
       imageInfo: _deserializeImage(resp['user']['image']),
       playCount: int.tryParse(resp['user']['playcount']),
@@ -93,65 +76,65 @@ class LastFMApi {
 
   LastFMScrobble _deserializeScrobble(dynamic scrobble) {
     final artist = Artist(
-      imageInfo: _deserializeImage(scrobble['image']), // bypass
-      name: scrobble['artist']['name'],
-      mbid: scrobble['artist']['mbid'],
-      url: scrobble['artist']['url']
-    );
+        imageInfo: _deserializeImage(scrobble['image']), // bypass
+        name: scrobble['artist']['name'],
+        mbid: scrobble['artist']['mbid'],
+        url: scrobble['artist']['url']);
+
     final track = Track(
-      imageInfo: _deserializeImage(scrobble['image']),
-      artistId: artist.id,
-      mbid: scrobble['mbid'],
-      name: scrobble['name'],
-      url: scrobble['url'],
-      loved: scrobble['loved'] == '1'
-    );
+        imageInfo: _deserializeImage(scrobble['image']),
+        artistId: artist.id,
+        mbid: scrobble['mbid'],
+        name: scrobble['name'],
+        url: scrobble['url'],
+        loved: scrobble['loved'] == '1');
+
     return LastFMScrobble(
       artist: artist,
       track: track,
       date: DateTime.fromMillisecondsSinceEpoch(
-        int.parse(scrobble['date']['uts']) * 1000
-      )
+          int.parse(scrobble['date']['uts']) * 1000),
     );
   }
 
-  Stream<LastFMScrobble>  getUserScrobbles (
-    String username, { 
-    DateTime from, 
-    DateTime to, 
-    Cancelled cancelled, 
-    int requestLimit = 200
+  Stream<LastFMScrobble> getUserScrobbles(
+    String username, {
+    DateTime from,
+    DateTime to,
+    Cancelled cancelled,
+    int requestLimit = 200,
   }) async* {
     assert(requestLimit != null && requestLimit > 0 && requestLimit <= 200);
-    for(var i = 1; ; i++) {
+    for (var i = 1;; i++) {
       var scrobbles = <dynamic>[];
       final resp = await _request('user.getrecenttracks', {
         'user': username,
         'extended': '1',
         'limit': requestLimit.toString(),
         'page': i.toString(),
-        if (from != null)
-          'from': from.secondsSinceEpoch.toString(),
-        if (to != null)
-          'to': to.secondsSinceEpoch.toString()
+        if (from != null) 'from': from.secondsSinceEpoch.toString(),
+        if (to != null) 'to': to.secondsSinceEpoch.toString()
       });
+
       if (resp['recenttracks']['track'].isEmpty) break;
+
       if (resp['recenttracks']['track'] is Map) {
         scrobbles.add(resp['recenttracks']['track']);
       } else {
         scrobbles.addAll(resp['recenttracks']['track']);
       }
 
-      scrobbles = scrobbles.where((scrobble) => 
-        scrobble['@attr'] == null ||
-        scrobble['@attr']['nowplaying'] != 'true'
-      ).toList();
+      scrobbles = scrobbles
+          .where((scrobble) =>
+              scrobble['@attr'] == null ||
+              scrobble['@attr']['nowplaying'] != 'true')
+          .toList();
 
-      final totalPages = int.tryParse(
-        resp['recenttracks']['@attr']['totalPages']
-      );
+      final totalPages =
+          int.tryParse(resp['recenttracks']['@attr']['totalPages']);
 
       if (cancelled != null && cancelled()) throw CancelledException();
+      
       for (final scrobble in scrobbles) {
         yield _deserializeScrobble(scrobble);
       }

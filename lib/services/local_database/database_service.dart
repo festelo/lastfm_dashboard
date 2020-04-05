@@ -6,14 +6,13 @@ import 'package:sembast/sembast.dart';
 import 'package:lastfm_dashboard/models/models.dart';
 import 'package:lastfm_dashboard/models/database_mapped_model.dart';
 
-import 'db_setup.dart' 
-  if (dart.library.html) 'db_setup_web.dart'
-  if (dart.library.io) 'db_setup_io.dart';
+import 'db_setup.dart'
+    if (dart.library.html) 'db_setup_web.dart'
+    if (dart.library.io) 'db_setup_io.dart';
 
 import 'migrations.dart';
 
 typedef Constructor<T> = T Function(String id, Map<String, dynamic> data);
-
 
 class DatabaseBuilder {
   DatabaseBuilder({
@@ -22,8 +21,8 @@ class DatabaseBuilder {
     this.artistsStorePath = LocalDatabaseInfo.artistsPath,
     this.tracksStorePath = LocalDatabaseInfo.tracksPath,
     this.trackScrobblesStorePath = LocalDatabaseInfo.trackScrobblesPath,
-    this.artistSelectionsStorePath = 
-      LocalDatabaseInfo.artistSelectionsStorePath,
+    this.artistSelectionsStorePath =
+        LocalDatabaseInfo.artistSelectionsStorePath,
     this.databaseVersion = LocalDatabaseInfo.databaseVersion,
   });
 
@@ -36,46 +35,45 @@ class DatabaseBuilder {
   final int databaseVersion;
 
   StoreRef<String, Map<String, dynamic>> usersStore() =>
-    StoreRef<String, Map<String, dynamic>>(usersStorePath);
+      StoreRef<String, Map<String, dynamic>>(usersStorePath);
 
   StoreRef<String, Map<String, dynamic>> artistsStore() =>
-    StoreRef<String, Map<String, dynamic>>(artistsStorePath);
+      StoreRef<String, Map<String, dynamic>>(artistsStorePath);
 
   StoreRef<String, Map<String, dynamic>> tracksStore() =>
-    StoreRef<String, Map<String, dynamic>>(tracksStorePath);
+      StoreRef<String, Map<String, dynamic>>(tracksStorePath);
 
   StoreRef<String, Map<String, dynamic>> scrobblesSubstore(String userId) =>
-    StoreRef<String, Map<String, dynamic>>(
-      trackScrobblesStorePath + '_' + userId
-    );
-
-  StoreRef<String, Map<String, dynamic>> artistSelectionsSubstore
-    (String userId) =>
       StoreRef<String, Map<String, dynamic>>(
-        artistSelectionsStorePath + '_' + userId
-      );
+          trackScrobblesStorePath + '_' + userId);
+
+  StoreRef<String, Map<String, dynamic>> artistSelectionsSubstore(
+          String userId) =>
+      StoreRef<String, Map<String, dynamic>>(
+          artistSelectionsStorePath + '_' + userId);
 
   Future<LocalDatabaseService> build() async {
     final fullPath = await getFullPath(path);
     final dbFactory = getDatabaseFactory();
-    final db = await dbFactory.openDatabase(fullPath,
+    final db = await dbFactory.openDatabase(
+      fullPath,
       version: databaseVersion,
       mode: DatabaseMode.neverFails,
       onVersionChanged: (db, oldVersion, newVersion) async {
         await migrate(
-          database: db,
-          databaseBuilder: this,
-          current: oldVersion,
-          expected: newVersion
-        );
+            database: db,
+            databaseBuilder: this,
+            current: oldVersion,
+            expected: newVersion);
       },
     );
-    return LocalDatabaseService(db,
+    return LocalDatabaseService(
+      db,
       usersStore: usersStore(),
       artistsStore: artistsStore(),
       tracksStore: tracksStore(),
       trackScrobblesSubstore: scrobblesSubstore,
-      artistSelectionsSubstore: artistSelectionsSubstore
+      artistSelectionsSubstore: artistSelectionsSubstore,
     );
   }
 }
@@ -87,22 +85,27 @@ class LocalDatabaseService {
   final ArtistsCollection artists;
   final TracksCollection tracks;
 
-  LocalDatabaseService(this.database, {
-    @required StoreRef<String, Map<String, dynamic>> usersStore,
-    @required StoreRef<String, Map<String, dynamic>> artistsStore,
-    @required StoreRef<String, Map<String, dynamic>> tracksStore,
-    @required StoreRef<String, Map<String, dynamic>> 
-      Function(String userId) trackScrobblesSubstore,
-    @required StoreRef<String, Map<String, dynamic>> 
-      Function(String userId) artistSelectionsSubstore
-  }) :
-    users = UsersCollection(database, usersStore, 
-      trackScrobblesSubstore, artistSelectionsSubstore),
-    artists = ArtistsCollection(database, artistsStore),
-    tracks = TracksCollection(database, tracksStore);
-  
+  LocalDatabaseService(
+      this.database,
+      {@required
+          StoreRef<String, Map<String, dynamic>> usersStore,
+      @required
+          StoreRef<String, Map<String, dynamic>> artistsStore,
+      @required
+          StoreRef<String, Map<String, dynamic>> tracksStore,
+      @required
+          StoreRef<String, Map<String, dynamic>> Function(String userId)
+              trackScrobblesSubstore,
+      @required
+          StoreRef<String, Map<String, dynamic>> Function(String userId)
+              artistSelectionsSubstore})
+      : users = UsersCollection(database, usersStore, trackScrobblesSubstore,
+            artistSelectionsSubstore),
+        artists = ArtistsCollection(database, artistsStore),
+        tracks = TracksCollection(database, tracksStore);
+
   Future<T> transaction<T>(FutureOr<T> Function(Transaction) action) =>
-    database.transaction(action);
+      database.transaction(action);
 }
 
 class DatabaseEntity<T extends DatabaseMappedModel> {
@@ -118,7 +121,7 @@ class DatabaseEntity<T extends DatabaseMappedModel> {
       id: id,
       record: record,
       database: database,
-      constructor: constructor
+      constructor: constructor,
     );
   }
 
@@ -132,9 +135,8 @@ class DatabaseEntity<T extends DatabaseMappedModel> {
     return await record.exists(database);
   }
 
-  Future<void> update(Map<String, dynamic> data, {
-    bool createIfNotExist = false
-  }) async {
+  Future<void> update(Map<String, dynamic> data,
+      {bool createIfNotExist = false}) async {
     if (createIfNotExist) {
       await record.add(database, data);
     } else {
@@ -143,7 +145,7 @@ class DatabaseEntity<T extends DatabaseMappedModel> {
   }
 
   /// Works slow, but updates only affected properties
-  /// If the object doesn't exist empty constructor will be 
+  /// If the object doesn't exist empty constructor will be
   /// sent to modificator as parameter
   Future<T> updateSelective(T Function(T) modificator) async {
     final initial = constructor(id, {});
@@ -153,15 +155,16 @@ class DatabaseEntity<T extends DatabaseMappedModel> {
     return constructor(id, rec);
   }
 
-
   /// Create/add object to databse. If [id] is specified, then
   /// the object will be created with this Id, otherwise Id
-  /// will be generated. 
-  /// 
+  /// will be generated.
+  ///
   /// Returns object Id.
   Future<void> create(T state, {Map<String, dynamic> additional}) async {
     final map = state.toDbMap();
-    if(additional != null) { map.addAll(additional); }
+    if (additional != null) {
+      map.addAll(additional);
+    }
     await record.put(database, state.toDbMap());
   }
 
@@ -169,41 +172,45 @@ class DatabaseEntity<T extends DatabaseMappedModel> {
   /// after every change
   Stream<T> changes(String id) {
     return record
-      .onSnapshot(database)
-      .map((d) => d == null ? null : constructor(id, d.value));
+        .onSnapshot(database)
+        .map((d) => d == null ? null : constructor(id, d.value));
   }
 
   Future<void> delete() async {
     await record.delete(database);
   }
 }
-class UserEntity extends DatabaseEntity<User> {
-  final StoreRef<String, Map<String, dynamic>> 
-    Function(String userId) scrobblesSubstore;
 
-  final StoreRef<String, Map<String, dynamic>> 
-    Function(String userId) artistSelectionsSubstore;
+class UserEntity extends DatabaseEntity<User> {
+  final StoreRef<String, Map<String, dynamic>> Function(String userId)
+      scrobblesSubstore;
+
+  final StoreRef<String, Map<String, dynamic>> Function(String userId)
+      artistSelectionsSubstore;
 
   UserEntity({
     @required this.scrobblesSubstore,
     @required this.artistSelectionsSubstore,
-    String id, 
+    String id,
     RecordRef<String, Map<String, dynamic>> record,
-    DatabaseClient database, 
-    User Function(String, Map<String, dynamic>) constructor
-  }): super(
-    id: id, 
-    record: record,
-    database: database, 
-    constructor: constructor
-  );
+    DatabaseClient database,
+    User Function(String, Map<String, dynamic>) constructor,
+  }) : super(
+          id: id,
+          record: record,
+          database: database,
+          constructor: constructor,
+        );
 
-  StoreRef<String, Map<String, dynamic>> _scrobblesStoreRef
-    (String userId) => scrobblesSubstore(userId);
+  StoreRef<String, Map<String, dynamic>> _scrobblesStoreRef(String userId) =>
+      scrobblesSubstore(userId);
 
-  StoreRef<String, Map<String, dynamic>> _artistSelectionsStoreRef
-    (String userId) => artistSelectionsSubstore(userId);
-  
+  StoreRef<String, Map<String, dynamic>> _artistSelectionsStoreRef(
+    String userId,
+  ) {
+    return artistSelectionsSubstore(userId);
+  }
+
   @override
   UserEntity through(DatabaseClient database) {
     return UserEntity(
@@ -212,24 +219,18 @@ class UserEntity extends DatabaseEntity<User> {
       database: database,
       constructor: constructor,
       artistSelectionsSubstore: artistSelectionsSubstore,
-      scrobblesSubstore: scrobblesSubstore
+      scrobblesSubstore: scrobblesSubstore,
     );
   }
 
   TrackScrobblesCollection get scrobbles {
-    return TrackScrobblesCollection(
-      database,
-      _scrobblesStoreRef(id)
-    );
+    return TrackScrobblesCollection(database, _scrobblesStoreRef(id));
   }
 
   ArtistSelectionsCollection get artistSelections {
-    return ArtistSelectionsCollection(
-      database,
-      _artistSelectionsStoreRef(id)
-    );
+    return ArtistSelectionsCollection(database, _artistSelectionsStoreRef(id));
   }
-  
+
   @override
   Future<void> delete() async {
     final db = database;
@@ -252,45 +253,40 @@ abstract class _DatabaseCollection<T extends DatabaseMappedModel> {
   _DatabaseCollection<T> through(DatabaseClient database);
 
   DatabaseEntity<T> operator [](String id) => DatabaseEntity<T>(
-    id: id,
-    database: database,
-    constructor: constructor,
-    record: record(id)
-  );
+      id: id, database: database, constructor: constructor, record: record(id));
 
-  RecordRef<String, Map<String, dynamic>> record(String id){
+  RecordRef<String, Map<String, dynamic>> record(String id) {
     return store.record(id);
   }
 
   Future<List<T>> getAll() async {
     return await store
-      .stream(database)
-      .map((d) => constructor(d.key, d.value))
-      .toList();
+        .stream(database)
+        .map((d) => constructor(d.key, d.value))
+        .toList();
   }
 
-  /// Returns Stream that will return list with all objects 
+  /// Returns Stream that will return list with all objects
   /// after every collection change (e.g. object added into
-  /// collection), doesn't track objects properties inside 
+  /// collection), doesn't track objects properties inside
   /// collection
   Stream<List<T>> changes() {
-    return store.query()
-      .onSnapshots(database)
-      .map((list) => 
-        list.map((d) => d == null || d.value == null 
-          ? null 
-          : constructor(d.key, d.value)).toList()
-      );
+    return store.query().onSnapshots(database).map((list) => list
+        .map((d) =>
+            d == null || d.value == null ? null : constructor(d.key, d.value))
+        .toList());
   }
 
   /// Adds object to database. If [id] is specified, then
   /// the object will be created with this Id, otherwise Id
-  /// will be generated. 
-  /// 
+  /// will be generated.
+  ///
   /// Returns object Id.
   Future<String> add(T state, {Map<String, dynamic> additional}) async {
     final map = state.toDbMap();
-    if(additional != null) { map.addAll(additional); }
+    if (additional != null) {
+      map.addAll(additional);
+    }
     if (state.id != null) {
       await store.record(state.id).put(database, map);
       return state.id;
@@ -302,14 +298,14 @@ abstract class _DatabaseCollection<T extends DatabaseMappedModel> {
 
   /// Adds objects to database. If [id] is specified, then
   /// the object will be created with this Id, otherwise Id
-  /// will be generated. 
-  /// 
+  /// will be generated.
+  ///
   /// Returns object Id.
   Future<List<String>> addAll(Iterable<T> states) async {
     final List<T> statesWithId = [];
     final List<T> statesWithoutId = [];
     final List<String> ids = [];
-    for(final s in states) {
+    for (final s in states) {
       if (s.id != null) {
         statesWithId.add(s);
       } else {
@@ -317,16 +313,11 @@ abstract class _DatabaseCollection<T extends DatabaseMappedModel> {
       }
     }
     if (statesWithoutId.isNotEmpty) {
-      final newIds = 
-        await store
-          .addAll(database, 
-            statesWithoutId
-              .map((s) => s.toDbMap())
-              .toList()
-          );
+      final newIds = await store.addAll(
+          database, statesWithoutId.map((s) => s.toDbMap()).toList());
       ids.addAll(newIds);
     }
-    for(final s in statesWithId) {
+    for (final s in statesWithId) {
       await store.record(s.id).put(database, s.toDbMap());
       ids.add(s.id);
     }
@@ -342,37 +333,33 @@ abstract class _DatabaseCollection<T extends DatabaseMappedModel> {
 
 class UsersCollection extends _DatabaseCollection<User> {
   UsersCollection(
-    DatabaseClient database, 
-    StoreRef<String, Map<String, dynamic>> store,
-    this.scrobblesSubstore,
-    this.artistSelectionsSubstore
-  ) : super(database, store, (id, data) => User.deserialize(id, data));
-  
-  final StoreRef<String, Map<String, dynamic>> 
-    Function(String userId) scrobblesSubstore;
+      DatabaseClient database,
+      StoreRef<String, Map<String, dynamic>> store,
+      this.scrobblesSubstore,
+      this.artistSelectionsSubstore)
+      : super(database, store, (id, data) => User.deserialize(id, data));
 
-  final StoreRef<String, Map<String, dynamic>> 
-    Function(String userId) artistSelectionsSubstore;
-    
+  final StoreRef<String, Map<String, dynamic>> Function(String userId)
+      scrobblesSubstore;
+
+  final StoreRef<String, Map<String, dynamic>> Function(String userId)
+      artistSelectionsSubstore;
+
   @override
   UsersCollection through(DatabaseClient database) {
     return UsersCollection(
-      database,
-      store,
-      scrobblesSubstore,
-      artistSelectionsSubstore
-    );
+        database, store, scrobblesSubstore, artistSelectionsSubstore);
   }
 
   @override
   UserEntity operator [](String id) => UserEntity(
-    id: id,
-    database: database,
-    constructor: constructor,
-    record: record(id),
-    scrobblesSubstore: scrobblesSubstore,
-    artistSelectionsSubstore: artistSelectionsSubstore
-  );
+        id: id,
+        database: database,
+        constructor: constructor,
+        record: record(id),
+        scrobblesSubstore: scrobblesSubstore,
+        artistSelectionsSubstore: artistSelectionsSubstore,
+      );
 
   @override
   Future<void> delete() async {
@@ -381,8 +368,7 @@ class UsersCollection extends _DatabaseCollection<User> {
       return await db.transaction((t) => through(t).delete());
     }
     final users = await getAll();
-    final futures = users
-      .map((v) => this[v.id].scrobbles.delete());
+    final futures = users.map((v) => this[v.id].scrobbles.delete());
     await Future.wait(futures);
     await super.delete();
     return;
@@ -391,10 +377,10 @@ class UsersCollection extends _DatabaseCollection<User> {
 
 class ArtistsCollection extends _DatabaseCollection<Artist> {
   ArtistsCollection(
-    DatabaseClient database, 
+    DatabaseClient database,
     StoreRef<String, Map<String, dynamic>> store,
   ) : super(database, store, (id, data) => Artist.deserialize(id, data));
-    
+
   @override
   ArtistsCollection through(DatabaseClient database) {
     return ArtistsCollection(database, store);
@@ -403,10 +389,10 @@ class ArtistsCollection extends _DatabaseCollection<Artist> {
 
 class TracksCollection extends _DatabaseCollection<Track> {
   TracksCollection(
-    DatabaseClient database, 
+    DatabaseClient database,
     StoreRef<String, Map<String, dynamic>> store,
   ) : super(database, store, (id, data) => Track.deserialize(data));
-    
+
   @override
   TracksCollection through(DatabaseClient database) {
     return TracksCollection(database, store);
@@ -415,10 +401,10 @@ class TracksCollection extends _DatabaseCollection<Track> {
 
 class TrackScrobblesCollection extends _DatabaseCollection<TrackScrobble> {
   TrackScrobblesCollection(
-    DatabaseClient database, 
+    DatabaseClient database,
     StoreRef<String, Map<String, dynamic>> store,
   ) : super(database, store, (id, data) => TrackScrobble.deserialize(data));
-    
+
   @override
   TrackScrobblesCollection through(DatabaseClient database) {
     return TrackScrobblesCollection(database, store);
@@ -426,23 +412,21 @@ class TrackScrobblesCollection extends _DatabaseCollection<TrackScrobble> {
 
   Stream<int> countByArtistStream(String artistId) {
     return store
-      .query(finder: Finder(
-        filter: Filter.equals(
-          TrackScrobble.properties.artistId,
-          artistId
-        )
-      ))
-      .onSnapshots(database)
-      .map((s) => s.length);
+        .query(
+            finder: Finder(
+                filter:
+                    Filter.equals(TrackScrobble.properties.artistId, artistId)))
+        .onSnapshots(database)
+        .map((s) => s.length);
   }
 }
 
 class ArtistSelectionsCollection extends _DatabaseCollection<ArtistSelection> {
   ArtistSelectionsCollection(
-    DatabaseClient database, 
+    DatabaseClient database,
     StoreRef<String, Map<String, dynamic>> store,
   ) : super(database, store, (id, data) => ArtistSelection.deserialize(data));
-    
+
   @override
   ArtistSelectionsCollection through(DatabaseClient database) {
     return ArtistSelectionsCollection(database, store);

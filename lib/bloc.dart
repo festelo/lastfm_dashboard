@@ -5,21 +5,18 @@ import 'package:rxdart/rxdart.dart';
 typedef Returner<T> = T Function(T);
 typedef Cancelled = bool Function();
 
-typedef Pusher<TE, VMT> = 
-  void Function<TE>(TE, Event<VMT, TE>, EventsContext);
+typedef Pusher<TE, VMT> = void Function<TE>(TE, Event<VMT, TE>, EventsContext);
 
-typedef Event<T, TEventInfo> = 
-  Stream<Returner<T>> Function(
+typedef Event<T, TEventInfo> = Stream<Returner<T>> Function(
     TEventInfo info, EventConfiguration<T> configuration);
 
-Future<void> initializeBlocs(
-  EventsContext context, List<Bloc> blocs) async {
-  final blocsToInitialize = blocs
-    .whereType<BlocWithInitializationEvent>()
-    .toList();
-  for(var i = 0; i < blocsToInitialize.length; i++) {
+Future<void> initializeBlocs(EventsContext context, List<Bloc> blocs) async {
+  final blocsToInitialize =
+      blocs.whereType<BlocWithInitializationEvent>().toList();
+  for (var i = 0; i < blocsToInitialize.length; i++) {
     final bloc = blocsToInitialize[i];
-    print('Initalizing ${bloc.runtimeType.toString()} (${i+1}/${blocsToInitialize.length})');
+    print(
+        'Initalizing ${bloc.runtimeType.toString()} (${i + 1}/${blocsToInitialize.length})');
     await bloc.pushInitializationEvent(context).future;
     print('done');
   }
@@ -38,14 +35,10 @@ class EventConfiguration<T> {
   final EventsContext context;
 
   void throwIfCancelled() {
-    if (cancelled())
-      throw CancelledException();
+    if (cancelled()) throw CancelledException();
   }
 
-  EventConfiguration({
-    this.cancelled,
-    this.context
-  });
+  EventConfiguration({this.cancelled, this.context});
 }
 
 mixin BlocWithInitializationEvent<T> on Bloc<T> {
@@ -53,41 +46,40 @@ mixin BlocWithInitializationEvent<T> on Bloc<T> {
     return context.push(null, initializationEvent);
   }
 
-  Stream<Returner<T>> initializationEvent(
-    void _, EventConfiguration<T> c);
+  Stream<Returner<T>> initializationEvent(void _, EventConfiguration<T> config);
 }
 
 class BlocCombiner {
   final List<Bloc> _blocs;
   BlocCombiner(this._blocs);
-  
+
   List<Bloc> flatBlocs() {
     final ret = <Bloc>[];
-    for(final f in _blocs) {
+    for (final f in _blocs) {
       ret.addAll(f.flatBlocs());
-    } 
+    }
     return ret;
-  } 
+  }
 
   List<ValueStream<dynamic>> flatModels() {
     final vms = <ValueStream<dynamic>>[];
-    for(final bloc in flatBlocs()) {
+    for (final bloc in flatBlocs()) {
       vms.addAll(bloc.flatModels());
     }
     return vms;
   }
-  
+
   List<ValueStream<dynamic>> flatStreams() {
     final ret = <ValueStream<dynamic>>[];
-    for(final bloc in flatBlocs()) {
+    for (final bloc in flatBlocs()) {
       ret.addAll(bloc.flatStreams());
     }
     return ret;
   }
-  
+
   List<dynamic> flatPushers() {
     final pushers = <dynamic>[];
-    for(final bloc in flatBlocs()) {
+    for (final bloc in flatBlocs()) {
       pushers.addAll(bloc.flatPushers());
     }
     return pushers;
@@ -97,51 +89,47 @@ class BlocCombiner {
 abstract class Bloc<T> {
   List<RunnedEvent> working = [];
   Stream<dynamic> get completedEvents => _cCompletedEvents.stream;
-  final StreamController<dynamic> _cCompletedEvents 
-    = StreamController.broadcast();
+  final StreamController<dynamic> _cCompletedEvents =
+      StreamController.broadcast();
 
   BehaviorSubject<T> get model;
-  List<ValueStream<dynamic>> get streams => []; 
+  List<ValueStream<dynamic>> get streams => [];
 
-  List<Bloc> flatBlocs() => [this]; 
+  List<Bloc> flatBlocs() => [this];
 
   List<ValueStream<dynamic>> flatModels() {
     final vms = <ValueStream<dynamic>>[];
     vms.add(model.stream);
-    for(final bloc in flatBlocs()) {
+    for (final bloc in flatBlocs()) {
       if (bloc != this) vms.addAll(bloc.flatModels());
     }
     return vms;
   }
-  
+
   List<ValueStream<dynamic>> flatStreams() {
     final ret = <ValueStream<dynamic>>[];
     ret.addAll(streams);
-    for(final bloc in flatBlocs()) {
+    for (final bloc in flatBlocs()) {
       if (bloc != this) ret.addAll(bloc.flatStreams());
     }
     return ret;
   }
-  
+
   List<dynamic> flatPushers() {
     final pushers = <dynamic>[];
     pushers.add(push);
-    for(final bloc in flatBlocs()) {
+    for (final bloc in flatBlocs()) {
       if (bloc != this) pushers.addAll(bloc.flatPushers());
     }
     return pushers;
   }
 
   RunnedEvent<TEventInfo> push<TEventInfo>(
-    TEventInfo info, 
-    Event<T, TEventInfo> event,
-    EventsContext context
-  ) {
+      TEventInfo info, Event<T, TEventInfo> event, EventsContext context) {
     var cancelled = false;
     final completer = Completer<void>();
-    final runnedEvent = RunnedEvent(info, 
-      () => cancelled = true, 
-      completer.future);
+    final runnedEvent =
+        RunnedEvent(info, () => cancelled = true, completer.future);
 
     working.add(runnedEvent);
     final remove = ([dynamic error]) {
@@ -157,16 +145,13 @@ abstract class Bloc<T> {
       }
       working.remove(runnedEvent);
     };
-    final configuration = EventConfiguration<T>(
-      cancelled: () => cancelled,
-      context: context
-    );
+    final configuration =
+        EventConfiguration<T>(cancelled: () => cancelled, context: context);
     Future.microtask(
       () async {
         try {
           await for (final c in event(info, configuration)) {
-            if (c != null)
-              model.value = c(model.value);
+            if (c != null) model.value = c(model.value);
           }
           remove();
         } catch (e) {
@@ -192,18 +177,17 @@ class EventsContext {
 
   EventsContext({
     @required List<dynamic> blocs,
-    List<ValueStream> streams  = const [],
+    List<ValueStream> streams = const [],
     List<dynamic> singletones = const [],
     List<ValueStream> models = const [],
-  }): 
-    _blocs = blocs, 
-    _streams = streams,
-    _singletones = singletones,
-    _models = models;
-  
+  })  : _blocs = blocs,
+        _streams = streams,
+        _singletones = singletones,
+        _models = models;
+
   RunnedEvent<TEventInfo> push<TEventInfo, TVM>(
-    TEventInfo eventInfo, Event<TVM, TEventInfo> event) {
-    for(final p in _blocs) {
+      TEventInfo eventInfo, Event<TVM, TEventInfo> event) {
+    for (final p in _blocs) {
       if (p is Bloc<TVM>) {
         return p.push(eventInfo, event, this);
       }
@@ -212,23 +196,23 @@ class EventsContext {
   }
 
   ValueStream<T> subscribe<T>() {
-    for(final s in _streams) {
+    for (final s in _streams) {
       if (s is ValueStream<T>) {
         return s;
       }
     }
-    for(final s in _models) {
+    for (final s in _models) {
       if (s is ValueStream<T>) {
         return s;
       }
     }
-    for(final s in _singletones) {
+    for (final s in _singletones) {
       if (s is T) {
         print('Subscribing to not changing value');
         return Stream.value(s).publishValue();
       }
     }
-    for(final s in _blocs) {
+    for (final s in _blocs) {
       if (s is T) {
         print('Subscribing to not changing value');
         return Stream.value(s).publishValue();
@@ -238,22 +222,22 @@ class EventsContext {
   }
 
   T get<T>() {
-    for(final s in _blocs) {
+    for (final s in _blocs) {
       if (s is T) {
         return s;
       }
     }
-    for(final s in _streams) {
+    for (final s in _streams) {
       if (s is ValueStream<T>) {
         return s.value;
       }
     }
-    for(final s in _models) {
+    for (final s in _models) {
       if (s is ValueStream<T>) {
         return s.value;
       }
     }
-    for(final s in _singletones) {
+    for (final s in _singletones) {
       if (s is T) {
         return s;
       }

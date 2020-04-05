@@ -10,23 +10,17 @@ class UsersViewModel {
   final List<User> users;
   final String currentUserId;
 
-  UsersViewModel({
-    this.users,
-    this.currentUserId
-  });
+  UsersViewModel({this.users, this.currentUserId});
 
   UsersViewModel copyWith({
     List<User> users,
     String currentUserId,
-    bool logOut = false
+    bool logOut = false,
   }) {
     assert(!logOut || (logOut && currentUserId == null));
     return UsersViewModel(
       users: users ?? this.users,
-      currentUserId: currentUserId ?? 
-        (logOut 
-          ? null 
-          : this.currentUserId)
+      currentUserId: currentUserId ?? (logOut ? null : this.currentUserId),
     );
   }
 }
@@ -35,53 +29,47 @@ class UsersBloc extends Bloc<UsersViewModel> with BlocWithInitializationEvent {
   @override
   final BehaviorSubject<UsersViewModel> model;
 
-  UsersBloc([UsersViewModel viewModel]):
-    model = BehaviorSubject.seeded(viewModel);
-    
+  UsersBloc([
+    UsersViewModel viewModel,
+  ]) : model = BehaviorSubject.seeded(viewModel);
+
   @override
   Stream<Returner<UsersViewModel>> initializationEvent(
     void _,
-    EventConfiguration<UsersViewModel> c
+    EventConfiguration<UsersViewModel> config,
   ) async* {
-    final ldb = c.context.get<LocalDatabaseService>();
-    final authService = c.context.get<AuthService>();
+    final ldb = config.context.get<LocalDatabaseService>();
+    final authService = config.context.get<AuthService>();
     final users = await ldb.users.getAll();
     await authService.loadUser();
     final userId = authService.currentUser.value;
-    yield (_) => UsersViewModel(
-      users: users,
-      currentUserId: userId
-    );
-    c.context.push(UsersUpdaterWatcherInfo(), usersUpdaterWatcher);
+    yield (_) => UsersViewModel(users: users, currentUserId: userId);
+    config.context.push(UsersUpdaterWatcherInfo(), usersUpdaterWatcher);
   }
 
-  bool userRefreshing(String uid) {
-    return working
-      .any((c) => 
+  bool isUserRefreshing(String uid) {
+    return working.any((c) =>
         c.info is RefreshUserEventInfo &&
-        (c.info as RefreshUserEventInfo).user.id == uid
-      );
+        (c.info as RefreshUserEventInfo).user.id == uid);
   }
 
-  bool userRemoving(String uid) {
-    return working
-      .any((c) => 
+  bool isUserRemoving(String uid) {
+    return working.any((c) =>
         c.info is RemoveUserEventInfo &&
-        (c.info as RemoveUserEventInfo).username == uid
-      );
+        (c.info as RemoveUserEventInfo).username == uid);
   }
-  
 
   User _currentUserFetcher(UsersViewModel b) {
     return b?.currentUserId == null
-      ? null
-      : b.users.firstWhere((u) => u.id == b.currentUserId, orElse: () => null);
+        ? null
+        : b.users
+            .firstWhere((u) => u.id == b.currentUserId, orElse: () => null);
   }
 
   ValueStream<User> get currentUser => model
-    .map(_currentUserFetcher)
-    .shareValueSeeded(_currentUserFetcher(model.value));
-    
+      .map(_currentUserFetcher)
+      .shareValueSeeded(_currentUserFetcher(model.value));
+
   @override
-  List<ValueStream> get streams => [currentUser]; 
+  List<ValueStream> get streams => [currentUser];
 }

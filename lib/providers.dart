@@ -8,12 +8,8 @@ import 'models/models.dart';
 
 List<Widget> _blocProviders(EventsContext context) {
   return [
-    Provider<ArtistsBloc>.value(
-      value: context.get<ArtistsBloc>()
-    ),  
-    Provider<UsersBloc>.value(
-      value: context.get<UsersBloc>()
-    )
+    Provider<ArtistsBloc>.value(value: context.get<ArtistsBloc>()),
+    Provider<UsersBloc>.value(value: context.get<UsersBloc>())
   ];
 }
 
@@ -22,11 +18,10 @@ List<Widget> _modelProviders(EventsContext context) {
     StreamProvider<ArtistsViewModel>.value(
       value: context.subscribe<ArtistsViewModel>(),
       initialData: context.get<ArtistsViewModel>(),
-    ),  
+    ),
     StreamProvider<UsersViewModel>.value(
-      value: context.subscribe<UsersViewModel>(),
-      initialData: context.get<UsersViewModel>()
-    )
+        value: context.subscribe<UsersViewModel>(),
+        initialData: context.get<UsersViewModel>())
   ];
 }
 
@@ -51,11 +46,9 @@ List<Widget> getProviders(BlocCombiner combiner, EventsContext eventsContext) {
   assert(streamProviders.length == combiner.flatStreams().length);
 
   return [
-      Provider<EventsContext>.value(
-        value: eventsContext
-      ),
-      ...blocProviders,
-      ...modelProviders,
-      ...streamProviders
+    Provider<EventsContext>.value(value: eventsContext),
+    ...blocProviders,
+    ...modelProviders,
+    ...streamProviders
   ];
 }

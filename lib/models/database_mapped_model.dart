@@ -14,7 +14,7 @@ abstract class DatabaseMappedModel {
     final map = <String, dynamic>{};
 
     final eq = const DeepCollectionEquality().equals;
-    for(final key in newMap.keys) {
+    for (final key in newMap.keys) {
       if (!eq(oldMap[key], newMap[key])) {
         map[key] = newMap[key];
       }

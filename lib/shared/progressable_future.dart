@@ -11,12 +11,14 @@ class Progress<TCounter> {
   Progress(this.current, this.total);
 }
 
-typedef SetProgressCallback<TCounter> = 
-  void Function(TCounter current, TCounter total);
+typedef SetProgressCallback<TCounter> = void Function(
+  TCounter current,
+  TCounter total,
+);
 
 typedef FutureCallback<T, TCounter> = Future<T> Function(
   SetProgressCallback<TCounter> setProgress,
-  ValueStream<bool> cancelled
+  ValueStream<bool> cancelled,
 );
 
 class ProgressableFuture<T, TCounter> implements Future<T> {
@@ -25,18 +27,17 @@ class ProgressableFuture<T, TCounter> implements Future<T> {
   // void Function(TCounter current, TCounter total) progressChanged;
   final BehaviorSubject<Progress<TCounter>> _progressChangedController;
 
-  ValueStream<Progress<TCounter>> get progressChanged
-    => _progressChangedController.stream;
-  
-  final BehaviorSubject<bool> _cancelledSubject = BehaviorSubject.seeded(false);
-  ValueStream<bool> get cancelled  => _cancelledSubject.stream;
+  ValueStream<Progress<TCounter>> get progressChanged =>
+      _progressChangedController.stream;
 
-  ProgressableFuture(
-    FutureCallback<T, TCounter> future, {
-    Progress defaultProgress
-  }): _progressChangedController = defaultProgress == null
-      ? BehaviorSubject() 
-      : BehaviorSubject.seeded(defaultProgress) {
+  final BehaviorSubject<bool> _cancelledSubject = BehaviorSubject.seeded(false);
+  ValueStream<bool> get cancelled => _cancelledSubject.stream;
+
+  ProgressableFuture(FutureCallback<T, TCounter> future,
+      {Progress defaultProgress})
+      : _progressChangedController = defaultProgress == null
+            ? BehaviorSubject()
+            : BehaviorSubject.seeded(defaultProgress) {
     _futureSource = future(_setProgress, cancelled);
     _futureSource.whenComplete(() => dispose());
   }
@@ -53,11 +54,11 @@ class ProgressableFuture<T, TCounter> implements Future<T> {
   }
 
   void chain(
-    SetProgressCallback<TCounter> callback,
-    ValueStream<bool> cancelled
-  ) {
+      SetProgressCallback<TCounter> callback, ValueStream<bool> cancelled) {
     progressChanged.listen((c) => callback(c.current, c.total));
-    cancelled.listen((c) { if(c) cancel(); });
+    cancelled.listen((c) {
+      if (c) cancel();
+    });
   }
 
   Future<void> dispose() async {
@@ -69,18 +70,18 @@ class ProgressableFuture<T, TCounter> implements Future<T> {
   Stream<T> asStream() => future.asStream();
 
   @override
-  Future<T> catchError(Function onError, {bool Function(Object error) test})
-    => future.catchError(onError, test: test);
+  Future<T> catchError(Function onError, {bool Function(Object error) test}) =>
+      future.catchError(onError, test: test);
 
   @override
-  Future<R> then<R>(FutureOr<R> onValue(T value), {Function onError})
-    => future.then(onValue, onError: onError);
+  Future<R> then<R>(FutureOr<R> onValue(T value), {Function onError}) =>
+      future.then(onValue, onError: onError);
 
   @override
-  Future<T> timeout(Duration timeLimit, {FutureOr Function() onTimeout})
-    => future.timeout(timeLimit, onTimeout: onTimeout);
+  Future<T> timeout(Duration timeLimit, {FutureOr Function() onTimeout}) =>
+      future.timeout(timeLimit, onTimeout: onTimeout);
 
   @override
-  Future<T> whenComplete(FutureOr Function() action)
-    => future.whenComplete(action);
+  Future<T> whenComplete(FutureOr Function() action) =>
+      future.whenComplete(action);
 }
