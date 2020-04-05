@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:lastfm_dashboard/bloc.dart';
 import 'package:lastfm_dashboard/blocs/users_bloc.dart';
@@ -5,7 +7,6 @@ import 'package:lastfm_dashboard/components/no_glow_scroll_behavior.dart';
 import 'package:lastfm_dashboard/events/users_events.dart';
 import 'package:lastfm_dashboard/models/models.dart';
 import 'package:lastfm_dashboard/extensions.dart';
-import 'package:lastfm_dashboard/services/auth/auth_service.dart';
 import 'package:provider/provider.dart';
 
 class AccountsModal extends StatefulWidget {
@@ -18,17 +19,45 @@ class _AccountsModalState extends State<AccountsModal> {
 
   final TextEditingController _connectingController = TextEditingController();
 
-  Widget userWidget(User user) => Padding(
-    padding: EdgeInsets.symmetric(
-      vertical: 5
-    ),
-    child: InkWell(
+  Widget userWidget(User user) {
+    final refreshing = Provider.of<UsersBloc>(context).userRefreshing(user.id);
+    final removing = Provider.of<UsersBloc>(context).userRemoving(user.id);
+    final current = Provider.of<User>(context)?.id == user.id;
+    return FlatButton(
+      padding: EdgeInsets.symmetric(
+        vertical: 5
+      ),
       child: Row(
         children: <Widget>[
-          CircleAvatar(
-            backgroundImage: user.imageInfo?.small == null
-              ? null
-              : NetworkImage(user.imageInfo?.small),
+          Stack(
+            children: [
+              Container(
+                height: 40,
+                width: 40,
+                decoration: BoxDecoration(
+                  image: DecorationImage(
+                    image: NetworkImage(user.imageInfo?.small,),
+                    colorFilter: !current
+                      ? null
+                      : ColorFilter.mode(
+                        Colors.black.withOpacity(0.6), 
+                        BlendMode.srcOver
+                      ),
+                    fit: BoxFit.cover
+                  ),
+                  shape: BoxShape.circle,
+                  border: !current ? null : Border.all(
+                    color: Theme.of(context).accentColor,
+                    width: 1
+                  )
+                ),
+                child: !current
+                  ? null 
+                  : Icon(Icons.check,
+                    color: Theme.of(context).accentColor,
+                  ),
+              ),
+            ],
           ),
           SizedBox(width: 20,),
           Expanded(
@@ -39,8 +68,7 @@ class _AccountsModalState extends State<AccountsModal> {
           Text(
             user.lastSync?.toHumanable() ?? ''
           ),
-          if (Provider.of<UsersBloc>(context).userRefreshing(user.id) ||
-              Provider.of<UsersBloc>(context).userRemoving(user.id))
+          if (refreshing || removing)
             SizedBox(
               height: 24,
               width: 24,
@@ -48,18 +76,20 @@ class _AccountsModalState extends State<AccountsModal> {
             )
           else IconButton(
             onPressed: () { remove(user.username); },
-            icon: Icon(Icons.delete),
+            icon: Icon(Icons.delete, 
+              color: Theme.of(context).iconTheme.color,
+            ),
           )
         ],
       ),
-      onTap: Provider.of<UsersBloc>(context).userRemoving(user.id)
+      onPressed: current || removing
         ? null
         : () {
           switchAccount(user.username);
           Navigator.of(context).pop();
         }
-    )
-  );
+    );
+  }
 
   void add(String username) {
     Provider.of<EventsContext>(context, listen: false)

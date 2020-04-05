@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lastfm_dashboard/blocs/artists_bloc.dart';
+import 'package:lastfm_dashboard/blocs/users_bloc.dart';
+import 'package:lastfm_dashboard/models/models.dart';
 import 'package:provider/provider.dart';
 
 class ArtistsList extends StatefulWidget {
@@ -84,13 +86,17 @@ class _ArtistsListState extends State<ArtistsList> {
 
   @override
   Widget build(BuildContext context) {
+    final user = Provider.of<User>(context);
     return Card(
       margin: EdgeInsets.all(10),
       child: Padding(
         padding: EdgeInsets.all(0),
         child: Consumer<ArtistsViewModel>(
           builder: (_, vm, snap) {
-            if (vm.artistsWithListens == null)
+            if (vm.artistsWithListens == null ||
+                (vm.artistsWithListens.isEmpty &&
+                Provider.of<UsersBloc>(context).userRefreshing(user.id))
+              )
               return Center(
                 child: CircularProgressIndicator(),
               );
