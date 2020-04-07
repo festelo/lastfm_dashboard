@@ -70,7 +70,7 @@ class _ArtistsListState extends State<ArtistsList> {
                 children: <Widget>[
                   Text(
                     name,
-                    style: Theme.of(context).textTheme.subtitle2,
+                    style: Theme.of(context).textTheme.subtitle1,
                   ),
                   Text(
                     '$scrobbles scrobbles',

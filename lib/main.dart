@@ -68,7 +68,7 @@ class DashboardApp extends StatelessWidget {
         color: Colors.grey[350],
         elevation: 6,
         textTheme: TextTheme(
-          headline5: TextStyle(
+          headline6: TextStyle(
             color: Colors.red,
             fontWeight: FontWeight.w500,
             fontSize: 18,
@@ -92,7 +92,7 @@ class DashboardApp extends StatelessWidget {
       appBarTheme: AppBarTheme(
         color: Colors.grey[900],
         textTheme: TextTheme(
-          headline5: TextStyle(
+          headline6: TextStyle(
             color: Colors.red,
             fontWeight: FontWeight.w500,
             fontSize: 18,
