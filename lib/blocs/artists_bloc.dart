@@ -5,49 +5,47 @@ import 'package:lastfm_dashboard/watchers/artists_watchers.dart';
 import 'package:rxdart/rxdart.dart';
 
 class ArtistWithListenInfo {
- final Artist artist;
- final int scrobbles;
- ArtistWithListenInfo({
-   this.artist,
-   this.scrobbles
- });
+  final Artist artist;
+  final int scrobbles;
+
+  const ArtistWithListenInfo({this.artist, this.scrobbles});
 }
 
 class ArtistsViewModel {
   final List<ArtistWithListenInfo> artistsWithListens;
   final List<ArtistSelection> artistSelections;
 
-  const ArtistsViewModel({
-    this.artistsWithListens,
-    this.artistSelections
-  });
+  const ArtistsViewModel({this.artistsWithListens, this.artistSelections});
 
   ArtistsViewModel copyWith({
     List<ArtistWithListenInfo> artistsWithListens,
-    List<ArtistSelection> artistSelections
-  }) => ArtistsViewModel(
-    artistsWithListens: artistsWithListens ?? this.artistsWithListens,
-    artistSelections: artistSelections ?? this.artistSelections
-  );
+    List<ArtistSelection> artistSelections,
+  }) {
+    return ArtistsViewModel(
+      artistsWithListens: artistsWithListens ?? this.artistsWithListens,
+      artistSelections: artistSelections ?? this.artistSelections,
+    );
+  }
 }
 
-class ArtistsBloc extends Bloc<ArtistsViewModel> 
-  with BlocWithInitializationEvent {
+class ArtistsBloc extends Bloc<ArtistsViewModel>
+    with BlocWithInitializationEvent {
   @override
   final BehaviorSubject<ArtistsViewModel> model;
 
-  ArtistsBloc([ArtistsViewModel viewModel = const ArtistsViewModel()]):
-    model = BehaviorSubject.seeded(viewModel);
-    
+  ArtistsBloc([
+    ArtistsViewModel viewModel = const ArtistsViewModel(),
+  ]) : model = BehaviorSubject.seeded(viewModel);
+
   @override
   Stream<Returner<ArtistsViewModel>> initializationEvent(
     void _,
-    EventConfiguration<ArtistsViewModel> c
+    EventConfiguration<ArtistsViewModel> config,
   ) async* {
-    final authService = c.context.get<AuthService>();
+    final authService = config.context.get<AuthService>();
     await authService.loadUser();
 
-    c.context.push(ArtistsWatcherInfo(), artistsWatcher);
-    c.context.push(ArtistSelectionsWatcherInfo(), artistSelectionsWatcher);
+    config.context.push(ArtistsWatcherInfo(), artistsWatcher);
+    config.context.push(ArtistSelectionsWatcherInfo(), artistSelectionsWatcher);
   }
 }

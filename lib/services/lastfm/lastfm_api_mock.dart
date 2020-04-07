@@ -61,7 +61,6 @@ Map<String, List<LastFMScrobble>> _userScrobbles =
   );
 
 class LastFMApiMock implements LastFMApi {
-
   @override
   Future<User> getUser(String username) {
     return Future.value(_users[username]);

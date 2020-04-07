@@ -9,12 +9,12 @@ class AuthServicePreferences {
   Future<String> getCurrentUsername() async {
     final p = await _pref();
     return p.getString('currentUser');
-  } 
+  }
 
   Future<void> setCurrentUsername(String value) async {
     final p = await _pref();
     await p.setString('currentUser', value);
-  } 
+  }
 }
 
 class AuthService {
@@ -25,9 +25,8 @@ class AuthService {
 
   AuthService({
     String username,
-    this.preferences = const AuthServicePreferences()
-  }):
-    _currentUserSubject = BehaviorSubject.seeded(username);
+    this.preferences = const AuthServicePreferences(),
+  }) : _currentUserSubject = BehaviorSubject.seeded(username);
 
   static Future<AuthService> load() async {
     final service = AuthService();

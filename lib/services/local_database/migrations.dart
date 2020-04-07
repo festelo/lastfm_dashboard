@@ -10,13 +10,12 @@ final _migrations = <int, Future<void> Function(Database, DatabaseBuilder)>{
 };
 
 Future<void> migrate({
-  @required Database database, 
-  @required DatabaseBuilder databaseBuilder, 
-  @required int current, 
-  @required int expected
+  @required Database database,
+  @required DatabaseBuilder databaseBuilder,
+  @required int current,
+  @required int expected,
 }) async {
-  for(var i = current; i < expected; i++) {
-    if (_migrations[i] != null)
-      await _migrations[i](database, databaseBuilder);
+  for (var i = current; i < expected; i++) {
+    if (_migrations[i] != null) await _migrations[i](database, databaseBuilder);
   }
 }

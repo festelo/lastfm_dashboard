@@ -10,79 +10,87 @@ class ArtistsList extends StatefulWidget {
 }
 
 class _ArtistsListState extends State<ArtistsList> {
-
   Widget listItem({
-    String name, 
-    String image, 
+    String name,
+    String image,
     int scrobbles,
     Color selectionColor,
-    VoidCallback onPressed
-  }) => FlatButton(
-    onPressed: onPressed,
-    padding: EdgeInsets.all(0),
-    child: Padding(
-      padding: EdgeInsets.symmetric(vertical: 5),
-      child: Row(
-        children: <Widget>[
-          Container(
-            color: selectionColor,
-            height: 44,
-            width: 2,
-          ),
-          SizedBox(width: 10,),
-          Container(
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: selectionColor
+    VoidCallback onPressed,
+  }) {
+    return FlatButton(
+      onPressed: onPressed,
+      padding: EdgeInsets.all(0),
+      child: Padding(
+        padding: EdgeInsets.symmetric(vertical: 5),
+        child: Row(
+          children: <Widget>[
+            Container(
+              color: selectionColor,
+              height: 44,
+              width: 2,
             ),
-            height: 46,
-            width: 46,
-            alignment: Alignment.center,
-            child: Stack(
-              children: [
-                Center(
-                  child: CircleAvatar(
-                    radius: 20,
-                    backgroundImage: image != null
-                      ? NetworkImage(image)
-                      : null,
-                  ),
-                ),
-                if (selectionColor != null)
-                Center(
-                  child: Icon(
-                    Icons.check,
-                    color: selectionColor,
-                    size: 40,
-                  ),
-                ),
-              ]
-            )
-          ),
-          SizedBox(width: 20,),
-          Expanded(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(name,
-                  style: Theme.of(context).textTheme.subtitle,
-                ),
-                Text('$scrobbles scrobbles',
-                  style: Theme.of(context).textTheme.caption,
-                )
-              ],
+            SizedBox(
+              width: 10,
             ),
-          ),
-          IconButton(
-            icon: Icon(Icons.arrow_forward),
-            onPressed: () {},
-          ),
-          SizedBox(width: 12,),
-        ],
+            Container(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: selectionColor,
+              ),
+              height: 46,
+              width: 46,
+              alignment: Alignment.center,
+              child: Stack(
+                children: [
+                  Center(
+                    child: CircleAvatar(
+                      radius: 20,
+                      backgroundImage:
+                          image != null ? NetworkImage(image) : null,
+                    ),
+                  ),
+                  if (selectionColor != null)
+                    Center(
+                      child: Icon(
+                        Icons.check,
+                        color: selectionColor,
+                        size: 40,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            SizedBox(
+              width: 20,
+            ),
+            Expanded(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(
+                    name,
+                    style: Theme.of(context).textTheme.subtitle2,
+                  ),
+                  Text(
+                    '$scrobbles scrobbles',
+                    style: Theme.of(context).textTheme.caption,
+                  )
+                ],
+              ),
+            ),
+            IconButton(
+              icon: Icon(Icons.arrow_forward),
+              onPressed: () {},
+            ),
+            SizedBox(
+              width: 12,
+            ),
+          ],
+        ),
       ),
-    )
-  );
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -95,7 +103,7 @@ class _ArtistsListState extends State<ArtistsList> {
           builder: (_, vm, snap) {
             if (vm.artistsWithListens == null ||
                 (vm.artistsWithListens.isEmpty &&
-                Provider.of<UsersBloc>(context).userRefreshing(user.id))
+                Provider.of<UsersBloc>(context).isUserRefreshing(user.id))
               )
               return Center(
                 child: CircularProgressIndicator(),
@@ -123,8 +131,8 @@ class _ArtistsListState extends State<ArtistsList> {
               ),
             );
           }
-        )
-      )
+        ),
+      ),
     );
   }
 }
