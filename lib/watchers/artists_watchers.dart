@@ -39,8 +39,7 @@ Stream<Returner<ArtistsViewModel>> artistsWatcher(
   final db = config.context.get<LocalDatabaseService>();
   final auth = config.context.get<AuthService>();
 
-  final scrobblesStream = auth.currentUser
-    .switchMap((userId) => 
+  final scrobblesStream = auth.currentUser.switchMap((userId) =>
       userId == null ? Stream.empty() : db.users[userId].scrobbles.changes());
 
   final changes = db.artists.changes();

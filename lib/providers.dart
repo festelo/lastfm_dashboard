@@ -20,8 +20,9 @@ List<Widget> _modelProviders(EventsContext context) {
       initialData: context.get<ArtistsViewModel>(),
     ),
     StreamProvider<UsersViewModel>.value(
-        value: context.subscribe<UsersViewModel>(),
-        initialData: context.get<UsersViewModel>())
+      value: context.subscribe<UsersViewModel>(),
+      initialData: context.get<UsersViewModel>(),
+    )
   ];
 }
 

@@ -35,24 +35,25 @@ class _AccountsModalState extends State<AccountsModal> {
                     height: 40,
                     width: 40,
                     decoration: BoxDecoration(
-                        image: DecorationImage(
-                            image: NetworkImage(
-                              user.imageInfo?.small,
+                      image: DecorationImage(
+                          image: NetworkImage(
+                            user.imageInfo?.small,
+                          ),
+                          colorFilter: !current
+                              ? null
+                              : ColorFilter.mode(
+                                  Colors.black.withOpacity(0.6),
+                                  BlendMode.srcOver,
+                                ),
+                          fit: BoxFit.cover),
+                      shape: BoxShape.circle,
+                      border: !current
+                          ? null
+                          : Border.all(
+                              color: Theme.of(context).accentColor,
+                              width: 1,
                             ),
-                            colorFilter: !current
-                                ? null
-                                : ColorFilter.mode(
-                                    Colors.black.withOpacity(0.6),
-                                    BlendMode.srcOver,
-                                  ),
-                            fit: BoxFit.cover),
-                        shape: BoxShape.circle,
-                        border: !current
-                            ? null
-                            : Border.all(
-                                color: Theme.of(context).accentColor,
-                                width: 1,
-                              )),
+                    ),
                     child: !current
                         ? null
                         : Icon(
@@ -74,11 +75,13 @@ class _AccountsModalState extends State<AccountsModal> {
               Text(user.lastSync?.toHumanable() ?? ''),
               if (refreshing || removing)
                 Padding(
-                    padding: EdgeInsets.only(right: 11),
-                    child: SizedBox(
-                        height: 24,
-                        width: 24,
-                        child: CircularProgressIndicator()))
+                  padding: EdgeInsets.only(right: 11),
+                  child: SizedBox(
+                    height: 24,
+                    width: 24,
+                    child: CircularProgressIndicator(),
+                  ),
+                )
               else
                 IconButton(
                   onPressed: () {

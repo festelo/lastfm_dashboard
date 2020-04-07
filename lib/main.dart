@@ -90,14 +90,15 @@ class DashboardApp extends StatelessWidget {
       primaryColor: Colors.grey[900],
       accentColor: Colors.redAccent,
       appBarTheme: AppBarTheme(
-          color: Colors.grey[900],
-          textTheme: TextTheme(
-            headline5: TextStyle(
-              color: Colors.red,
-              fontWeight: FontWeight.w500,
-              fontSize: 18,
-            ),
-          )),
+        color: Colors.grey[900],
+        textTheme: TextTheme(
+          headline5: TextStyle(
+            color: Colors.red,
+            fontWeight: FontWeight.w500,
+            fontSize: 18,
+          ),
+        ),
+      ),
       textTheme: TextTheme(
         bodyText2: TextStyle(
           color: Colors.white60,
@@ -117,10 +118,11 @@ class DashboardApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-        title: 'Last.fm Dashboard',
-        debugShowCheckedModeBanner: false,
-        theme: theme(),
-        darkTheme: darkTheme(),
-        home: HomePage());
+      title: 'Last.fm Dashboard',
+      debugShowCheckedModeBanner: false,
+      theme: theme(),
+      darkTheme: darkTheme(),
+      home: HomePage(),
+    );
   }
 }
