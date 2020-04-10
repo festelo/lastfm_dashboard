@@ -101,8 +101,8 @@ class _ArtistsListState extends State<ArtistsList> {
         padding: EdgeInsets.all(0),
         child: Consumer<ArtistsViewModel>(
           builder: (_, vm, snap) {
-            if (vm.artistsWithListens == null ||
-                (vm.artistsWithListens.isEmpty &&
+            if (vm.artistsDetailed == null ||
+                (vm.artistsDetailed.isEmpty &&
                 Provider.of<UsersBloc>(context).isUserRefreshing(user.id))
               )
               return Center(
@@ -113,11 +113,11 @@ class _ArtistsListState extends State<ArtistsList> {
               padding: EdgeInsets.symmetric(
                 vertical: 10
               ),
-              itemCount: vm.artistsWithListens.length,
+              itemCount: vm.artistsDetailed.length,
               itemBuilder: (_, i) => listItem(
-                image: vm.artistsWithListens[i].artist.imageInfo.small,
-                name: vm.artistsWithListens[i].artist.name,
-                scrobbles: vm.artistsWithListens[i].scrobbles,
+                image: vm.artistsDetailed[i].imageInfo.small,
+                name: vm.artistsDetailed[i].name,
+                scrobbles: vm.artistsDetailed[i].scrobbles,
                 // selectionColor: vm.artistsWithListens[i].s,
                 // onPressed: () => setState(() => 
                 //   artistsArray[i].selectionColor = [

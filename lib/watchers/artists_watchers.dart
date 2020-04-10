@@ -13,21 +13,38 @@ Stream<Returner<ArtistsViewModel>> artistSelectionsWatcher(
 ) async* {
   final db = c.context.get<LocalDatabaseService>();
   final auth = c.context.get<AuthService>();
-  final stream = auth.currentUser.flatMap((userId) => userId == null
-      ? Stream.empty()
-      : db.users[userId].artistSelections.changes());
+  final stream = auth.currentUser.switchMap((userId) =>
+    userId == null
+      ? Stream<List<String>>.empty()
+      : db.userArtistDetails.changesWhere(userId: userId, selected: true));
 
-  await for (final s in stream) {
+  await for (final ids in stream) {
     c.throwIfCancelled();
-    yield (vm) => vm.copyWith(artistSelections: s);
+    if (ids == null || ids.isEmpty)
+      yield (vm) => vm.copyWith(artistSelections: []);
+    else {
+      final details = await db.userArtistDetails.getWhere(ids: ids);
+      yield (vm) => vm.copyWith(artistSelections: details);
+    }
   }
 }
 
-class _ArtistsWithScrobbles {
-  final List<TrackScrobble> scrobbles;
-  final List<Artist> artists;
+class _ArtistsLoadDetails {
+  final int from;
+  final int to;
+  _ArtistsLoadDetails(this.from, this.to);
+}
 
-  const _ArtistsWithScrobbles(this.artists, this.scrobbles);
+class _ArtistsDetails {
+  final _ArtistsLoadDetails loadInfo;
+  final String userId;
+  _ArtistsDetails(this.loadInfo, this.userId);
+}
+
+class _ArtistsWatcherUpdateDetails {
+  final List<UserArtistDetails> artists;
+  final int count;
+  _ArtistsWatcherUpdateDetails(this.artists, this.count);
 }
 
 class ArtistsWatcherInfo {}
@@ -39,30 +56,51 @@ Stream<Returner<ArtistsViewModel>> artistsWatcher(
   final db = config.context.get<LocalDatabaseService>();
   final auth = config.context.get<AuthService>();
 
-  final scrobblesStream = auth.currentUser.switchMap((userId) =>
-      userId == null ? Stream.empty() : db.users[userId].scrobbles.changes());
+  final viewModelChangesStream = config.context
+      .subscribe<ArtistsViewModel>()
+      .map((c) => _ArtistsLoadDetails(c.loadFrom, c.loadTo))
+      .distinct((a, b) => a.to == b.to && a.from == b.from);
 
-  final changes = db.artists.changes();
+  final currentUserStream = auth.currentUser;
 
-  final combinedStream = Rx.combineLatest2(
-    scrobblesStream,
-    changes,
-    (a, b) => _ArtistsWithScrobbles(b, a),
+  final loadDetailsStream = Rx.combineLatest2(
+    viewModelChangesStream,
+    currentUserStream,
+    (a, b) => b == null ? null : _ArtistsDetails(a, b),
   );
 
-  await for (final m in combinedStream) {
+  final artistsStream = loadDetailsStream.asyncMap((details) async {
+    if (details == null) return <UserArtistDetails>[];
+    final take = details.loadInfo.to - details.loadInfo.from;
+    return await db.userArtistDetails.getWhere(
+      skip: details.loadInfo.from,
+      take: take,
+      userId: details.userId,
+    );
+  });
+
+  final artistsUpdatesStream = artistsStream.switchMap((d) => d.isEmpty
+      ? Stream<List<UserArtistDetails>>.empty()
+      : db.userArtistDetails
+          .changesWhere(ids: d.map((e) => e.id))
+          .asyncMap((ids) => db.userArtistDetails.getWhere(ids: ids))
+      ).publish();
+
+  final mergedArtistsStream = Rx.merge([artistsStream, artistsUpdatesStream]);
+
+  final combinedStream = Rx.combineLatest2(
+    mergedArtistsStream,
+    currentUserStream.switchMap((userId) => userId == null
+        ? Stream<int>.value(0)
+        : db.userArtistDetails.subscribeCountWhere(userId: userId)),
+    (a, b) => _ArtistsWatcherUpdateDetails(a, b),
+  );
+
+  await for (final details in combinedStream) {
     config.throwIfCancelled();
-    final artistsListens = <Artist, int>{};
-    for (final s in m.scrobbles) {
-      final artist = m.artists.firstWhere((a) => a.id == s.artistId,
-          orElse: () => Artist(name: 'Unknown#' + s.artistId));
-      artistsListens[artist] = (artistsListens[artist] ?? 0) + 1;
-    }
     yield (vm) => vm.copyWith(
-          artistsWithListens: artistsListens.entries
-              .map((entry) => ArtistWithListenInfo(
-                  artist: entry.key, scrobbles: entry.value))
-              .toList(),
+          artistsDetailed: details.artists,
+          totalCount: details.count,
         );
   }
 }

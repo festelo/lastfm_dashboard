@@ -50,3 +50,43 @@ extension ListExtensions<T> on List<T> {
     return this;
   }
 }
+
+
+extension MapExtensions<T> on Map<String, T> {
+  Map<String, T> selectPrefixed(Pattern prefix) {
+    return Map<String, T>.fromEntries(
+      entries.where((c) => c.key.startsWith(prefix))
+    );
+  }
+
+  Map<String, T> unpackDbMap(String name) {
+    return this[name] ?? selectPrefixed(name + '_');
+  }
+  
+  Map<String, dynamic> flat() {
+    final retMap = <String, dynamic>{};
+    for(final d in entries) {
+      if (d.value is Map<String, dynamic>) {
+        final flatted = (d.value as Map<String, dynamic>).flat();
+        retMap.addAll(flatted.map((a, b) => MapEntry(d.key + '_' + a, b)));
+      } else {
+        retMap[d.key] = d.value;
+      }
+    }
+    return retMap;
+  }
+}
+
+extension NullExtensions<T> on T {
+  RetT nullOr<RetT>(RetT Function(T) fun) {
+    return this == null ? null : fun(this);
+  }
+}
+
+extension BoolExtensions<T> on bool {
+  int get integer => this ? 1 : 0;
+}
+
+extension NumExtensions<T> on num {
+  bool get boolean => this == 1 ? true : false;
+}

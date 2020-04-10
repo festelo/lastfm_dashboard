@@ -12,8 +12,12 @@ class LastFMScrobble {
 
   const LastFMScrobble({this.artist, this.track, this.date});
 
-  TrackScrobble toTrackScrobble() =>
-      TrackScrobble(artistId: artist.id, trackId: track.id, date: date);
+  TrackScrobble toTrackScrobble(String userId) => TrackScrobble(
+        artistId: artist.id,
+        trackId: track.id,
+        date: date,
+        userId: userId,
+      );
 }
 
 class LastFMApi {

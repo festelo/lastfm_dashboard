@@ -4,26 +4,34 @@ import 'package:lastfm_dashboard/services/auth/auth_service.dart';
 import 'package:lastfm_dashboard/watchers/artists_watchers.dart';
 import 'package:rxdart/rxdart.dart';
 
-class ArtistWithListenInfo {
-  final Artist artist;
-  final int scrobbles;
-
-  const ArtistWithListenInfo({this.artist, this.scrobbles});
-}
-
 class ArtistsViewModel {
-  final List<ArtistWithListenInfo> artistsWithListens;
-  final List<ArtistSelection> artistSelections;
+  final List<UserArtistDetails> artistsDetailed;
+  final List<UserArtistDetails> artistSelections;
+  final int loadFrom;
+  final int loadTo;
+  final int totalCount;
 
-  const ArtistsViewModel({this.artistsWithListens, this.artistSelections});
+  const ArtistsViewModel({
+    this.artistsDetailed,
+    this.artistSelections,
+    this.loadFrom = 0,
+    this.loadTo = 0,
+    this.totalCount = 0
+  });
 
   ArtistsViewModel copyWith({
-    List<ArtistWithListenInfo> artistsWithListens,
-    List<ArtistSelection> artistSelections,
+    List<UserArtistDetails> artistsDetailed,
+    List<UserArtistDetails> artistSelections,
+    int loadFrom,
+    int loadTo,
+    int totalCount
   }) {
     return ArtistsViewModel(
-      artistsWithListens: artistsWithListens ?? this.artistsWithListens,
+      artistsDetailed: artistsDetailed ?? this.artistsDetailed,
       artistSelections: artistSelections ?? this.artistSelections,
+      loadFrom: loadFrom ?? this.loadFrom,
+      loadTo: loadTo ?? this.loadTo,
+      totalCount: totalCount ?? this.totalCount
     );
   }
 }

@@ -108,18 +108,18 @@ Stream<Returner<UsersViewModel>> refreshUser(
       for(final artist in newAritsts) {
         await db.artists[artist.id]
             .through(t)
-            .update(artist.toDbMap(), createIfNotExist: true);
+            .updateSelective((a) => artist, createIfNotExist: true);
       }
 
       for (final track in newTracks) {
-        await db.artists[track.id]
+        await db.tracks[track.id]
             .through(t)
-            .update(track.toDbMap(), createIfNotExist: true);
+            .updateSelective((t) => track, createIfNotExist: true);
       }
 
-      await db.users[user.id].scrobbles
+      await db.trackScrobbles
           .through(t)
-          .addAll(scrobbles.map((e) => e.toTrackScrobble()));
+          .addAll(scrobbles.map((e) => e.toTrackScrobble(user.id)).toList());
 
       await db.users[user.id].through(t).updateSelective(updater);
     });

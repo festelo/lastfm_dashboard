@@ -1,4 +1,5 @@
 import 'package:collection/collection.dart';
+import 'package:lastfm_dashboard/extensions.dart';
 
 abstract class DatabaseMappedModel {
   const DatabaseMappedModel();
@@ -7,6 +8,11 @@ abstract class DatabaseMappedModel {
   /// Map which contains only properties that db
   /// should contain to succesfull deseriallization
   Map<String, dynamic> toDbMap();
+
+  Map<String, dynamic> toDbMapFlat() {
+    final dbMap = toDbMap();
+    return dbMap.flat();
+  }
 
   Map<String, dynamic> diff(DatabaseMappedModel other) {
     final oldMap = other.toDbMap();
