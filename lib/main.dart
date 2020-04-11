@@ -6,6 +6,7 @@ import 'package:lastfm_dashboard/services/lastfm/lastfm_api.dart';
 import 'package:lastfm_dashboard/services/lastfm/lastfm_api_mock.dart';
 import 'package:lastfm_dashboard/services/local_database/database_service.dart';
 import 'package:lastfm_dashboard/services/local_database/mobile/database_service.dart';
+import 'package:lastfm_dashboard/services/local_database/web/database_service.dart';
 import 'package:provider/provider.dart';
 
 import 'bloc.dart';
@@ -18,7 +19,7 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final authService = await AuthService.load();
   print('auth service loaded');
-  final dbService = await MobileDatabaseBuilder().build();
+  final dbService = await WebDatabaseBuilder().build();
   print('db configured');
   final lastFmApi = LastFMApi();
 

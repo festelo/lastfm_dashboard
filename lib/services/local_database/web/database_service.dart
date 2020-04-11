@@ -3,15 +3,24 @@ import 'package:flutter/foundation.dart';
 import 'package:lastfm_dashboard/constants.dart';
 import 'package:lastfm_dashboard/services/local_database/database_service.dart';
 import 'package:meta/meta.dart';
+import 'package:rxdart/rxdart.dart';
 import 'package:sembast/sembast.dart';
 import 'package:lastfm_dashboard/models/models.dart';
 import 'package:lastfm_dashboard/models/database_mapped_model.dart';
+import 'package:quiver/core.dart';
+import 'package:collection/collection.dart';
 
 import 'db_setup.dart' if (dart.library.html) 'db_setup_web.dart';
 
 import 'migrations.dart';
 
 typedef Constructor<T> = T Function(String id, Map<String, dynamic> data);
+
+class SembastExecutorWrapper extends ExecutorWrapper {
+  @override
+  final DatabaseClient executor;
+  SembastExecutorWrapper(this.executor);
+}
 
 class WebDatabaseBuilder {
   WebDatabaseBuilder({
@@ -41,14 +50,11 @@ class WebDatabaseBuilder {
   StoreRef<String, Map<String, dynamic>> tracksStore() =>
       StoreRef<String, Map<String, dynamic>>(tracksStorePath);
 
-  StoreRef<String, Map<String, dynamic>> scrobblesSubstore(String userId) =>
-      StoreRef<String, Map<String, dynamic>>(
-          trackScrobblesStorePath + '_' + userId);
+  StoreRef<String, Map<String, dynamic>> scrobblesStore() =>
+      StoreRef<String, Map<String, dynamic>>(trackScrobblesStorePath);
 
-  StoreRef<String, Map<String, dynamic>> artistSelectionsSubstore(
-          String userId) =>
-      StoreRef<String, Map<String, dynamic>>(
-          artistSelectionsStorePath + '_' + userId);
+  StoreRef<String, Map<String, dynamic>> artistSelectionsStore() =>
+      StoreRef<String, Map<String, dynamic>>(artistSelectionsStorePath);
 
   Future<WebDatabaseService> build() async {
     final fullPath = await getFullPath(path);
@@ -71,52 +77,72 @@ class WebDatabaseBuilder {
       usersStore: usersStore(),
       artistsStore: artistsStore(),
       tracksStore: tracksStore(),
-      trackScrobblesSubstore: scrobblesSubstore,
-      artistSelectionsSubstore: artistSelectionsSubstore,
+      trackScrobblesStore: scrobblesStore(),
+      artistSelectionsStore: artistSelectionsStore(),
     );
   }
 }
 
-class WebDatabaseService {
+class WebDatabaseService extends LocalDatabaseService {
   final Database database;
 
+  @override
   final UsersCollection users;
+  @override
   final ArtistsCollection artists;
+  @override
   final TracksCollection tracks;
+  @override
+  final TrackScrobblesCollection trackScrobbles;
+  @override
+  final ArtistSelectionsCollection artistSelections;
+  @override
+  final UserArtistDetailsSembastQueryable userArtistDetails;
 
   WebDatabaseService(
     this.database, {
     @required StoreRef<String, Map<String, dynamic>> usersStore,
     @required StoreRef<String, Map<String, dynamic>> artistsStore,
     @required StoreRef<String, Map<String, dynamic>> tracksStore,
-    @required
-        StoreRef<String, Map<String, dynamic>> Function(String userId)
-            trackScrobblesSubstore,
-    @required
-        StoreRef<String, Map<String, dynamic>> Function(String userId)
-            artistSelectionsSubstore,
-  })  : users = UsersCollection(database, usersStore, trackScrobblesSubstore,
-            artistSelectionsSubstore),
+    @required StoreRef<String, Map<String, dynamic>> trackScrobblesStore,
+    @required StoreRef<String, Map<String, dynamic>> artistSelectionsStore,
+  })  : users = UsersCollection(database, usersStore),
         artists = ArtistsCollection(database, artistsStore),
-        tracks = TracksCollection(database, tracksStore);
+        tracks = TracksCollection(database, tracksStore),
+        trackScrobbles =
+            TrackScrobblesCollection(database, trackScrobblesStore),
+        artistSelections =
+            ArtistSelectionsCollection(database, artistSelectionsStore),
+        userArtistDetails = UserArtistDetailsSembastQueryable(
+            database,
+            usersStore,
+            artistsStore,
+            trackScrobblesStore,
+            artistSelectionsStore);
 
-  Future<T> transaction<T>(FutureOr<T> Function(Transaction) action) =>
-      database.transaction(action);
+  @override
+  Future<T> transaction<T>(
+      FutureOr<T> Function(SembastExecutorWrapper) action) {
+    return database.transaction((t) => action(SembastExecutorWrapper(t)));
+  }
 }
 
-class DatabaseEntity<T extends DatabaseMappedModel> {
+class DatabaseReadOnlyEntity<T extends DatabaseMappedModel>
+    extends ReadOnlyEntity<T> {
   final String id;
   final RecordRef<String, Map<String, dynamic>> record;
   final DatabaseClient database;
   final Constructor<T> constructor;
 
-  DatabaseEntity({this.id, this.record, this.database, this.constructor});
+  DatabaseReadOnlyEntity(
+      {this.id, this.record, this.database, this.constructor});
 
-  DatabaseEntity<T> through(DatabaseClient database) {
-    return DatabaseEntity(
+  @override
+  DatabaseReadOnlyEntity<T> through(ExecutorWrapper database) {
+    return DatabaseReadOnlyEntity(
       id: id,
       record: record,
-      database: database,
+      database: database.executor,
       constructor: constructor,
     );
   }
@@ -131,6 +157,37 @@ class DatabaseEntity<T extends DatabaseMappedModel> {
     return await record.exists(database);
   }
 
+  /// Returns Stream that will return object with this [id]
+  /// after every change
+  Stream<T> changes(String id) {
+    return record
+        .onSnapshot(database)
+        .map((d) => d == null ? null : constructor(id, d.value));
+  }
+}
+
+class DatabaseEntity<T extends DatabaseMappedModel>
+    extends DatabaseReadOnlyEntity<T> implements Entity<T> {
+  DatabaseEntity({
+    String id,
+    RecordRef<String, Map<String, dynamic>> record,
+    DatabaseClient database,
+    Constructor<T> constructor,
+  }) : super(
+            id: id,
+            record: record,
+            database: database,
+            constructor: constructor);
+
+  DatabaseEntity<T> through(ExecutorWrapper database) {
+    return DatabaseEntity(
+      id: id,
+      record: record,
+      database: database.executor,
+      constructor: constructor,
+    );
+  }
+
   Future<void> update(Map<String, dynamic> data,
       {bool createIfNotExist = false}) async {
     if (createIfNotExist) {
@@ -143,12 +200,13 @@ class DatabaseEntity<T extends DatabaseMappedModel> {
   /// Works slow, but updates only affected properties
   /// If the object doesn't exist empty constructor will be
   /// sent to modificator as parameter
-  Future<T> updateSelective(T Function(T) modificator) async {
+  @override
+  Future<void> updateSelective(T Function(T) modificator,
+      {bool createIfNotExist = true}) async {
     final initial = constructor(id, {});
     final state = modificator(initial);
     final diff = state.diff(initial);
-    final rec = await record.update(database, diff);
-    return constructor(id, rec);
+    await update(diff, createIfNotExist: createIfNotExist);
   }
 
   /// Create/add object to databse. If [id] is specified, then
@@ -156,6 +214,7 @@ class DatabaseEntity<T extends DatabaseMappedModel> {
   /// will be generated.
   ///
   /// Returns object Id.
+  @override
   Future<void> create(T state, {Map<String, dynamic> additional}) async {
     final map = state.toDbMap();
     if (additional != null) {
@@ -164,90 +223,24 @@ class DatabaseEntity<T extends DatabaseMappedModel> {
     await record.put(database, state.toDbMap());
   }
 
-  /// Returns Stream that will return object with this [id]
-  /// after every change
-  Stream<T> changes(String id) {
-    return record
-        .onSnapshot(database)
-        .map((d) => d == null ? null : constructor(id, d.value));
-  }
-
+  @override
   Future<void> delete() async {
     await record.delete(database);
   }
 }
 
-class UserEntity extends DatabaseEntity<User> {
-  final StoreRef<String, Map<String, dynamic>> Function(String userId)
-      scrobblesSubstore;
-
-  final StoreRef<String, Map<String, dynamic>> Function(String userId)
-      artistSelectionsSubstore;
-
-  UserEntity({
-    @required this.scrobblesSubstore,
-    @required this.artistSelectionsSubstore,
-    String id,
-    RecordRef<String, Map<String, dynamic>> record,
-    DatabaseClient database,
-    User Function(String, Map<String, dynamic>) constructor,
-  }) : super(
-          id: id,
-          record: record,
-          database: database,
-          constructor: constructor,
-        );
-
-  StoreRef<String, Map<String, dynamic>> _scrobblesStoreRef(String userId) =>
-      scrobblesSubstore(userId);
-
-  StoreRef<String, Map<String, dynamic>> _artistSelectionsStoreRef(
-    String userId,
-  ) {
-    return artistSelectionsSubstore(userId);
-  }
-
-  @override
-  UserEntity through(DatabaseClient database) {
-    return UserEntity(
-      id: id,
-      record: record,
-      database: database,
-      constructor: constructor,
-      artistSelectionsSubstore: artistSelectionsSubstore,
-      scrobblesSubstore: scrobblesSubstore,
-    );
-  }
-
-  TrackScrobblesCollection get scrobbles {
-    return TrackScrobblesCollection(database, _scrobblesStoreRef(id));
-  }
-
-  ArtistSelectionsCollection get artistSelections {
-    return ArtistSelectionsCollection(database, _artistSelectionsStoreRef(id));
-  }
-
-  @override
-  Future<void> delete() async {
-    final db = database;
-    if (db is Database) {
-      return await db.transaction((t) => through(t).delete());
-    }
-    await artistSelections.delete();
-    await scrobbles.delete();
-    await super.delete();
-  }
-}
-
-abstract class _DatabaseCollection<T extends DatabaseMappedModel> {
+abstract class _DatabaseCollection<T extends DatabaseMappedModel>
+    extends Collection<T> {
   final StoreRef<String, Map<String, dynamic>> store;
   final DatabaseClient database;
   final Constructor<T> constructor;
 
   _DatabaseCollection(this.database, this.store, this.constructor);
 
-  _DatabaseCollection<T> through(DatabaseClient database);
+  @override
+  _DatabaseCollection<T> through(ExecutorWrapper database);
 
+  @override
   DatabaseEntity<T> operator [](String id) => DatabaseEntity<T>(
       id: id, database: database, constructor: constructor, record: record(id));
 
@@ -255,6 +248,7 @@ abstract class _DatabaseCollection<T extends DatabaseMappedModel> {
     return store.record(id);
   }
 
+  @override
   Future<List<T>> getAll() async {
     return await store
         .stream(database)
@@ -297,6 +291,7 @@ abstract class _DatabaseCollection<T extends DatabaseMappedModel> {
   /// will be generated.
   ///
   /// Returns object Id.
+  @override
   Future<List<String>> addAll(Iterable<T> states) async {
     final List<T> statesWithId = [];
     final List<T> statesWithoutId = [];
@@ -329,45 +324,13 @@ abstract class _DatabaseCollection<T extends DatabaseMappedModel> {
 
 class UsersCollection extends _DatabaseCollection<User> {
   UsersCollection(
-      DatabaseClient database,
-      StoreRef<String, Map<String, dynamic>> store,
-      this.scrobblesSubstore,
-      this.artistSelectionsSubstore)
-      : super(database, store, (id, data) => User.deserialize(id, data));
-
-  final StoreRef<String, Map<String, dynamic>> Function(String userId)
-      scrobblesSubstore;
-
-  final StoreRef<String, Map<String, dynamic>> Function(String userId)
-      artistSelectionsSubstore;
+    DatabaseClient database,
+    StoreRef<String, Map<String, dynamic>> store,
+  ) : super(database, store, (id, data) => User.deserialize(id, data));
 
   @override
-  UsersCollection through(DatabaseClient database) {
-    return UsersCollection(
-        database, store, scrobblesSubstore, artistSelectionsSubstore);
-  }
-
-  @override
-  UserEntity operator [](String id) => UserEntity(
-        id: id,
-        database: database,
-        constructor: constructor,
-        record: record(id),
-        scrobblesSubstore: scrobblesSubstore,
-        artistSelectionsSubstore: artistSelectionsSubstore,
-      );
-
-  @override
-  Future<void> delete() async {
-    final db = database;
-    if (db is Database) {
-      return await db.transaction((t) => through(t).delete());
-    }
-    final users = await getAll();
-    final futures = users.map((v) => this[v.id].scrobbles.delete());
-    await Future.wait(futures);
-    await super.delete();
-    return;
+  UsersCollection through(ExecutorWrapper database) {
+    return UsersCollection(database.executor, store);
   }
 }
 
@@ -378,8 +341,8 @@ class ArtistsCollection extends _DatabaseCollection<Artist> {
   ) : super(database, store, (id, data) => Artist.deserialize(id, data));
 
   @override
-  ArtistsCollection through(DatabaseClient database) {
-    return ArtistsCollection(database, store);
+  ArtistsCollection through(ExecutorWrapper database) {
+    return ArtistsCollection(database.executor, store);
   }
 }
 
@@ -390,8 +353,8 @@ class TracksCollection extends _DatabaseCollection<Track> {
   ) : super(database, store, (id, data) => Track.deserialize(data));
 
   @override
-  TracksCollection through(DatabaseClient database) {
-    return TracksCollection(database, store);
+  TracksCollection through(ExecutorWrapper database) {
+    return TracksCollection(database.executor, store);
   }
 }
 
@@ -402,18 +365,8 @@ class TrackScrobblesCollection extends _DatabaseCollection<TrackScrobble> {
   ) : super(database, store, (id, data) => TrackScrobble.deserialize(data));
 
   @override
-  TrackScrobblesCollection through(DatabaseClient database) {
-    return TrackScrobblesCollection(database, store);
-  }
-
-  Stream<int> countByArtistStream(String artistId) {
-    return store
-        .query(
-            finder: Finder(
-                filter:
-                    Filter.equals(TrackScrobble.properties.artistId, artistId)))
-        .onSnapshots(database)
-        .map((s) => s.length);
+  TrackScrobblesCollection through(ExecutorWrapper database) {
+    return TrackScrobblesCollection(database.executor, store);
   }
 }
 
@@ -425,7 +378,175 @@ class ArtistSelectionsCollection extends _DatabaseCollection<ArtistSelection> {
             (id, data) => ArtistSelection.deserialize(id, data));
 
   @override
-  ArtistSelectionsCollection through(DatabaseClient database) {
-    return ArtistSelectionsCollection(database, store);
+  ArtistSelectionsCollection through(ExecutorWrapper database) {
+    return ArtistSelectionsCollection(database.executor, store);
+  }
+}
+
+class _ArtistWithSelectionPair {
+  final Artist artist;
+  final ArtistSelection artistSelection;
+  _ArtistWithSelectionPair(this.artist, this.artistSelection);
+}
+
+class _UserArtistPair {
+  final String userId;
+  final String artistId;
+  _UserArtistPair(this.userId, this.artistId);
+  @override
+  bool operator ==(o) =>
+      o is _UserArtistPair && o.userId == userId && o.artistId == artistId;
+
+  @override
+  int get hashCode => hash2(userId.hashCode, artistId.hashCode);
+}
+
+class _ScrobblesCountByUserArtist {
+  final String userId;
+  final String artistId;
+  final int count;
+  _ScrobblesCountByUserArtist(this.userId, this.artistId, this.count);
+  @override
+  bool operator ==(o) =>
+      o is _ScrobblesCountByUserArtist &&
+      o.userId == userId &&
+      o.artistId == artistId &&
+      o.count == count;
+
+  @override
+  int get hashCode => hash3(userId.hashCode, artistId.hashCode, count.hashCode);
+}
+
+class UserArtistDetailsSembastQueryable extends UserArtistDetailsQueryable {
+  final DatabaseClient database;
+
+  UserArtistDetailsSembastQueryable(this.database, this.usersStore,
+      this.artistsStore, this.scrobblesStore, this.artistSelectionsStore);
+
+  final StoreRef<String, Map<String, dynamic>> usersStore;
+  final StoreRef<String, Map<String, dynamic>> artistsStore;
+  final StoreRef<String, Map<String, dynamic>> artistSelectionsStore;
+  final StoreRef<String, Map<String, dynamic>> scrobblesStore;
+
+  @override
+  UserArtistDetailsSembastQueryable through(ExecutorWrapper database) {
+    return UserArtistDetailsSembastQueryable(database.executor, usersStore,
+        artistsStore, scrobblesStore, artistSelectionsStore);
+  }
+
+  @override
+  ReadOnlyEntity<UserArtistDetails> operator [](String id) {
+    throw UnimplementedError();
+  }
+
+  @override
+  Stream<List<UserArtistDetails>> changesWhere(
+      {List<String> ids,
+      bool selected, // +
+      String userId, // +
+      int skip,
+      int take,
+      SortDirection scrobblesSort}) {
+    final users = usersStore
+        .query(
+          finder: userId == null ? null : Finder(filter: Filter.byKey(userId)),
+        )
+        .onSnapshots(database);
+
+    final scrobbles = scrobblesStore.query().onSnapshots(database).map(
+          (list) => groupBy<RecordSnapshot<String, Map<String, dynamic>>,
+                  _UserArtistPair>(
+            list,
+            (c) => _UserArtistPair(c.value[TrackScrobble.properties.userId],
+                c.value[TrackScrobble.properties.artistId]),
+          )
+              .entries
+              .map((e) => _ScrobblesCountByUserArtist(
+                  e.key.userId, e.key.artistId, e.value.length))
+              .toList(),
+        );
+    final artistSelectedPairs = artistSelectionsStore
+        .query()
+        .onSnapshots(database)
+        .switchMap((artistSelections) {
+      final artistSelectionsDeserialized = artistSelections
+          .map((e) => ArtistSelection.deserialize(e.key, e.value));
+      final artistSelectionByArtist = Map<String, ArtistSelection>.fromIterable(
+          artistSelectionsDeserialized,
+          key: (sel) => sel.artistId,
+          value: (sel) => sel);
+      return artistsStore
+          .query(
+            finder: Finder(
+                filter: selected == null
+                    ? null
+                    : Filter.custom(
+                        (artist) => selected
+                            ? artistSelectionByArtist.containsKey(artist.key)
+                            : !artistSelectionByArtist.containsKey(artist.key),
+                      )),
+          )
+          .onSnapshots(database)
+          .map((list) => list
+              .map((e) => _ArtistWithSelectionPair(
+                  Artist.deserialize(e.key, e.value),
+                  artistSelectionByArtist[e.key]))
+              .toList());
+    });
+    return Rx.combineLatest3<
+            List<RecordSnapshot<String, Map<String, dynamic>>>,
+            List<_ScrobblesCountByUserArtist>,
+            List<_ArtistWithSelectionPair>,
+            List<UserArtistDetails>>(users, scrobbles, artistSelectedPairs,
+        (u, s, a) {
+      final mapped = s.map((scrobbles) {
+        final artistSelectedPair = a
+            .firstWhere((a) => a.artist.id == scrobbles.artistId, orElse: null);
+        if (artistSelectedPair == null) return null;
+        return UserArtistDetails(scrobbles.artistId + '@' + scrobbles.userId,
+            imageInfo: artistSelectedPair.artist.imageInfo,
+            mbid: artistSelectedPair.artist.mbid,
+            name: artistSelectedPair.artist.name,
+            scrobbles: scrobbles.count,
+            selected: artistSelectedPair.artistSelection != null,
+            selectionColor: artistSelectedPair.artistSelection?.selectionColor,
+            url: artistSelectedPair.artist.url,
+            userId: scrobbles.userId);
+      }).toList();
+      if (scrobblesSort != null) {
+        mapped.sort((a, b) => scrobblesSort == SortDirection.ascending
+            ? a.scrobbles.compareTo(b.scrobbles)
+            : b.scrobbles.compareTo(a.scrobbles));
+      }
+      Iterable<UserArtistDetails> ret = mapped;
+      if (skip != null) {
+        ret = mapped.skip(skip);
+      }
+      if (take != null) {
+        ret = mapped.take(take);
+      }
+      return ret.toList();
+    });
+  }
+
+  @override
+  Stream<int> countWhere({List<String> ids, bool selected, String userId}) {
+    return Stream.value(0);
+  }
+
+  @override
+  Future<List<UserArtistDetails>> getAll() {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<List<UserArtistDetails>> getWhere(
+      {List<String> ids,
+      bool selected,
+      String userId,
+      int skip,
+      int take,
+      SortDirection scrobblesSort}) {
+    throw UnimplementedError();
   }
 }
