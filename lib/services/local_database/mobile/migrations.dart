@@ -12,7 +12,7 @@ final _migrations = <int, Future<void> Function(Database)>{
       imageInfo_large TEXT,
       imageInfo_extraLarge TEXT,
       setupSync_passed BOOLEAN NOT NULL DEFAULT 0,
-      setupSync_latestScrobble INTEGER NOT NULL DEFAULT 0
+      setupSync_latestScrobble INTEGER
     )''');
     await db.execute('''CREATE TABLE artists (
       id TEXT PRIMARY KEY NOT NULL,
@@ -48,31 +48,41 @@ final _migrations = <int, Future<void> Function(Database)>{
       userId TEXT NOT NULL,
       selectionColor INTEGER
     )''');
+    await db.execute('''CREATE VIEW scrobbles_count 
+    AS
+    SELECT 
+      artistid,
+      userId,
+      count(*) as scrobbles
+    FROM 
+      track_scrobbles
+    GROUP BY 
+      artistid,
+      userId;
+    ''');
     await db.execute('''CREATE VIEW artists_by_user_detailed 
     AS
     SELECT
-      artists.id,
+      scrobbles_count.artistId || '@' || scrobbles_count.userId as id,
+      scrobbles_count.artistId as name,
       artists.mbid,
       artists.url,
-      (SELECT COUNT(*) FROM track_scrobbles 
-        WHERE track_scrobbles.artistId = artists.id and 
-        track_scrobbles.userId = users.id
-      ) as scrobbles,
+      scrobbles,
       artist_selections.selectionColor as selectionColor,
       CASE WHEN artist_selections.selectionColor IS NOT NULL
         THEN 1
         ELSE 0
       END AS selected,
-      users.id as userId,
+      scrobbles_count.userId as userId,
       artists.imageInfo_small,
       artists.imageInfo_medium,
       artists.imageInfo_large,
       artists.imageInfo_extraLarge
-    FROM artists
-    CROSS JOIN users
+    FROM scrobbles_count
     LEFT JOIN artist_selections ON 
-      artist_selections.artistId = artists.id and
-      artist_selections.userId = users.id
+      artist_selections.artistId = scrobbles_count.artistId and
+      artist_selections.userId = scrobbles_count.userId
+    INNER JOIN artists ON artists.id = scrobbles_count.artistId
     ''');
   },
 };

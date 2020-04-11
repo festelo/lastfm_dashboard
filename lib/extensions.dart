@@ -51,21 +51,20 @@ extension ListExtensions<T> on List<T> {
   }
 }
 
-
 extension MapExtensions<T> on Map<String, T> {
   Map<String, T> selectPrefixed(Pattern prefix) {
-    return Map<String, T>.fromEntries(
-      entries.where((c) => c.key.startsWith(prefix))
-    );
+    return Map<String, T>.fromEntries(entries
+        .where((c) => c.key.startsWith(prefix))
+        .map((c) => MapEntry(c.key.replaceFirst(prefix, ''), c.value)));
   }
 
   Map<String, T> unpackDbMap(String name) {
     return this[name] ?? selectPrefixed(name + '_');
   }
-  
+
   Map<String, dynamic> flat() {
     final retMap = <String, dynamic>{};
-    for(final d in entries) {
+    for (final d in entries) {
       if (d.value is Map<String, dynamic>) {
         final flatted = (d.value as Map<String, dynamic>).flat();
         retMap.addAll(flatted.map((a, b) => MapEntry(d.key + '_' + a, b)));

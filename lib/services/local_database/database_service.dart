@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:lastfm_dashboard/models/models.dart';
 
+enum SortDirection { ascending, descending }
+
 abstract class ExecutorWrapper {
   dynamic get executor;
 }
@@ -26,14 +28,25 @@ abstract class Queryable<T> {
 }
 
 abstract class UserArtistDetailsQueryable extends Queryable<UserArtistDetails> {
-  Stream<List<String>> changesWhere(
-      {List<String> ids, bool selected, String userId});
+  Stream<List<UserArtistDetails>> changesWhere({
+    List<String> ids,
+    bool selected,
+    String userId,
+    int skip,
+    int take,
+    SortDirection scrobblesSort,
+  });
 
-  Future<List<UserArtistDetails>> getWhere(
-      {List<String> ids, bool selected, String userId, int skip, int take});
+  Future<List<UserArtistDetails>> getWhere({
+    List<String> ids,
+    bool selected,
+    String userId,
+    int skip,
+    int take,
+    SortDirection scrobblesSort,
+  });
 
-  Stream<int> subscribeCountWhere(
-      {List<String> ids, bool selected, String userId});
+  Stream<int> countWhere({List<String> ids, bool selected, String userId});
 }
 
 abstract class Collection<T> extends Queryable<T> {

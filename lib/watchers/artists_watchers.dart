@@ -13,8 +13,7 @@ Stream<Returner<ArtistsViewModel>> artistSelectionsWatcher(
 ) async* {
   final db = c.context.get<LocalDatabaseService>();
   final auth = c.context.get<AuthService>();
-  final stream = auth.currentUser.switchMap((userId) =>
-    userId == null
+  final stream = auth.currentUser.switchMap((userId) => userId == null
       ? Stream<List<String>>.empty()
       : db.userArtistDetails.changesWhere(userId: userId, selected: true));
 
@@ -69,30 +68,20 @@ Stream<Returner<ArtistsViewModel>> artistsWatcher(
     (a, b) => b == null ? null : _ArtistsDetails(a, b),
   );
 
-  final artistsStream = loadDetailsStream.asyncMap((details) async {
-    if (details == null) return <UserArtistDetails>[];
-    final take = details.loadInfo.to - details.loadInfo.from;
-    return await db.userArtistDetails.getWhere(
-      skip: details.loadInfo.from,
-      take: take,
-      userId: details.userId,
-    );
-  });
-
-  final artistsUpdatesStream = artistsStream.switchMap((d) => d.isEmpty
+  final artistsUpdatesStream = loadDetailsStream.switchMap((d) => d == null
       ? Stream<List<UserArtistDetails>>.empty()
-      : db.userArtistDetails
-          .changesWhere(ids: d.map((e) => e.id))
-          .asyncMap((ids) => db.userArtistDetails.getWhere(ids: ids))
-      ).publish();
-
-  final mergedArtistsStream = Rx.merge([artistsStream, artistsUpdatesStream]);
+      : db.userArtistDetails.changesWhere(
+          userId: d.userId,
+          skip: d.loadInfo.from,
+          take: d.loadInfo.to,
+          scrobblesSort: SortDirection.descending
+        ));
 
   final combinedStream = Rx.combineLatest2(
-    mergedArtistsStream,
+    artistsUpdatesStream,
     currentUserStream.switchMap((userId) => userId == null
         ? Stream<int>.value(0)
-        : db.userArtistDetails.subscribeCountWhere(userId: userId)),
+        : db.userArtistDetails.countWhere(userId: userId)),
     (a, b) => _ArtistsWatcherUpdateDetails(a, b),
   );
 

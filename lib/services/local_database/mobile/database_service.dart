@@ -153,12 +153,11 @@ class DatabaseReadOnlyEntity<T extends DatabaseMappedModel>
   @override
   DatabaseReadOnlyEntity<T> through(ExecutorWrapper database) {
     return DatabaseReadOnlyEntity(
-      id: id,
-      tableName: tableName,
-      database: database.executor,
-      constructor: constructor,
-      events: events
-    );
+        id: id,
+        tableName: tableName,
+        database: database.executor,
+        constructor: constructor,
+        events: events);
   }
 
   Future<T> get() async {
@@ -212,12 +211,11 @@ class DatabaseEntity<T extends DatabaseMappedModel>
   @override
   DatabaseEntity<T> through(ExecutorWrapper database) {
     return DatabaseEntity(
-      id: id,
-      tableName: tableName,
-      database: database.executor,
-      constructor: constructor,
-      events: events
-    );
+        id: id,
+        tableName: tableName,
+        database: database.executor,
+        constructor: constructor,
+        events: events);
   }
 
   Future<void> update(Map<String, dynamic> data,
@@ -315,12 +313,11 @@ abstract class _DatabaseReadOnlyCollection<T extends DatabaseMappedModel>
 
   @override
   DatabaseReadOnlyEntity<T> operator [](String id) => DatabaseReadOnlyEntity<T>(
-        id: id,
-        database: database,
-        constructor: constructor,
-        tableName: tableName,
-        events: events
-      );
+      id: id,
+      database: database,
+      constructor: constructor,
+      tableName: tableName,
+      events: events);
 
   @override
   _DatabaseReadOnlyCollection<T> through(ExecutorWrapper database);
@@ -351,12 +348,11 @@ abstract class _DatabaseCollection<T extends DatabaseMappedModel>
 
   @override
   DatabaseEntity<T> operator [](String id) => DatabaseEntity<T>(
-        id: id,
-        database: database,
-        constructor: constructor,
-        tableName: tableName,
-        events: events
-      );
+      id: id,
+      database: database,
+      constructor: constructor,
+      tableName: tableName,
+      events: events);
 
   @override
   _DatabaseCollection<T> through(ExecutorWrapper database);
@@ -384,9 +380,9 @@ abstract class _DatabaseCollection<T extends DatabaseMappedModel>
         .toList();
     final keys = maps.first.keys.toList();
     final columns = keys.map((e) => '[$e]').join(', ');
-    final valuesPlaceholders =  List.filled(keys.length, '?').join(', ');
+    final valuesPlaceholders = List.filled(keys.length, '?').join(', ');
     final batch = database.batch();
-    for(final m in maps) {
+    for (final m in maps) {
       final values = keys.map((k) => m[k]).toList();
       batch.rawInsert('''
         INSERT OR IGNORE INTO '$tableName' ($columns) VALUES ($valuesPlaceholders);
@@ -483,6 +479,7 @@ class UserArtistDetailsCollection
     return UserArtistDetailsCollection(
         database.executor, tableName, events, dependsTables);
   }
+  
 
   List<String> _getWhereStatements({
     List<String> ids,
@@ -491,7 +488,7 @@ class UserArtistDetailsCollection
   }) {
     final statements = [
       if (ids != null && ids.isNotEmpty)
-        '$cid in  ${List.filled(ids.length, '?').join(', ')})',
+        '$cid in  (${List.filled(ids.length, '?').join(', ')})',
       if (userId != null) UserArtistDetails.properties.userId + ' = ?',
       if (selected != null) UserArtistDetails.properties.selected + ' = ?',
     ];
@@ -512,41 +509,57 @@ class UserArtistDetailsCollection
   }
 
   @override
-  Stream<List<String>> changesWhere(
-      {List<String> ids, bool selected, String userId}) async* {
+  Stream<List<UserArtistDetails>> changesWhere(
+      {List<String> ids,
+      bool selected,
+      String userId,
+      int skip,
+      int take,
+      SortDirection scrobblesSort}) async* {
     final statements = _getWhereStatements(
       ids: ids,
       selected: selected,
       userId: userId,
     );
-    assert(statements.isNotEmpty);
+    assert(statements.isNotEmpty || skip != null || take != null);
     final params = _getWhereParams(
       ids: ids,
       selected: selected,
       userId: userId,
     );
-    Future<List<String>> getIds() async {
-      final idsQuery = '''
-        SELECT $cid FROM $tableName WHERE
-          ${statements.join(' and\n')};
-      ''';
-      final idsMap = await database.rawQuery(idsQuery, params);
-      return idsMap.map((e) => e[cid] as String).toList();
+    Future<List<Map<String, dynamic>>> getValues() async {
+      final idsQuery = [
+        'SELECT * FROM $tableName',
+        if (statements.isNotEmpty) 'WHERE ' + statements.join(' and\n'),
+        if (scrobblesSort != null)
+          'ORDER BY ${UserArtistDetails.properties.scrobbles} ' +
+              (scrobblesSort == SortDirection.descending ? 'desc' : 'asc'),
+        if (take != null) 'LIMIT ?',
+        if (skip != null) 'OFFSET ?',
+      ].join('\n');
+      final idsMap = await database.rawQuery(idsQuery, [
+        ...params,
+        if (take != null) take,
+        if (skip != null) skip,
+      ]);
+      return idsMap;
     }
 
-    var watchingIds = await getIds();
-    await for (final _
-        in events.where((e) => dependsTables.contains(e.tableName))) {
-      final newIds = await getIds();
-      if (!const ListEquality().equals(watchingIds, newIds)) {
-        watchingIds = newIds;
-        yield newIds;
-      }
-    }
+    var watching = await getValues();
+    yield watching.map((e) => constructor(e[cid], e)).toList();
+    yield* events
+        .where((e) => dependsTables.contains(e.tableName))
+        .asyncMap((event) => getValues())
+        .where((newValues) =>
+            !const DeepCollectionEquality().equals(watching, newValues))
+        .map((newValues) {
+      watching = newValues;
+      return newValues.map((e) => constructor(e[cid], e)).toList();
+    });
   }
 
   @override
-  Stream<int> subscribeCountWhere(
+  Stream<int> countWhere(
       {List<String> ids, bool selected, String userId}) async* {
     final statements = _getWhereStatements(
       ids: ids,
@@ -563,21 +576,28 @@ class UserArtistDetailsCollection
       SELECT COUNT(*) FROM $tableName WHERE
         ${statements.join(' and\n')};
     ''';
-    yield Sqflite.firstIntValue(await database.rawQuery(countQuery, params));
-    await for (final _
-        in events.where((e) => dependsTables.contains(e.tableName))) {
-      yield Sqflite.firstIntValue(await database.rawQuery(countQuery, params));
-    }
+    var watching =
+        Sqflite.firstIntValue(await database.rawQuery(countQuery, params));
+    yield watching;
+    yield* events
+        .where((e) => dependsTables.contains(e.tableName))
+        .asyncMap((event) => database.rawQuery(countQuery, params))
+        .map((event) => Sqflite.firstIntValue(event))
+        .where((newValue) => newValue != watching)
+        .map((newValue) {
+      watching = newValue;
+      return newValue;
+    });
   }
 
   @override
-  Future<List<UserArtistDetails>> getWhere({
-    List<String> ids,
-    bool selected,
-    String userId,
-    int skip,
-    int take,
-  }) async {
+  Future<List<UserArtistDetails>> getWhere(
+      {List<String> ids,
+      bool selected,
+      String userId,
+      int skip,
+      int take,
+      SortDirection scrobblesSort}) async {
     final statements = _getWhereStatements(
       ids: ids,
       selected: selected,
@@ -592,8 +612,11 @@ class UserArtistDetailsCollection
     final selectQuery = [
       'SELECT * FROM $tableName',
       if (statements.isNotEmpty) 'WHERE ' + statements.join(' and\n'),
+      if (scrobblesSort != null)
+        'ORDER BY ${UserArtistDetails.properties.scrobbles} ' +
+            (scrobblesSort == SortDirection.descending ? 'desc' : 'asc'),
       if (take != null) 'LIMIT ?',
-      if (skip != null) 'OFFSET ?'
+      if (skip != null) 'OFFSET ?',
     ].join('\n');
     final maps = await database.rawQuery(selectQuery, [
       ...params,

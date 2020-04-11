@@ -15,7 +15,7 @@ class ArtistsViewModel {
     this.artistsDetailed,
     this.artistSelections,
     this.loadFrom = 0,
-    this.loadTo = 0,
+    this.loadTo = 20,
     this.totalCount = 0
   });
 

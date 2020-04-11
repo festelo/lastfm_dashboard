@@ -6,6 +6,7 @@ import 'models.dart';
 class _UserArtistDetailsProperties {
   String get selected => 'selected';
   String get userId => 'userId';
+  String get scrobbles => 'scrobbles';
 
   const _UserArtistDetailsProperties();
 }
@@ -40,9 +41,9 @@ class UserArtistDetails extends DatabaseMappedModel {
         name = map['name'],
         scrobbles = map['scrobbles'],
         userId = map[properties.userId],
-        selectionColor = Color(map['selectionColor']),
+        selectionColor = (map['selectionColor'] as int).nullOr((c) => Color(c)),
         imageInfo = ImageInfo.fromMap(map.unpackDbMap('imageInfo')),
-        selected = map[properties.selected] ?? false;
+        selected = (map[properties.selected] as int).boolean;
 
   @override
   Map<String, dynamic> toDbMap() => {
