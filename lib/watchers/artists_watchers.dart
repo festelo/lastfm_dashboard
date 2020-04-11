@@ -28,16 +28,9 @@ Stream<Returner<ArtistsViewModel>> artistSelectionsWatcher(
   }
 }
 
-class _ArtistsLoadDetails {
-  final int from;
-  final int to;
-  _ArtistsLoadDetails(this.from, this.to);
-}
-
-class _ArtistsDetails {
-  final _ArtistsLoadDetails loadInfo;
+class _SetupDetails {
   final String userId;
-  _ArtistsDetails(this.loadInfo, this.userId);
+  _SetupDetails(this.userId);
 }
 
 class _ArtistsWatcherUpdateDetails {
@@ -55,27 +48,16 @@ Stream<Returner<ArtistsViewModel>> artistsWatcher(
   final db = config.context.get<LocalDatabaseService>();
   final auth = config.context.get<AuthService>();
 
-  final viewModelChangesStream = config.context
-      .subscribe<ArtistsViewModel>()
-      .map((c) => _ArtistsLoadDetails(c.loadFrom, c.loadTo))
-      .distinct((a, b) => a.to == b.to && a.from == b.from);
-
   final currentUserStream = auth.currentUser;
 
-  final loadDetailsStream = Rx.combineLatest2(
-    viewModelChangesStream,
-    currentUserStream,
-    (a, b) => b == null ? null : _ArtistsDetails(a, b),
-  );
+  final loadDetailsStream =
+      currentUserStream.map((e) => e == null ? null : _SetupDetails(e));
 
   final artistsUpdatesStream = loadDetailsStream.switchMap((d) => d == null
       ? Stream<List<UserArtistDetails>>.empty()
       : db.userArtistDetails.changesWhere(
           userId: d.userId,
-          skip: d.loadInfo.from,
-          take: d.loadInfo.to,
-          scrobblesSort: SortDirection.descending
-        ));
+          scrobblesSort: SortDirection.descending));
 
   final combinedStream = Rx.combineLatest2(
     artistsUpdatesStream,

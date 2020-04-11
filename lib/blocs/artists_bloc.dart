@@ -7,15 +7,11 @@ import 'package:rxdart/rxdart.dart';
 class ArtistsViewModel {
   final List<UserArtistDetails> artistsDetailed;
   final List<UserArtistDetails> artistSelections;
-  final int loadFrom;
-  final int loadTo;
   final int totalCount;
 
   const ArtistsViewModel({
     this.artistsDetailed,
     this.artistSelections,
-    this.loadFrom = 0,
-    this.loadTo = 20,
     this.totalCount = 0
   });
 
@@ -29,8 +25,6 @@ class ArtistsViewModel {
     return ArtistsViewModel(
       artistsDetailed: artistsDetailed ?? this.artistsDetailed,
       artistSelections: artistSelections ?? this.artistSelections,
-      loadFrom: loadFrom ?? this.loadFrom,
-      loadTo: loadTo ?? this.loadTo,
       totalCount: totalCount ?? this.totalCount
     );
   }

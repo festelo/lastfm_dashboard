@@ -19,7 +19,7 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final authService = await AuthService.load();
   print('auth service loaded');
-  final dbService = await WebDatabaseBuilder().build();
+  final dbService = await MobileDatabaseBuilder().build();
   print('db configured');
   final lastFmApi = LastFMApi();
 
