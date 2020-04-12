@@ -100,7 +100,6 @@ Stream<Returner<UsersViewModel>> refreshUser(
         scrobbles.where((s) => tracks.add(s.track)).map((c) => c.track);
 
     final updater = (User u) => u.copyWith(
-          playCount: scrobbles.last.total,
           setupSync: u.setupSync.copyWith(
             latestScrobble: scrobbles.last.date,
           ),

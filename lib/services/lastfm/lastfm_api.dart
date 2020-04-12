@@ -9,9 +9,8 @@ class LastFMScrobble {
   final Artist artist;
   final Track track;
   final DateTime date;
-  final int total;
 
-  const LastFMScrobble({this.artist, this.track, this.date, this.total});
+  const LastFMScrobble({this.artist, this.track, this.date});
 
   TrackScrobble toTrackScrobble(String userId) => TrackScrobble(
         artistId: artist.id,
@@ -76,7 +75,7 @@ class LastFMApi {
     );
   }
 
-  LastFMScrobble _deserializeScrobble(dynamic scrobble, int total) {
+  LastFMScrobble _deserializeScrobble(dynamic scrobble) {
     final artist = Artist(
       imageInfo: _deserializeImage(scrobble['image']), // bypass
       name: scrobble['artist']['name'],
@@ -96,7 +95,6 @@ class LastFMApi {
     return LastFMScrobble(
       artist: artist,
       track: track,
-      total: total,
       date: DateTime.fromMillisecondsSinceEpoch(
           int.parse(scrobble['date']['uts']) * 1000),
     );
@@ -142,7 +140,7 @@ class LastFMApi {
 
       for (final scrobble in scrobbles) {
         yield _deserializeScrobble(
-            scrobble, int.tryParse(resp['recenttracks']['@attr']['total']));
+            scrobble);
       }
 
       print('$i/$totalPages');
