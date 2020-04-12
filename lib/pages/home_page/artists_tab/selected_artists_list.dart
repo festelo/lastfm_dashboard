@@ -4,13 +4,12 @@ import 'package:lastfm_dashboard/blocs/users_bloc.dart';
 import 'package:lastfm_dashboard/models/models.dart';
 import 'package:provider/provider.dart';
 
-class ArtistsList extends StatefulWidget {
-  @override
-  _ArtistsListState createState() => _ArtistsListState();
-}
+class SelectedArtistsList extends StatelessWidget {
+  final VoidCallback addArtistPressed;
+  const SelectedArtistsList({this.addArtistPressed});
 
-class _ArtistsListState extends State<ArtistsList> {
-  Widget listItem({
+  Widget listItem(
+    BuildContext context, {
     String name,
     String image,
     int scrobbles,
@@ -99,39 +98,46 @@ class _ArtistsListState extends State<ArtistsList> {
       margin: EdgeInsets.all(10),
       child: Padding(
         padding: EdgeInsets.all(0),
-        child: Consumer<ArtistsViewModel>(
-          builder: (_, vm, snap) {
-            if (vm.artistsDetailed == null ||
-                (vm.artistsDetailed.isEmpty &&
-                Provider.of<UsersBloc>(context).isUserRefreshing(user.id))
-              )
-              return Center(
-                child: CircularProgressIndicator(),
-              );
-              
-            return ListView.builder(
-              padding: EdgeInsets.symmetric(
-                vertical: 10
-              ),
-              itemCount: vm.artistsDetailed.length,
-              itemBuilder: (_, i) => listItem(
-                image: vm.artistsDetailed[i].imageInfo.small,
-                name: vm.artistsDetailed[i].name,
-                scrobbles: vm.artistsDetailed[i].scrobbles,
-                // selectionColor: vm.artistsWithListens[i].s,
-                // onPressed: () => setState(() => 
-                //   artistsArray[i].selectionColor = [
-                //     Colors.red,
-                //     Colors.green,
-                //     Colors.orange,
-                //     Colors.yellow,
-                //     null
-                //   ][counter++ % 5]
-                // )
-              ),
+        child: Consumer<ArtistsViewModel>(builder: (_, vm, snap) {
+          if (vm.artistSelections == null ||
+              (vm.artistsDetailed.isEmpty &&
+                  Provider.of<UsersBloc>(context).isUserRefreshing(user.id)))
+            return Center(
+              child: CircularProgressIndicator(),
             );
-          }
-        ),
+
+          if (vm.artistSelections.isEmpty)
+            return FlatButton(
+              child: Center(
+                child: Text(
+                  'Nothing is picked\nTap to add an artist',
+                  textAlign: TextAlign.center,
+                ),
+              ),
+              onPressed: addArtistPressed,
+            );
+
+          return ListView.builder(
+            padding: EdgeInsets.symmetric(vertical: 10),
+            itemCount: vm.artistSelections.length,
+            itemBuilder: (_, i) => listItem(
+              context,
+              image: vm.artistSelections[i].imageInfo.small,
+              name: vm.artistSelections[i].name,
+              scrobbles: vm.artistSelections[i].scrobbles,
+              // selectionColor: vm.artistsWithListens[i].s,
+              // onPressed: () => setState(() =>
+              //   artistsArray[i].selectionColor = [
+              //     Colors.red,
+              //     Colors.green,
+              //     Colors.orange,
+              //     Colors.yellow,
+              //     null
+              //   ][counter++ % 5]
+              // )
+            ),
+          );
+        }),
       ),
     );
   }
