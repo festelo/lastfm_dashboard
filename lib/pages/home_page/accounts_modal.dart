@@ -75,7 +75,7 @@ class _AccountsModalState extends State<AccountsModal> {
               Text(user.lastSync?.toHumanable() ?? ''),
               if (refreshing || removing)
                 Padding(
-                  padding: EdgeInsets.only(right: 11),
+                  padding: EdgeInsets.only(right: 11, left: 11),
                   child: SizedBox(
                     height: 24,
                     width: 24,

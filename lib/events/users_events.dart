@@ -85,6 +85,7 @@ Stream<Returner<UsersViewModel>> refreshUser(
 
   final Set<Artist> artists = {};
   final Set<Track> tracks = {};
+  DateTime lastTime;
 
   await for (final scrobbles in scrobbles.bufferCount(limit)) {
     if (config.cancelled()) throw CancelledException();
@@ -99,13 +100,15 @@ Stream<Returner<UsersViewModel>> refreshUser(
         scrobbles.where((s) => tracks.add(s.track)).map((c) => c.track);
 
     final updater = (User u) => u.copyWith(
+          playCount: scrobbles.last.total,
           setupSync: u.setupSync.copyWith(
             latestScrobble: scrobbles.last.date,
           ),
         );
-
+    lastTime =
+        scrobbles.map((e) => e.date).reduce((a, b) => a.isAfter(b) ? a : b);
     await db.transaction((t) async {
-      for(final artist in newAritsts) {
+      for (final artist in newAritsts) {
         await db.artists[artist.id]
             .through(t)
             .updateSelective((a) => artist, createIfNotExist: true);
@@ -126,6 +129,17 @@ Stream<Returner<UsersViewModel>> refreshUser(
 
     yield (vm) => vm.copyWith(
           users: vm.users.changeWhere((u) => u.id == user.id, updater).toList(),
+        );
+  }
+  if (lastTime != null) {
+    final lastSyncUpdater = (User u) => u.copyWith(
+          lastSync: lastTime,
+        );
+    await db.users[user.id].updateSelective(lastSyncUpdater);
+    yield (vm) => vm.copyWith(
+          users: vm.users
+              .changeWhere((u) => u.id == user.id, lastSyncUpdater)
+              .toList(),
         );
   }
 }

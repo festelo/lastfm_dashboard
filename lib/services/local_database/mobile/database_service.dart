@@ -159,7 +159,8 @@ class DatabaseReadOnlyEntity<T extends DatabaseMappedModel>
         constructor: constructor,
         events: events);
   }
-
+  
+  @override
   Future<T> get() async {
     final elements = await database.query(
       tableName,

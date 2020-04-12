@@ -147,6 +147,7 @@ class DatabaseReadOnlyEntity<T extends DatabaseMappedModel>
     );
   }
 
+  @override
   Future<T> get() async {
     final data = await record.get(database);
     if (data == null) return null;

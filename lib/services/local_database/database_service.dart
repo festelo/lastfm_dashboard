@@ -59,6 +59,7 @@ abstract class Collection<T> extends Queryable<T> {
 
 abstract class ReadOnlyEntity<T> {
   ReadOnlyEntity<T> through(ExecutorWrapper database);
+  Future<T> get();
 }
 
 abstract class Entity<T> extends ReadOnlyEntity<T> {
