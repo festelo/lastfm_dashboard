@@ -125,7 +125,6 @@ class MobileDatabaseService extends LocalDatabaseService {
             database, artistsDetailedStorePath, events, [
           trackScrobblesStorePath,
           artistsStorePath,
-          artistSelectionsStorePath
         ]);
 
   @override
@@ -159,7 +158,7 @@ class DatabaseReadOnlyEntity<T extends DatabaseMappedModel>
         constructor: constructor,
         events: events);
   }
-  
+
   @override
   Future<T> get() async {
     final elements = await database.query(
@@ -325,16 +324,30 @@ abstract class _DatabaseReadOnlyCollection<T extends DatabaseMappedModel>
 
   @override
   Future<List<T>> getAll() async {
-    final entities = await database.query(tableName);
+    final entities = await _getAllMapped();
     return entities.map((d) => constructor(d[cid], d)).toList();
+  }
+
+  Future<List<Map<String, dynamic>>> _getAllMapped() async {
+    final entities = await database.query(tableName);
+    return entities;
   }
 
   /// Returns Stream that will emits
   /// after every change
-  Stream<void> changes() async* {
-    await for (final _ in events.where((e) => e.tableName == tableName)) {
-      yield null;
-    }
+  @override
+  Stream<List<T>> changes() async* {
+    var watching = await _getAllMapped();
+    yield watching.map((e) => constructor(e[cid], e)).toList();
+    yield* events
+        .where((e) => e.tableName == tableName)
+        .asyncMap((event) => _getAllMapped())
+        .where((newValues) =>
+            !const DeepCollectionEquality().equals(watching, newValues))
+        .map((newValues) {
+      watching = newValues;
+      return newValues.map((e) => constructor(e[cid], e)).toList();
+    });
   }
 }
 
@@ -361,6 +374,7 @@ abstract class _DatabaseCollection<T extends DatabaseMappedModel>
   /// Adds object to database. If [id] is specified, then
   /// the object will be created with this Id, otherwise Id
   /// will be generated.
+  @override
   Future<void> add(T state) async {
     await this[state.id].create(state);
   }
@@ -452,17 +466,73 @@ class TrackScrobblesCollection extends _DatabaseCollection<TrackScrobble> {
   }
 }
 
-class ArtistSelectionsCollection extends _DatabaseCollection<ArtistSelection> {
+class ArtistSelectionsCollection extends _DatabaseCollection<ArtistSelection>
+    implements ArtistSelectionCollection {
   ArtistSelectionsCollection(
     DatabaseExecutor database,
     String tableName,
     PublishSubject<Event> events,
   ) : super(database, tableName, events,
-            (id, data) => ArtistSelection.deserialize(id, data));
+            (id, data) => ArtistSelection.deserialize(data));
 
   @override
   ArtistSelectionsCollection through(ExecutorWrapper database) {
     return ArtistSelectionsCollection(database.executor, tableName, events);
+  }
+  List<String> _getWhereStatements({
+    List<String> ids,
+    String userId,
+  }) {
+    final statements = [
+      if (ids != null && ids.isNotEmpty)
+        '$cid in  (${List.filled(ids.length, '?').join(', ')})',
+      if (userId != null) UserArtistDetails.properties.userId + ' = ?',
+    ];
+    return statements;
+  }
+
+  List<dynamic> _getWhereParams({
+    List<String> ids,
+    String userId,
+  }) {
+    final params = [
+      if (ids != null && ids.isNotEmpty) ...ids,
+      if (userId != null) userId,
+    ];
+    return params;
+  }
+
+  @override
+  Stream<List<ArtistSelection>> changesWhere({String userId}) async* {
+    final statements = _getWhereStatements(
+      userId: userId,
+    );
+    assert(statements.isNotEmpty);
+    final params = _getWhereParams(
+      userId: userId,
+    );
+    Future<List<Map<String, dynamic>>> getValues() async {
+      final idsQuery = [
+        'SELECT * FROM $tableName',
+        if (statements.isNotEmpty) 'WHERE ' + statements.join(' and\n'),
+      ].join('\n');
+      final idsMap = await database.rawQuery(idsQuery, [
+        ...params,
+      ]);
+      return idsMap;
+    }
+
+    var watching = await getValues();
+    yield watching.map((e) => constructor(e[cid], e)).toList();
+    yield* events
+        .where((e) => e.tableName == tableName)
+        .asyncMap((event) => getValues())
+        .where((newValues) =>
+            !const DeepCollectionEquality().equals(watching, newValues))
+        .map((newValues) {
+      watching = newValues;
+      return newValues.map((e) => constructor(e[cid], e)).toList();
+    });
   }
 }
 
@@ -480,31 +550,26 @@ class UserArtistDetailsCollection
     return UserArtistDetailsCollection(
         database.executor, tableName, events, dependsTables);
   }
-  
 
   List<String> _getWhereStatements({
     List<String> ids,
-    bool selected,
     String userId,
   }) {
     final statements = [
       if (ids != null && ids.isNotEmpty)
         '$cid in  (${List.filled(ids.length, '?').join(', ')})',
       if (userId != null) UserArtistDetails.properties.userId + ' = ?',
-      if (selected != null) UserArtistDetails.properties.selected + ' = ?',
     ];
     return statements;
   }
 
   List<dynamic> _getWhereParams({
     List<String> ids,
-    bool selected,
     String userId,
   }) {
     final params = [
       if (ids != null && ids.isNotEmpty) ...ids,
       if (userId != null) userId,
-      if (selected != null) selected ? '1' : '0',
     ];
     return params;
   }
@@ -512,20 +577,17 @@ class UserArtistDetailsCollection
   @override
   Stream<List<UserArtistDetails>> changesWhere(
       {List<String> ids,
-      bool selected,
       String userId,
       int skip,
       int take,
       SortDirection scrobblesSort}) async* {
     final statements = _getWhereStatements(
       ids: ids,
-      selected: selected,
       userId: userId,
     );
     assert(statements.isNotEmpty || skip != null || take != null);
     final params = _getWhereParams(
       ids: ids,
-      selected: selected,
       userId: userId,
     );
     Future<List<Map<String, dynamic>>> getValues() async {
@@ -560,17 +622,14 @@ class UserArtistDetailsCollection
   }
 
   @override
-  Stream<int> countWhere(
-      {List<String> ids, bool selected, String userId}) async* {
+  Stream<int> countWhere({List<String> ids, String userId}) async* {
     final statements = _getWhereStatements(
       ids: ids,
-      selected: selected,
       userId: userId,
     );
     assert(statements.isNotEmpty);
     final params = _getWhereParams(
       ids: ids,
-      selected: selected,
       userId: userId,
     );
     final countQuery = '''
@@ -594,20 +653,17 @@ class UserArtistDetailsCollection
   @override
   Future<List<UserArtistDetails>> getWhere(
       {List<String> ids,
-      bool selected,
       String userId,
       int skip,
       int take,
       SortDirection scrobblesSort}) async {
     final statements = _getWhereStatements(
       ids: ids,
-      selected: selected,
       userId: userId,
     );
     assert(statements.isNotEmpty || skip != null || take != null);
     final params = _getWhereParams(
       ids: ids,
-      selected: selected,
       userId: userId,
     );
     final selectQuery = [

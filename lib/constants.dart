@@ -23,7 +23,7 @@ class MobileDatabaseViewNames {
 class MobileDatabaseInfo {
   static const String idColumn = 'id';
   static const String databaseFileName = 'app.db';
-  static const int databaseVersion = 1;
+  static const int databaseVersion = 2;
 }
 
 class UpdaterConfig {

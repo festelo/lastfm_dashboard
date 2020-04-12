@@ -14,16 +14,15 @@ class ArtistSelection extends DatabaseMappedModel {
   static const properties = _ArtistSelectionProperties();
 
   @override
-  final String id;
+  String get id => artistId + '@' + userId;
 
   final String artistId;
   final String userId;
   final Color selectionColor;
 
-  const ArtistSelection(this.id,
-      {this.artistId, this.selectionColor, this.userId});
+  const ArtistSelection({this.artistId, this.selectionColor, this.userId});
 
-  ArtistSelection.deserialize(this.id, Map<String, dynamic> map)
+  ArtistSelection.deserialize(Map<String, dynamic> map)
       : artistId = map[properties.artistId],
         selectionColor =
             (map[properties.selectionColor] as int).nullOr((t) => Color(t)),
@@ -32,7 +31,7 @@ class ArtistSelection extends DatabaseMappedModel {
   @override
   Map<String, dynamic> toDbMap() => {
         properties.artistId: artistId,
-        properties.selectionColor: selectionColor.value,
+        properties.selectionColor: selectionColor?.value,
         properties.userId: userId
       };
 }

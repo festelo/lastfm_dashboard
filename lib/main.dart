@@ -3,10 +3,8 @@ import 'package:lastfm_dashboard/blocs/artists_bloc.dart';
 import 'package:lastfm_dashboard/blocs/users_bloc.dart';
 import 'package:lastfm_dashboard/services/auth/auth_service.dart';
 import 'package:lastfm_dashboard/services/lastfm/lastfm_api.dart';
-import 'package:lastfm_dashboard/services/lastfm/lastfm_api_mock.dart';
 import 'package:lastfm_dashboard/services/local_database/database_service.dart';
 import 'package:lastfm_dashboard/services/local_database/mobile/database_service.dart';
-import 'package:lastfm_dashboard/services/local_database/web/database_service.dart';
 import 'package:provider/provider.dart';
 
 import 'bloc.dart';

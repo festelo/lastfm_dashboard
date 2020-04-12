@@ -1,31 +1,60 @@
 import 'package:flutter/material.dart';
+import 'package:lastfm_dashboard/bloc.dart';
+import 'package:lastfm_dashboard/events/artitsts_events.dart';
+import 'package:lastfm_dashboard/models/models.dart';
+import 'package:provider/provider.dart';
 
 class ArtistListItem extends StatelessWidget {
-  final String name;
-  final String image;
-  final int scrobbles;
-  final Color selectionColor;
-  final VoidCallback onPressed;
+  final bool drawSelectionCircle;
+  final ArtistSelection selection;
+  final UserArtistDetails artistDetails;
+
+  static const _colors = <Color>[
+    Colors.red,
+    Colors.green,
+    Colors.orange,
+    Colors.yellow,
+  ];
 
   const ArtistListItem({
-    this.name,
-    this.image,
-    this.scrobbles,
-    this.selectionColor,
-    this.onPressed,
+    this.selection,
+    this.artistDetails,
+    this.drawSelectionCircle = true,
   });
+
+  void addSelection(BuildContext context, String artistId, Color color) {
+    Provider.of<EventsContext>(context, listen: false).push(
+      SelectArtistEventInfo(artistId: artistId, selectionColor: color),
+      selectArtist,
+    );
+  }
+
+  void removeSelection(BuildContext context, String artistId) {
+    Provider.of<EventsContext>(context, listen: false).push(
+      RemoveArtistSelectionEventInfo(artistId: artistId),
+      removeArtistSelection,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
+    final image = artistDetails.imageInfo.small;
     return FlatButton(
-      onPressed: onPressed,
+      onPressed: () {
+        final selectedColor = selection?.selectionColor;
+        final currentColorIndex = selectedColor == null
+            ? -1
+            : _colors.indexWhere((c) => c.value == selectedColor.value);
+        final color = _colors[(currentColorIndex + 1) % _colors.length];
+        addSelection(context, artistDetails.artistId, color);
+      },
       padding: EdgeInsets.all(0),
       child: Padding(
         padding: EdgeInsets.symmetric(vertical: 5),
         child: Row(
           children: <Widget>[
             Container(
-              color: selectionColor,
+              color: selection?.selectionColor,
               height: 44,
               width: 2,
             ),
@@ -35,7 +64,7 @@ class ArtistListItem extends StatelessWidget {
             Container(
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: selectionColor,
+                color: drawSelectionCircle ? selection?.selectionColor : null,
               ),
               height: 46,
               width: 46,
@@ -49,11 +78,11 @@ class ArtistListItem extends StatelessWidget {
                           image != null ? NetworkImage(image) : null,
                     ),
                   ),
-                  if (selectionColor != null)
+                  if (selection?.selectionColor != null && drawSelectionCircle)
                     Center(
                       child: Icon(
                         Icons.check,
-                        color: selectionColor,
+                        color: selection?.selectionColor,
                         size: 40,
                       ),
                     ),
@@ -69,20 +98,27 @@ class ArtistListItem extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
                   Text(
-                    name,
+                    artistDetails.name,
                     style: Theme.of(context).textTheme.subtitle1,
                   ),
                   Text(
-                    '$scrobbles scrobbles',
+                    '${artistDetails.scrobbles} scrobbles',
                     style: Theme.of(context).textTheme.caption,
                   )
                 ],
               ),
             ),
-            IconButton(
-              icon: Icon(Icons.arrow_forward),
-              onPressed: () {},
-            ),
+            if (selection?.selectionColor != null) ...[
+              IconButton(
+                icon: Icon(Icons.color_lens),
+                onPressed: () {},
+              ),
+              IconButton(
+                icon: Icon(Icons.close),
+                onPressed: () =>
+                    removeSelection(context, artistDetails.artistId),
+              ),
+            ],
             SizedBox(
               width: 12,
             ),

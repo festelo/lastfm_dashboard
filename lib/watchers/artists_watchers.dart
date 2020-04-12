@@ -14,15 +14,14 @@ Stream<Returner<ArtistsViewModel>> artistSelectionsWatcher(
   final db = c.context.get<LocalDatabaseService>();
   final auth = c.context.get<AuthService>();
   final stream = auth.currentUser.switchMap((userId) => userId == null
-      ? Stream<List<String>>.empty()
-      : db.userArtistDetails.changesWhere(userId: userId, selected: true));
+      ? Stream<List<UserArtistDetails>>.empty()
+      : db.artistSelections.changesWhere(userId: userId));
 
-  await for (final ids in stream) {
+  await for (final details in stream) {
     c.throwIfCancelled();
-    if (ids == null || ids.isEmpty)
+    if (details == null || details.isEmpty)
       yield (vm) => vm.copyWith(artistSelections: []);
     else {
-      final details = await db.userArtistDetails.getWhere(ids: ids);
       yield (vm) => vm.copyWith(artistSelections: details);
     }
   }

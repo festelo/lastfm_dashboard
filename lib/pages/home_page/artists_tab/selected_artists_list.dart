@@ -3,93 +3,11 @@ import 'package:lastfm_dashboard/blocs/artists_bloc.dart';
 import 'package:lastfm_dashboard/blocs/users_bloc.dart';
 import 'package:lastfm_dashboard/models/models.dart';
 import 'package:provider/provider.dart';
+import './artist_list_item.dart';
 
 class SelectedArtistsList extends StatelessWidget {
   final VoidCallback addArtistPressed;
   const SelectedArtistsList({this.addArtistPressed});
-
-  Widget listItem(
-    BuildContext context, {
-    String name,
-    String image,
-    int scrobbles,
-    Color selectionColor,
-    VoidCallback onPressed,
-  }) {
-    return FlatButton(
-      onPressed: onPressed,
-      padding: EdgeInsets.all(0),
-      child: Padding(
-        padding: EdgeInsets.symmetric(vertical: 5),
-        child: Row(
-          children: <Widget>[
-            Container(
-              color: selectionColor,
-              height: 44,
-              width: 2,
-            ),
-            SizedBox(
-              width: 10,
-            ),
-            Container(
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: selectionColor,
-              ),
-              height: 46,
-              width: 46,
-              alignment: Alignment.center,
-              child: Stack(
-                children: [
-                  Center(
-                    child: CircleAvatar(
-                      radius: 20,
-                      backgroundImage:
-                          image != null ? NetworkImage(image) : null,
-                    ),
-                  ),
-                  if (selectionColor != null)
-                    Center(
-                      child: Icon(
-                        Icons.check,
-                        color: selectionColor,
-                        size: 40,
-                      ),
-                    ),
-                ],
-              ),
-            ),
-            SizedBox(
-              width: 20,
-            ),
-            Expanded(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Text(
-                    name,
-                    style: Theme.of(context).textTheme.subtitle1,
-                  ),
-                  Text(
-                    '$scrobbles scrobbles',
-                    style: Theme.of(context).textTheme.caption,
-                  )
-                ],
-              ),
-            ),
-            IconButton(
-              icon: Icon(Icons.arrow_forward),
-              onPressed: () {},
-            ),
-            SizedBox(
-              width: 12,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -105,8 +23,23 @@ class SelectedArtistsList extends StatelessWidget {
             return Center(
               child: CircularProgressIndicator(),
             );
+          final selectionsByArtistId = vm.artistSelections
+              .asMap()
+              .map((key, value) => MapEntry(value.artistId, value));
 
-          if (vm.artistSelections.isEmpty)
+          final selectedArtists = vm.artistSelections
+              .map(
+                (sel) => vm.artistsDetailed.firstWhere(
+                    (artistDetails) => artistDetails.artistId == sel.artistId,
+                    orElse: () => null),
+              )
+              .where((sel) => sel != null)
+              .toList();
+
+          final artistSelection = (artistIndex) =>
+              selectionsByArtistId[selectedArtists[artistIndex].name];
+
+          if (selectedArtists.isEmpty)
             return FlatButton(
               child: Center(
                 child: Text(
@@ -117,26 +50,27 @@ class SelectedArtistsList extends StatelessWidget {
               onPressed: addArtistPressed,
             );
 
-          return ListView.builder(
-            padding: EdgeInsets.symmetric(vertical: 10),
-            itemCount: vm.artistSelections.length,
-            itemBuilder: (_, i) => listItem(
-              context,
-              image: vm.artistSelections[i].imageInfo.small,
-              name: vm.artistSelections[i].name,
-              scrobbles: vm.artistSelections[i].scrobbles,
-              // selectionColor: vm.artistsWithListens[i].s,
-              // onPressed: () => setState(() =>
-              //   artistsArray[i].selectionColor = [
-              //     Colors.red,
-              //     Colors.green,
-              //     Colors.orange,
-              //     Colors.yellow,
-              //     null
-              //   ][counter++ % 5]
-              // )
+          return Column(children: [
+            Expanded(
+              child: ListView.builder(
+                padding: EdgeInsets.symmetric(vertical: 10),
+                itemCount: selectedArtists.length,
+                itemBuilder: (_, i) => ArtistListItem(
+                  selection: artistSelection(i),
+                  artistDetails: selectedArtists[i],
+                  drawSelectionCircle: false,
+                ),
+              ),
             ),
-          );
+            Container(
+              width: double.infinity,
+              height: 60,
+              child: FlatButton(
+                onPressed: addArtistPressed,
+                child: Text('Select new artist'),
+              ),
+            )
+          ]);
         }),
       ),
     );

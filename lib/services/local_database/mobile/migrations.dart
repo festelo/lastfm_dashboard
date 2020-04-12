@@ -85,6 +85,26 @@ final _migrations = <int, Future<void> Function(Database)>{
     INNER JOIN artists ON artists.id = scrobbles_count.artistId
     ''');
   },
+  1: (db) async {
+    await db.execute('''DROP VIEW IF EXISTS artists_by_user_detailed ''');
+    await db.execute('''CREATE VIEW artists_by_user_detailed 
+    AS
+    SELECT
+      scrobbles_count.artistId || '@' || scrobbles_count.userId as id,
+      scrobbles_count.artistId as name,
+      scrobbles_count.artistId,
+      artists.mbid,
+      artists.url,
+      scrobbles,
+      scrobbles_count.userId as userId,
+      artists.imageInfo_small,
+      artists.imageInfo_medium,
+      artists.imageInfo_large,
+      artists.imageInfo_extraLarge
+    FROM scrobbles_count
+    INNER JOIN artists ON artists.id = scrobbles_count.artistId
+    ''');
+  }
 };
 
 Future<void> migrate({

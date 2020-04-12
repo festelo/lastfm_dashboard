@@ -17,11 +17,10 @@ class UserArtistDetails extends DatabaseMappedModel {
   final String id;
 
   final String name;
+  final String artistId;
   final String mbid;
   final String url;
   final int scrobbles;
-  final Color selectionColor;
-  final bool selected;
   final String userId;
   final ImageInfo imageInfo;
 
@@ -31,8 +30,7 @@ class UserArtistDetails extends DatabaseMappedModel {
       this.url,
       this.imageInfo,
       this.scrobbles,
-      this.selectionColor,
-      this.selected,
+      this.artistId,
       this.userId});
 
   UserArtistDetails.deserialize(this.id, Map<String, dynamic> map)
@@ -40,10 +38,9 @@ class UserArtistDetails extends DatabaseMappedModel {
         url = map['url'],
         name = map['name'],
         scrobbles = map['scrobbles'],
+        artistId = map['artistId'],
         userId = map[properties.userId],
-        selectionColor = (map['selectionColor'] as int).nullOr((c) => Color(c)),
-        imageInfo = ImageInfo.fromMap(map.unpackDbMap('imageInfo')),
-        selected = (map[properties.selected] as int).boolean;
+        imageInfo = ImageInfo.fromMap(map.unpackDbMap('imageInfo'));
 
   @override
   Map<String, dynamic> toDbMap() => {
@@ -51,8 +48,7 @@ class UserArtistDetails extends DatabaseMappedModel {
         'mbid': mbid,
         'url': url,
         'scrobbles': scrobbles,
-        'selectionColor': selectionColor.value,
-        properties.selected: selected,
+        'artistId': artistId,
         properties.userId: userId,
         'imageInfo': imageInfo?.toMap()
       };

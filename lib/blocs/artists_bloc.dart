@@ -6,7 +6,7 @@ import 'package:rxdart/rxdart.dart';
 
 class ArtistsViewModel {
   final List<UserArtistDetails> artistsDetailed;
-  final List<UserArtistDetails> artistSelections;
+  final List<ArtistSelection> artistSelections;
   final int totalCount;
 
   const ArtistsViewModel({
@@ -17,7 +17,7 @@ class ArtistsViewModel {
 
   ArtistsViewModel copyWith({
     List<UserArtistDetails> artistsDetailed,
-    List<UserArtistDetails> artistSelections,
+    List<ArtistSelection> artistSelections,
     int loadFrom,
     int loadTo,
     int totalCount

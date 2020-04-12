@@ -83,7 +83,7 @@ class WebDatabaseBuilder {
   }
 }
 
-class WebDatabaseService extends LocalDatabaseService {
+class WebDatabaseService {
   final Database database;
 
   @override
@@ -261,6 +261,7 @@ abstract class _DatabaseCollection<T extends DatabaseMappedModel>
   /// after every collection change (e.g. object added into
   /// collection), doesn't track objects properties inside
   /// collection
+  @override
   Stream<List<T>> changes() {
     return store.query().onSnapshots(database).map((list) => list
         .map((d) =>
@@ -273,6 +274,7 @@ abstract class _DatabaseCollection<T extends DatabaseMappedModel>
   /// will be generated.
   ///
   /// Returns object Id.
+  @override
   Future<String> add(T state, {Map<String, dynamic> additional}) async {
     final map = state.toDbMap();
     if (additional != null) {
@@ -376,7 +378,7 @@ class ArtistSelectionsCollection extends _DatabaseCollection<ArtistSelection> {
     DatabaseClient database,
     StoreRef<String, Map<String, dynamic>> store,
   ) : super(database, store,
-            (id, data) => ArtistSelection.deserialize(id, data));
+            (id, data) => ArtistSelection.deserialize(data));
 
   @override
   ArtistSelectionsCollection through(ExecutorWrapper database) {
@@ -471,7 +473,7 @@ class UserArtistDetailsSembastQueryable extends UserArtistDetailsQueryable {
         .onSnapshots(database)
         .switchMap((artistSelections) {
       final artistSelectionsDeserialized = artistSelections
-          .map((e) => ArtistSelection.deserialize(e.key, e.value));
+          .map((e) => ArtistSelection.deserialize(e.value));
       final artistSelectionByArtist = Map<String, ArtistSelection>.fromIterable(
           artistSelectionsDeserialized,
           key: (sel) => sel.artistId,
@@ -509,8 +511,6 @@ class UserArtistDetailsSembastQueryable extends UserArtistDetailsQueryable {
             mbid: artistSelectedPair.artist.mbid,
             name: artistSelectedPair.artist.name,
             scrobbles: scrobbles.count,
-            selected: artistSelectedPair.artistSelection != null,
-            selectionColor: artistSelectedPair.artistSelection?.selectionColor,
             url: artistSelectedPair.artist.url,
             userId: scrobbles.userId);
       }).toList();
@@ -548,6 +548,11 @@ class UserArtistDetailsSembastQueryable extends UserArtistDetailsQueryable {
       int skip,
       int take,
       SortDirection scrobblesSort}) {
+    throw UnimplementedError();
+  }
+
+  @override
+  Stream<List<UserArtistDetails>> changes() {
     throw UnimplementedError();
   }
 }
