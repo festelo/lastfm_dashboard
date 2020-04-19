@@ -22,6 +22,13 @@ Future<void> initializeBlocs(EventsContext context, List<Bloc> blocs) async {
   }
 }
 
+class EventException implements Exception {
+  final String message;
+  EventException(this.message);
+  @override
+  String toString() => message;
+}
+
 class RunnedEvent<T> {
   final T info;
   final void Function() cancel;

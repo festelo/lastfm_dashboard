@@ -15,6 +15,7 @@ class AccountsModal extends StatefulWidget {
 }
 
 class _AccountsModalState extends State<AccountsModal> {
+  String _errorText;
   var _connecting = false;
 
   final TextEditingController _connectingController = TextEditingController();
@@ -102,8 +103,18 @@ class _AccountsModalState extends State<AccountsModal> {
     );
   }
 
-  void add(String username) {
-    Provider.of<EventsContext>(context, listen: false).push(
+  Future<void> addPress(String username) async {
+    try {
+      setState(() => _errorText = null);
+      await add(username).future;
+      Navigator.of(context).pop();
+    } on Exception catch (e) { 
+      setState(() => _errorText = e.toString());
+    }
+  }
+
+  RunnedEvent<AddUserEventInfo> add(String username) {
+    return Provider.of<EventsContext>(context, listen: false).push(
       AddUserEventInfo(
         username: username,
       ),
@@ -192,13 +203,13 @@ class _AccountsModalState extends State<AccountsModal> {
                   child: TextField(
                     autofocus: true,
                     controller: _connectingController,
-                    onSubmitted: (t) => add(t),
+                    onSubmitted: (t) => addPress(t),
                     decoration: InputDecoration(
+                      errorText: _errorText,
                       hintText: 'Last.FM username or link',
                       suffix: IconButton(
                         onPressed: () {
-                          add(_connectingController.text);
-                          Navigator.of(context).pop();
+                          addPress(_connectingController.text);
                         },
                         icon: Icon(Icons.check_circle),
                       ),

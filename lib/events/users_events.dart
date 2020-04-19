@@ -34,11 +34,11 @@ Stream<Returner<UsersViewModel>> addUser(
   final db = config.context.get<LocalDatabaseService>();
 
   final user = await lastFMApi.getUser(info.username);
+  if (user == null) throw EventException('User not found');
   if (config.cancelled()) throw CancelledException();
 
   config.context.push(RefreshUserEventInfo(user: user), refreshUser);
-
-  await db.users[info.username].create(user);
+  await db.users.add(user);
   yield (UsersViewModel c) => c.copyWith(users: [...c.users, user]);
 
   if (info.switchAfter) {

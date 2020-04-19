@@ -5,6 +5,12 @@ import 'package:lastfm_dashboard/sensitive.dart' as sensitive;
 import 'package:lastfm_dashboard/extensions.dart';
 import 'package:http/http.dart' as http;
 
+class LastFMException {
+  final String message;
+  final int code;
+  LastFMException({this.message, this.code});
+}
+
 class LastFMScrobble {
   final Artist artist;
   final Track track;
@@ -33,7 +39,10 @@ class LastFMApi {
     final response = await _client.get(uri);
     final decoded = json.decode(response.body);
     if (decoded['error'] != null) {
-      throw Exception(decoded);
+      throw LastFMException(
+        message: decoded['message'],
+        code: decoded['error']
+      );
     }
     return decoded;
   }
@@ -67,12 +76,17 @@ class LastFMApi {
   }
 
   Future<User> getUser(String username) async {
-    final resp = await _request('user.getinfo', {'user': username});
-    return User(
-      imageInfo: _deserializeImage(resp['user']['image']),
-      playCount: int.tryParse(resp['user']['playcount']),
-      username: username,
-    );
+    try {
+      final resp = await _request('user.getinfo', {'user': username});
+      return User(
+        imageInfo: _deserializeImage(resp['user']['image']),
+        playCount: int.tryParse(resp['user']['playcount']),
+        username: username,
+      );
+    } on LastFMException catch (e) {
+      if (e.code == 6) return null;
+      rethrow;
+    }
   }
 
   LastFMScrobble _deserializeScrobble(dynamic scrobble) {
