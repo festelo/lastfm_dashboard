@@ -37,12 +37,11 @@ class LastFMApi {
     final uri = Uri.http('ws.audioscrobbler.com', '/2.0',
         {'method': method, 'api_key': apiKey, 'format': 'json', ...parameters});
     final response = await _client.get(uri);
-    final decoded = json.decode(response.body);
+    final body = utf8.decode(response.bodyBytes);
+    final decoded = json.decode(body);
     if (decoded['error'] != null) {
       throw LastFMException(
-        message: decoded['message'],
-        code: decoded['error']
-      );
+          message: decoded['message'], code: decoded['error']);
     }
     return decoded;
   }
@@ -153,8 +152,7 @@ class LastFMApi {
       if (cancelled != null && cancelled()) throw CancelledException();
 
       for (final scrobble in scrobbles) {
-        yield _deserializeScrobble(
-            scrobble);
+        yield _deserializeScrobble(scrobble);
       }
 
       print('$i/$totalPages');
