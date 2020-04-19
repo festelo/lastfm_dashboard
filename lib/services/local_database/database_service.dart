@@ -74,6 +74,5 @@ abstract class Entity<T> extends ReadOnlyEntity<T> {
   //Future<void> update(Map<String, dynamic> map, {bool createIfNotExist});
   Future<void> updateSelective(T Function(T) updater,
       {bool createIfNotExist = true});
-  Future<void> create(T state);
   Future<void> delete();
 }

@@ -27,4 +27,18 @@ abstract class DatabaseMappedModel {
     }
     return map;
   }
+
+  Map<String, dynamic> diffFlat(DatabaseMappedModel other) {
+    final oldMap = other.toDbMapFlat();
+    final newMap = toDbMapFlat();
+    final map = <String, dynamic>{};
+
+    final eq = const DeepCollectionEquality().equals;
+    for (final key in newMap.keys) {
+      if (!eq(oldMap[key], newMap[key])) {
+        map[key] = newMap[key];
+      }
+    }
+    return map;
+  }
 }

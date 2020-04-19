@@ -17,6 +17,11 @@ typedef Constructor<T> = T Function(String id, Map<String, dynamic> data);
 
 const String cid = MobileDatabaseInfo.idColumn;
 
+class SqliteDatabaseException implements Exception {
+  final String message;
+  SqliteDatabaseException(this.message);
+}
+
 class Change {
   final dynamic id;
   final Map<String, dynamic> updated;
@@ -43,17 +48,20 @@ class SqliteExecutorWrapper extends ExecutorWrapper {
 String newId() => randomString(128);
 
 class MobileDatabaseBuilder {
-  MobileDatabaseBuilder({
-    this.path = MobileDatabaseInfo.databaseFileName,
-    this.usersStorePath = MobileDatabaseTableNames.usersPath,
-    this.artistsStorePath = MobileDatabaseTableNames.artistsPath,
-    this.tracksStorePath = MobileDatabaseTableNames.tracksPath,
-    this.trackScrobblesStorePath = MobileDatabaseTableNames.trackScrobblesPath,
-    this.artistsDetailedStorePath = MobileDatabaseViewNames.artistsDetailedPath,
-    this.artistSelectionsStorePath =
-        MobileDatabaseTableNames.artistSelectionsStorePath,
-    this.databaseVersion = MobileDatabaseInfo.databaseVersion,
-  });
+  MobileDatabaseBuilder(
+      {this.path = MobileDatabaseInfo.databaseFileName,
+      this.absolutePath = false,
+      this.usersStorePath = MobileDatabaseTableNames.usersPath,
+      this.artistsStorePath = MobileDatabaseTableNames.artistsPath,
+      this.tracksStorePath = MobileDatabaseTableNames.tracksPath,
+      this.trackScrobblesStorePath =
+          MobileDatabaseTableNames.trackScrobblesPath,
+      this.artistsDetailedStorePath =
+          MobileDatabaseViewNames.artistsDetailedPath,
+      this.artistSelectionsStorePath =
+          MobileDatabaseTableNames.artistSelectionsStorePath,
+      this.databaseVersion = MobileDatabaseInfo.databaseVersion,
+      this.dbFactory});
 
   final String usersStorePath;
   final String artistsStorePath;
@@ -62,17 +70,22 @@ class MobileDatabaseBuilder {
   final String artistSelectionsStorePath;
   final String artistsDetailedStorePath;
   final String path;
+  final bool absolutePath;
   final int databaseVersion;
+  final DatabaseFactory dbFactory;
 
   Future<MobileDatabaseService> build() async {
-    final fullPath = await getFullPath(path);
-    final db = await openDatabase(
+    final fullPath = absolutePath ? path : await getFullPath(path);
+    final dbFactory = this.dbFactory ?? databaseFactory;
+    final db = await dbFactory.openDatabase(
       fullPath,
-      version: databaseVersion,
-      onUpgrade: (db, oldVersion, newVersion) async => await migrate(
-        database: db,
-        current: oldVersion,
-        expected: newVersion,
+      options: OpenDatabaseOptions(
+        version: databaseVersion,
+        onUpgrade: (db, oldVersion, newVersion) async => await migrate(
+          database: db,
+          current: oldVersion,
+          expected: newVersion,
+        ),
       ),
     );
     final events = PublishSubject<Event>();
@@ -172,7 +185,7 @@ class DatabaseReadOnlyEntity<T extends DatabaseMappedModel>
     return constructor(id, map);
   }
 
-  Future<bool> exist() async {
+  Future<bool> exists() async {
     final elements = await database.query(
       tableName,
       where: '"$cid" = ?',
@@ -185,10 +198,10 @@ class DatabaseReadOnlyEntity<T extends DatabaseMappedModel>
 
   /// Returns Stream that will emits
   /// after every change
-  Stream<void> changes(String id) async* {
-    await for (final _ in events
+  Stream<Event> changes() async* {
+    await for (final e in events
         .where((e) => e.tableName == tableName && e.itemsId.contains(id))) {
-      yield null;
+      yield e;
     }
   }
 }
@@ -218,7 +231,7 @@ class DatabaseEntity<T extends DatabaseMappedModel>
         events: events);
   }
 
-  Future<void> update(Map<String, dynamic> data,
+  Future<void> _update(Map<String, dynamic> data,
       {bool createIfNotExist = false}) async {
     assert(createIfNotExist || this.id != null);
     final id = this.id ?? newId();
@@ -250,9 +263,12 @@ class DatabaseEntity<T extends DatabaseMappedModel>
     } else {
       if (id == null) throw Exception('ID must be set');
       final setStatements = data.keys.map((e) => '[$e] = ?').join(',\n');
-      await database.rawUpdate(''' 
+      final updated = await database.rawUpdate(''' 
         UPDATE $tableName SET $setStatements WHERE $cid = ?;
         ''', [...data.values, id]);
+      if (updated != 1)
+        throw SqliteDatabaseException(
+            'Entities updated: $updated. Expected: 1');
     }
     events.add(Event(
         changes: [Change(id, updated: data)],
@@ -269,22 +285,7 @@ class DatabaseEntity<T extends DatabaseMappedModel>
     final initial = constructor(id, {});
     final state = modificator(initial);
     final diff = state.diff(initial).flat();
-    await update(diff, createIfNotExist: createIfNotExist);
-  }
-
-  /// Create/add object to databse. If [id] is specified, then
-  /// the object will be created with this Id, otherwise Id
-  /// will be generated.
-  ///
-  /// Returns object Id.
-  @override
-  Future<void> create(T state) async {
-    final id = this.id ?? newId();
-    await database.insert(tableName, {cid: id, ...state.toDbMapFlat()});
-    events.add(Event(
-        changes: [Change(id, updated: state.toDbMapFlat())],
-        itemsId: [id],
-        tableName: tableName));
+    await _update(diff, createIfNotExist: createIfNotExist);
   }
 
   @override
@@ -297,14 +298,14 @@ class DatabaseEntity<T extends DatabaseMappedModel>
   }
 }
 
-abstract class _DatabaseReadOnlyCollection<T extends DatabaseMappedModel>
+abstract class DatabaseReadOnlyCollection<T extends DatabaseMappedModel>
     implements Queryable<T> {
   final String tableName;
   final DatabaseExecutor database;
   final Constructor<T> constructor;
   final PublishSubject<Event> events;
 
-  _DatabaseReadOnlyCollection(
+  DatabaseReadOnlyCollection(
     this.database,
     this.tableName,
     this.events,
@@ -320,7 +321,7 @@ abstract class _DatabaseReadOnlyCollection<T extends DatabaseMappedModel>
       events: events);
 
   @override
-  _DatabaseReadOnlyCollection<T> through(ExecutorWrapper database);
+  DatabaseReadOnlyCollection<T> through(ExecutorWrapper database);
 
   @override
   Future<List<T>> getAll() async {
@@ -351,9 +352,9 @@ abstract class _DatabaseReadOnlyCollection<T extends DatabaseMappedModel>
   }
 }
 
-abstract class _DatabaseCollection<T extends DatabaseMappedModel>
-    extends _DatabaseReadOnlyCollection<T> implements Collection<T> {
-  _DatabaseCollection(
+abstract class DatabaseCollection<T extends DatabaseMappedModel>
+    extends DatabaseReadOnlyCollection<T> implements Collection<T> {
+  DatabaseCollection(
     DatabaseExecutor database,
     String tableName,
     PublishSubject<Event> events,
@@ -369,14 +370,19 @@ abstract class _DatabaseCollection<T extends DatabaseMappedModel>
       events: events);
 
   @override
-  _DatabaseCollection<T> through(ExecutorWrapper database);
+  DatabaseCollection<T> through(ExecutorWrapper database);
 
   /// Adds object to database. If [id] is specified, then
   /// the object will be created with this Id, otherwise Id
   /// will be generated.
   @override
   Future<void> add(T state) async {
-    await this[state.id].create(state);
+    final id = state.id ?? newId();
+    await database.insert(tableName, {cid: id, ...state.toDbMapFlat()});
+    events.add(Event(
+        changes: [Change(id, updated: state.toDbMapFlat())],
+        itemsId: [id],
+        tableName: tableName));
   }
 
   /// Adds objects to database. If [id] is specified, then
@@ -405,14 +411,15 @@ abstract class _DatabaseCollection<T extends DatabaseMappedModel>
     }
     await batch.commit(noResult: true);
     events.add(Event(
-      changes: maps.map((c) => Change(c[cid], updated: c)).toList(),
       itemsId: maps.map((c) => c[cid]).toList(),
+      changes:
+          maps.map((c) => Change(c[cid], updated: c..remove(cid))).toList(),
       tableName: tableName,
     ));
   }
 }
 
-class UsersCollection extends _DatabaseCollection<User> {
+class UsersCollection extends DatabaseCollection<User> {
   UsersCollection(
     DatabaseExecutor database,
     String tableName,
@@ -425,7 +432,7 @@ class UsersCollection extends _DatabaseCollection<User> {
   }
 }
 
-class ArtistsCollection extends _DatabaseCollection<Artist> {
+class ArtistsCollection extends DatabaseCollection<Artist> {
   ArtistsCollection(
     DatabaseExecutor database,
     String tableName,
@@ -439,7 +446,7 @@ class ArtistsCollection extends _DatabaseCollection<Artist> {
   }
 }
 
-class TracksCollection extends _DatabaseCollection<Track> {
+class TracksCollection extends DatabaseCollection<Track> {
   TracksCollection(
     DatabaseExecutor database,
     String tableName,
@@ -452,7 +459,7 @@ class TracksCollection extends _DatabaseCollection<Track> {
   }
 }
 
-class TrackScrobblesCollection extends _DatabaseCollection<TrackScrobble> {
+class TrackScrobblesCollection extends DatabaseCollection<TrackScrobble> {
   TrackScrobblesCollection(
     DatabaseExecutor database,
     String tableName,
@@ -466,7 +473,7 @@ class TrackScrobblesCollection extends _DatabaseCollection<TrackScrobble> {
   }
 }
 
-class ArtistSelectionsCollection extends _DatabaseCollection<ArtistSelection>
+class ArtistSelectionsCollection extends DatabaseCollection<ArtistSelection>
     implements ArtistSelectionCollection {
   ArtistSelectionsCollection(
     DatabaseExecutor database,
@@ -479,6 +486,7 @@ class ArtistSelectionsCollection extends _DatabaseCollection<ArtistSelection>
   ArtistSelectionsCollection through(ExecutorWrapper database) {
     return ArtistSelectionsCollection(database.executor, tableName, events);
   }
+
   List<String> _getWhereStatements({
     List<String> ids,
     String userId,
@@ -537,7 +545,7 @@ class ArtistSelectionsCollection extends _DatabaseCollection<ArtistSelection>
 }
 
 class UserArtistDetailsCollection
-    extends _DatabaseReadOnlyCollection<UserArtistDetails>
+    extends DatabaseReadOnlyCollection<UserArtistDetails>
     implements UserArtistDetailsQueryable {
   UserArtistDetailsCollection(DatabaseExecutor database, String tableName,
       PublishSubject<Event> events, this.dependsTables)
