@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:lastfm_dashboard/models/models.dart';
 
 enum SortDirection { ascending, descending }
@@ -17,11 +18,27 @@ abstract class LocalDatabaseService {
 
   UserArtistDetailsQueryable get userArtistDetails;
 
+  TrackScrobblesPerTimeQuery get trackScrobblesPerTimeQuery;
+
   Future<T> transaction<T>(
       FutureOr<T> Function(ExecutorWrapper transaction) action);
 }
 
-abstract class Queryable<T> {
+abstract class Query {
+  Query through(ExecutorWrapper database);
+}
+
+abstract class TrackScrobblesPerTimeQuery extends Query {
+  Stream<List<TrackScrobblesPerTime>> changesByArtist({
+    @required Duration duration,
+    List<String> ids,
+    String userId,
+    List<String> artistIds,
+  });
+}
+
+abstract class Queryable<T> extends Query {
+  @override
   Queryable<T> through(ExecutorWrapper database);
   Future<List<T>> getAll();
   ReadOnlyEntity<T> operator [](String id);

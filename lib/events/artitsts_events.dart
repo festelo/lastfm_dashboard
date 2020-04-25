@@ -18,6 +18,11 @@ class RemoveArtistSelectionEventInfo {
 
   const RemoveArtistSelectionEventInfo({this.artistId});
 }
+class SetArtistScrobblesDurationEventInfo {
+  final Duration duration;
+
+  const SetArtistScrobblesDurationEventInfo({this.duration});
+}
 
 Stream<Returner<ArtistsViewModel>> selectArtist(
   SelectArtistEventInfo info,
@@ -48,4 +53,13 @@ Stream<Returner<ArtistsViewModel>> removeArtistSelection(
     userId: user.id,
   );
   await db.artistSelections[artistSelection.id].delete();
+}
+
+Stream<Returner<ArtistsViewModel>> setArtistScrobblesDuration(
+  SetArtistScrobblesDurationEventInfo info,
+  EventConfiguration<ArtistsViewModel> config,
+) async* {
+  yield (c) => c.copyWith(
+    scrobblesDuration: info.duration
+  );
 }

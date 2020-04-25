@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:lastfm_dashboard/constants.dart';
+import 'package:lastfm_dashboard/models/track_scrobbles_per_time.dart';
 import 'package:meta/meta.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:sqflite/sqflite.dart';
@@ -9,6 +10,7 @@ import 'package:lastfm_dashboard/models/models.dart';
 import 'package:lastfm_dashboard/models/database_mapped_model.dart';
 import 'package:random_string/random_string.dart';
 import 'package:collection/collection.dart';
+import '../database_service.dart' as d;
 import '../database_service.dart';
 import './db_setup_io.dart';
 import 'migrations.dart';
@@ -116,6 +118,9 @@ class MobileDatabaseService extends LocalDatabaseService {
   @override
   final UserArtistDetailsQueryable userArtistDetails;
 
+  @override
+  final TrackScrobblesPerTimeQuery trackScrobblesPerTimeQuery;
+
   final PublishSubject<Event> events;
 
   MobileDatabaseService(
@@ -138,7 +143,9 @@ class MobileDatabaseService extends LocalDatabaseService {
             database, artistsDetailedStorePath, events, [
           trackScrobblesStorePath,
           artistsStorePath,
-        ]);
+        ]),
+        trackScrobblesPerTimeQuery = TrackScrobblesPerTimeQuery(
+            database, events, trackScrobblesStorePath);
 
   @override
   Future<T> transaction<T>(FutureOr<T> Function(SqliteExecutorWrapper) action) {
@@ -689,5 +696,105 @@ class UserArtistDetailsCollection
       if (skip != null) skip,
     ]);
     return maps.map((c) => constructor(c[cid], c)).toList();
+  }
+}
+
+class TrackScrobblesPerTimeQuery implements d.TrackScrobblesPerTimeQuery {
+  TrackScrobblesPerTimeQuery(this.database, this.events, this.scrobblesTable);
+
+  final PublishSubject<Event> events;
+  final DatabaseExecutor database;
+  final String scrobblesTable;
+
+  @override
+  TrackScrobblesPerTimeQuery through(ExecutorWrapper database) {
+    return TrackScrobblesPerTimeQuery(
+        database.executor, events, scrobblesTable);
+  }
+
+  List<String> _getWhereStatements(
+      {List<String> ids, String userId, List<String> artistIds}) {
+    final statements = [
+      if (ids != null && ids.isNotEmpty)
+        '$cid in  (${List.filled(ids.length, '?').join(', ')})',
+      if (userId != null) TrackScrobble.properties.userId + ' = ?',
+      if (artistIds != null && artistIds.isNotEmpty)
+        TrackScrobble.properties.artistId +
+            ' in  (${List.filled(artistIds.length, '?').join(', ')})',
+    ];
+    return statements;
+  }
+
+  List<dynamic> _getWhereParams(
+      {List<String> ids, String userId, List<String> artistIds}) {
+    final params = [
+      if (ids != null) ...ids,
+      if (userId != null) userId,
+      if (artistIds != null) ...artistIds,
+    ];
+    return params;
+  }
+
+  @override
+  Stream<List<TrackScrobblesPerTime>> changesByArtist({
+    List<String> ids,
+    List<String> artistIds,
+    String userId,
+    @required Duration duration,
+  }) async* {
+    final statements = _getWhereStatements(
+      ids: ids,
+      userId: userId,
+      artistIds: artistIds,
+    );
+    assert(statements.isNotEmpty);
+    final params = _getWhereParams(
+      ids: ids,
+      userId: userId,
+      artistIds: artistIds,
+    );
+    final durationMsec = duration.inMilliseconds;
+
+    Future<List<Map<String, dynamic>>> getValues() async {
+      final idsQuery = [
+        'SELECT',
+        TrackScrobble.properties.date +
+            ' / ? * ?' +
+            ' as ' +
+            TrackScrobblesPerTime.properties.groupedDate +
+            ',',
+        TrackScrobble.properties.artistId + ',',
+        TrackScrobble.properties.userId + ',',
+        '? as ' + TrackScrobblesPerTime.properties.duration + ',',
+        'count(*) as ' + TrackScrobblesPerTime.properties.count,
+        'FROM $scrobblesTable',
+        if (statements.isNotEmpty) 'WHERE ' + statements.join(' and\n'),
+        'GROUP BY ',
+        TrackScrobblesPerTime.properties.groupedDate + ',',
+        TrackScrobble.properties.artistId + ',',
+        TrackScrobble.properties.userId,
+      ].join('\n');
+      final idsMap = await database.rawQuery(idsQuery, [
+        durationMsec,
+        durationMsec,
+        durationMsec,
+        ...params,
+      ]);
+      return idsMap;
+    }
+
+    var watching = await getValues();
+    yield watching.map((e) => TrackScrobblesPerTime.deserialize(e)).toList();
+    yield* events
+        .where((e) => e.tableName == scrobblesTable)
+        .asyncMap((event) => getValues())
+        .where((newValues) =>
+            !const DeepCollectionEquality().equals(watching, newValues))
+        .map((newValues) {
+      watching = newValues;
+      return newValues
+          .map((e) => TrackScrobblesPerTime.deserialize(e))
+          .toList();
+    });
   }
 }

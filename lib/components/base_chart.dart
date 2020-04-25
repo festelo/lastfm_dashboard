@@ -1,8 +1,20 @@
 import 'package:flutter/material.dart';
 
 import 'package:charts_flutter/flutter.dart' as c;
+import 'package:charts_common/src/common/palette.dart';
 
-enum ChartColor { orange, red, green, blue, pink }
+enum ChartColorr { orange, red, green, blue, pink }
+
+class ChartColor {
+  final Color value;
+  c.Color get chartColor => c.Color(
+        a: value.alpha,
+        r: value.red,
+        g: value.green,
+        b: value.blue,
+      );
+  ChartColor(this.value);
+}
 
 class ChartSeries {
   final List<ChartEntity> entities;
@@ -31,22 +43,7 @@ class BaseChart extends StatelessWidget {
               measureFn: (ChartEntity entity, _) => entity.scrobbles,
               data: s.entities,
               colorFn: (_, __) {
-                if (s.color == ChartColor.orange)
-                  return c.MaterialPalette.deepOrange.shadeDefault;
-
-                if (s.color == ChartColor.red)
-                  return c.MaterialPalette.red.shadeDefault;
-
-                if (s.color == ChartColor.green)
-                  return c.MaterialPalette.green.shadeDefault;
-
-                if (s.color == ChartColor.blue)
-                  return c.MaterialPalette.blue.shadeDefault;
-
-                if (s.color == ChartColor.pink)
-                  return c.MaterialPalette.pink.shadeDefault;
-
-                return c.MaterialPalette.transparent;
+                return s.color.chartColor;
               },
             ))
         .toList();
@@ -58,22 +55,13 @@ class BaseChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(10),
-      child: c.TimeSeriesChart(
-        _convertChartSeries(series),
-        animate: false,
-        behaviors: [c.PanBehavior(), c.SeriesLegend()],
-        defaultInteractions: false,
-        defaultRenderer: c.LineRendererConfig(includePoints: true),
-        domainAxis: c.DateTimeAxisSpec(
-            viewport: c.DateTimeExtents(
-          start: DateTime.now().subtract(const Duration(days: 7)),
-          end: DateTime.now(),
-        )),
-        primaryMeasureAxis:
-            const c.NumericAxisSpec(viewport: c.NumericExtents(0, 100)),
-      ),
+    return c.TimeSeriesChart(
+      _convertChartSeries(series),
+      animate: false,
+      behaviors: [c.PanAndZoomBehavior()],
+      defaultInteractions: false,
+      defaultRenderer: c.LineRendererConfig(includePoints: true),
+      primaryMeasureAxis: const c.NumericAxisSpec(),
     );
   }
 }

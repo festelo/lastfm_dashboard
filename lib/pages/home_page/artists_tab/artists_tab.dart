@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lastfm_dashboard/pages/home_page/artists_tab/duration_switcher.dart';
 import './artists_chart.dart';
 import 'all_artists_list.dart';
 import 'selected_artists_list.dart';
@@ -15,12 +16,14 @@ class _ArtistsTabState extends State<ArtistsTab>
     with SingleTickerProviderStateMixin {
   AnimationController controller;
   Animation<double> animation;
+  var durationSwitcherOffsetX = 0.0;
+  var durationSwitcherOffsetY = 0.0;
 
   @override
   void initState() {
     super.initState();
     controller = AnimationController(
-      duration: const Duration(milliseconds: 350),
+      duration: const Duration(milliseconds: 250),
       vsync: this,
     );
     animation = Tween<double>(begin: 0, end: 1).animate(controller)
@@ -77,6 +80,38 @@ class _ArtistsTabState extends State<ArtistsTab>
                       })
                     ],
                   ),
+                ),
+              ),
+              Positioned(
+                right: 0 - durationSwitcherOffsetX,
+                top: 0 + durationSwitcherOffsetY,
+                child: GestureDetector(
+                  child: Container(
+                      child: DurationSwitcher(
+                    width: 160,
+                    height: 40,
+                    margin: 20,
+                  )),
+                  onPanUpdate: (e) {
+                    const width = 160 + 40;
+                    const height = 40 + 40;
+                    final newOffsetX = durationSwitcherOffsetX + e.delta.dx;
+                    final newOffsetY = durationSwitcherOffsetY + e.delta.dy;
+                    var approvedOffsetX = durationSwitcherOffsetX;
+                    var approvedOffsetY = durationSwitcherOffsetY;
+                    if (newOffsetX <= 0 &&
+                        newOffsetX >= -(cnst.maxWidth - width)) {
+                      approvedOffsetX = newOffsetX;
+                    }
+                    if (newOffsetY >= 0 &&
+                        newOffsetY <= cnst.maxHeight - height) {
+                      approvedOffsetY = newOffsetY;
+                    }
+                    setState(() {
+                      durationSwitcherOffsetX = approvedOffsetX;
+                      durationSwitcherOffsetY = approvedOffsetY;
+                    });
+                  },
                 ),
               ),
             ],
