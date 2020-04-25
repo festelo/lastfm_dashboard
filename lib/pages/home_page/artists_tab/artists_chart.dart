@@ -5,6 +5,7 @@ import 'package:lastfm_dashboard/components/base_chart.dart';
 import 'package:provider/provider.dart';
 
 class ArtistsChart extends StatelessWidget {
+  const ArtistsChart();
   /*[
           ChartSeries(
             entities: [],
@@ -25,7 +26,6 @@ class ArtistsChart extends StatelessWidget {
               .map((key, value) => MapEntry(value.artistId, value));
 
           final artistSelection = (String id) => selectionsByArtistId[id];
-
           return BaseChart(
             vm.scrobblesPerArtist.entries
                 .map(
