@@ -25,6 +25,8 @@ dependencies:
   quiver: ^2.1.3
 
 dev_dependencies:
+  pubspec_semver:
+    path: packages/pubspec_semver
   environment_config: ^2.2.2
   sqflite_common_ffi: ^1.0.0+1
   flutter_test:

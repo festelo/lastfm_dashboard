@@ -1,0 +1,1 @@
+Console app to manage pubspec version number
