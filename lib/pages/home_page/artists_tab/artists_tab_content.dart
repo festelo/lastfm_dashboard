@@ -19,12 +19,9 @@ class ArtistsTabContent extends StatefulWidget {
 class _ArtistsTabContentState extends State<ArtistsTabContent>
     with SingleTickerProviderStateMixin {
   AnimationController controller;
-  static const _animationDuration = Duration(milliseconds: 250);
+  static const _animationDuration = Duration(milliseconds: 300);
 
-  Animation<RelativeRect> selectedArtistsAnimation;
-  Animation<RelativeRect> allArtistsAnimation;
-  Animation<double> opacityAnimation;
-  Animation<double> opacityAnimationReversed;
+  Animation<double> animation;
   
   var durationSwitcherOffsetX = 0.0;
   var durationSwitcherOffsetY = 0.0;
@@ -36,22 +33,14 @@ class _ArtistsTabContentState extends State<ArtistsTabContent>
       duration: _animationDuration,
       vsync: this,
     );
-    selectedArtistsAnimation = RelativeRectTween(
-      begin: RelativeRect.fromLTRB(0, 0, 0, 0),
-      end: RelativeRect.fromLTRB(0, widget.height, 0, -widget.height * 2),
-    ).animate(controller);
-    allArtistsAnimation = RelativeRectTween(
-      begin: RelativeRect.fromLTRB(0, widget.height, 0, -widget.height * 2),
-      end: RelativeRect.fromLTRB(0, 0, 0, 0),
-    ).animate(controller);
-    opacityAnimation = Tween<double>(
-      begin: 1,
-      end: 0,
-    ).animate(controller);
-    opacityAnimationReversed = Tween<double>(
-      begin: 0,
-      end: 1,
-    ).animate(controller);
+    controller = AnimationController(
+      duration: const Duration(milliseconds: 250),
+      vsync: this,
+    );
+    animation = Tween<double>(begin: 0, end: 1).animate(controller)
+      ..addListener(() {
+        setState(() {});
+      });
   }
 
   @override
@@ -66,10 +55,12 @@ class _ArtistsTabContentState extends State<ArtistsTabContent>
       },
       child: Stack(
         children: [
-          PositionedTransition(
-            rect: selectedArtistsAnimation,
-            child: FadeTransition(
-              opacity: opacityAnimation,
+          Positioned(
+            top: animation.value * widget.height,
+            height: widget.height,
+            width: widget.width,
+            child: Opacity(
+              opacity: 1 - animation.value,
               child: Column(
                 children: [
                   Expanded(child: const ArtistsChart()),
@@ -85,10 +76,12 @@ class _ArtistsTabContentState extends State<ArtistsTabContent>
               ),
             ),
           ),
-          PositionedTransition(
-            rect: allArtistsAnimation,
-            child: FadeTransition(
-              opacity: opacityAnimationReversed,
+          Positioned(
+            top: widget.height - animation.value * widget.height,
+            height: widget.height,
+            width: widget.width,
+            child: Opacity(
+              opacity: animation.value,
               child: Column(
                 children: [
                   Expanded(child: const AllArtistsList()),
