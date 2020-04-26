@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:lastfm_dashboard/bloc.dart';
 import 'package:lastfm_dashboard/models/models.dart';
-import 'package:lastfm_dashboard/sensitive.dart' as sensitive;
+import 'package:lastfm_dashboard/config.dart';
 import 'package:lastfm_dashboard/extensions.dart';
 import 'package:http/http.dart' as http;
 
@@ -27,7 +27,7 @@ class LastFMScrobble {
 }
 
 class LastFMApi {
-  static const apiKey = sensitive.lastFmKey;
+  static const apiKey = Config.lastFmKey;
   final _client = http.Client();
 
   Future<dynamic> _request(

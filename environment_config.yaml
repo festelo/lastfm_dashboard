@@ -1,0 +1,6 @@
+environment_config:
+  path: config.dart
+  fields:
+    lastFmKey:
+      type: String
+      env_var: LAST_FM_API_KEY
