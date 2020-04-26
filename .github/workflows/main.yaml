@@ -1,0 +1,50 @@
+name: Android CI/CD
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - uses: subosito/flutter-action@v1.3.0
+      with:
+        flutter-version: 1.17.0-dev.3.1
+        channel: beta
+    - name: Flutter get dependencies
+      run: flutter pub get
+    - name: Get application version
+      id: app_ver
+      run: echo "::set-output name=app_ver::" "$(flutter pub run pubspec_semver:get_ver)"
+    - name: Set application build number
+      run: flutter pub run pubspec_semver:set_build ${{ github.run_id }}
+    - name: Flutter config generate
+      run: flutter pub run environment_config:generate
+      env:
+          LAST_FM_API_KEY: ${{ secrets.LAST_FM_API_KEY }}
+    - name: Flutter build
+      run: flutter build apk
+    - name: Create Release
+      uses: actions/create-release@v1
+      id: create_release
+      env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: "${{ github.run_id }}"
+        release_name: "Build ${{ steps.app_ver.outputs.app_ver }}#${{ github.run_id }}"
+        prerelease: true
+    - name: Upload Release Asset
+      id: upload-release-asset 
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }} 
+        asset_path: ./build/app/outputs/apk/release/app-release.apk
+        asset_name: ${{ steps.app_ver.outputs.app_ver }}_${{ github.run_id }}.apk
+        asset_content_type: application/zip
