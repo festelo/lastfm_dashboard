@@ -1,23 +1,22 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:lastfm_dashboard/epics/epic_state.dart';
+import 'package:lastfm_dashboard/epics/users_epics.dart';
 import 'package:lastfm_dashboard/models/models.dart';
 import 'package:lastfm_dashboard/pages/home_page/accounts_modal.dart';
-import 'package:provider/provider.dart';
 
 import 'artists_tab/artists_tab.dart';
 
-/// Providers: 
-/// - LocalDatabaseService
-/// - AuthService
-/// - LastFMApi
-class HomePage extends StatelessWidget {
+
+class HomePage extends StatefulWidget {
   @override
-  Widget build(BuildContext context) {
-    return _HomePageContent();
-  }
+  _HomePageState createState() => _HomePageState();
 }
 
-class _HomePageContent extends StatelessWidget {
+class _HomePageState extends EpicState<HomePage> {
   final GlobalKey<ScaffoldState> scaffoldKey = GlobalKey();
+  User user;
   
   void accountsManagement(BuildContext context) {
     scaffoldKey.currentState.showBottomSheet(
@@ -31,7 +30,22 @@ class _HomePageContent extends StatelessWidget {
     );
   }
 
-  Widget content(BuildContext context, User user) {
+  @override
+  Future<void> onLoad() async {
+    subscribe<UserSwitched>(userSwitched);
+    await refreshUser();
+  }
+
+  Future<void> userSwitched(UserSwitched e) async {
+    await refreshUser();
+  }
+
+  Future<void> refreshUser() async {
+    user = await provider.get<User>(CurrentUser);
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       key: scaffoldKey,
       appBar: AppBar(
@@ -91,10 +105,5 @@ class _HomePageContent extends StatelessWidget {
           ]
         )
     );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return content(context, Provider.of<User>(context));
   }
 }

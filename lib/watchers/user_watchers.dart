@@ -1,38 +1,28 @@
-
-import 'package:lastfm_dashboard/bloc.dart';
-import 'package:lastfm_dashboard/blocs/users_bloc.dart';
+import 'package:epic/epic.dart';
 import 'package:lastfm_dashboard/constants.dart';
-import 'package:lastfm_dashboard/events/users_events.dart';
+import 'package:lastfm_dashboard/epics/users_epics.dart';
+import 'package:lastfm_dashboard/services/local_database/database_service.dart';
 
-class UsersUpdaterWatcherInfo {}
-Stream<Returner<UsersViewModel>> usersUpdaterWatcher(
-  UsersUpdaterWatcherInfo i, 
-  EventConfiguration<UsersViewModel> c,
-) async* {
-  final usersBloc = c.context.get<UsersBloc>();
-  while(true) {
-    final usersVM = c.context.get<UsersViewModel>();
-    
-    final users = usersVM.users;
-    for(final u in users) {
+class UserRefreshWatcher extends Epic {
+  @override
+  Future<void> call(EpicContext context, notify) async {
+    final db = await context.provider.get<LocalDatabaseService>();
+    while (true) {
+      context.throwIfCancelled();
+      final users = await db.users.getAll();
 
-      final syncNeeded = 
-        u.lastSync == null ||
-        u.lastSync.isBefore(
-          DateTime.now().subtract(UpdaterConfig.period)
-        );
-        
-      final alreadySyncing = usersBloc.isUserRefreshing(u.id);
+      for (final u in users) {
+        final syncNeeded = u.lastSync == null ||
+            u.lastSync.isBefore(DateTime.now().subtract(UpdaterConfig.period));
 
-      if (syncNeeded && !alreadySyncing) {
-        c.context.push(
-          RefreshUserEventInfo(
-            user: u
-          ), 
-          refreshUser
-        );
+        final alreadySyncing =
+            context.manager.runned.any((e) => e.epic is RefreshUserEpic);
+
+        if (syncNeeded && !alreadySyncing) {
+          context.manager.start(RefreshUserEpic(u.username));
+        }
       }
+      await Future.delayed(UpdaterConfig.period);
     }
-    await Future.delayed(UpdaterConfig.period);
   }
 }

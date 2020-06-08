@@ -1,55 +1,51 @@
 import 'package:flutter/material.dart';
-import 'package:lastfm_dashboard/blocs/artists_bloc.dart';
-import 'package:lastfm_dashboard/blocs/users_bloc.dart';
+import 'package:epic/container.dart';
+import 'package:lastfm_dashboard/models/identifiers.dart';
 import 'package:lastfm_dashboard/services/auth/auth_service.dart';
 import 'package:lastfm_dashboard/services/lastfm/lastfm_api.dart';
 import 'package:lastfm_dashboard/services/local_database/database_service.dart';
 import 'package:lastfm_dashboard/services/local_database/mobile/database_service.dart';
 import 'package:provider/provider.dart';
-
-import 'bloc.dart';
-import 'blocs/users_bloc.dart';
+import 'package:epic/epic.dart';
+import 'models/models.dart';
 import 'pages/home_page/home_page.dart';
-import 'providers.dart';
 
 Future<void> main() async {
   print('ok, let\'s start');
   WidgetsFlutterBinding.ensureInitialized();
-  final authService = await AuthService.load();
-  print('auth service loaded');
-  final dbService = await MobileDatabaseBuilder().build();
-  print('db configured');
-  final lastFmApi = LastFMApi();
+  final container = EpicContainer();
 
-  final blocCombiner = BlocCombiner([UsersBloc(), ArtistsBloc()]);
-
-  final eventsContext = EventsContext(
-    blocs: blocCombiner.flatBlocs(),
-    streams: blocCombiner.flatStreams(),
-    models: blocCombiner.flatModels(),
-    singletones: [
-      authService,
-      dbService,
-      lastFmApi,
-    ],
+  container.addScoped<LastFMApi>(
+    () => LastFMApi(),
+    dispose: (t) => t.dispose(),
   );
-  print('eventsContext initialized');
 
-  await initializeBlocs(eventsContext, blocCombiner.flatBlocs());
-  print('blocs initialized');
+  container.addScoped<LocalDatabaseService>(
+    () => MobileDatabaseBuilder().build(),
+    dispose: (t) => t.dispose(),
+  );
+
+  container.addScoped<AuthService>(
+    () => AuthService.load(),
+    dispose: (t) => t.close(),
+  );
+
+  container.addTransientComplex<User>((p) async {
+    final db = await p.get<LocalDatabaseService>();
+    final auth = await p.get<AuthService>();
+    return auth.currentUser.value == null
+        ? null
+        : db.users[auth.currentUser.value].get();
+  }, key: CurrentUser);
+
+  final manager = EpicManager(container);
+  manager.events.listen((event) { print(event); });
 
   final widget = MultiProvider(
     providers: [
-      Provider<AuthService>.value(
-        value: authService,
+      Provider<EpicManager>.value(
+        value: manager,
       ),
-      Provider<LocalDatabaseService>.value(
-        value: dbService,
-      ),
-      Provider<LastFMApi>.value(
-        value: lastFmApi,
-      ),
-      ...getProviders(blocCombiner, eventsContext)
     ],
     child: DashboardApp(),
   );

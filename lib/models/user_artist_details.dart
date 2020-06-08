@@ -6,6 +6,7 @@ import 'models.dart';
 class _UserArtistDetailsProperties {
   String get selected => 'selected';
   String get userId => 'userId';
+  String get artistId => 'artistId';
   String get scrobbles => 'scrobbles';
 
   const _UserArtistDetailsProperties();
@@ -38,7 +39,7 @@ class UserArtistDetails extends DatabaseMappedModel {
         url = map['url'],
         name = map['name'],
         scrobbles = map['scrobbles'],
-        artistId = map['artistId'],
+        artistId = map[properties.artistId],
         userId = map[properties.userId],
         imageInfo = ImageInfo.fromMap(map.unpackDbMap('imageInfo'));
 
@@ -48,7 +49,7 @@ class UserArtistDetails extends DatabaseMappedModel {
         'mbid': mbid,
         'url': url,
         'scrobbles': scrobbles,
-        'artistId': artistId,
+        properties.artistId: artistId,
         properties.userId: userId,
         'imageInfo': imageInfo?.toMap()
       };

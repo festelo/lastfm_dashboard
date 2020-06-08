@@ -1,43 +1,84 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
-import 'package:lastfm_dashboard/bloc.dart';
-import 'package:lastfm_dashboard/blocs/artists_bloc.dart';
-import 'package:lastfm_dashboard/blocs/users_bloc.dart';
+import 'package:lastfm_dashboard/epics/artists_epics.dart';
+import 'package:lastfm_dashboard/epics/epic_state.dart';
+import 'package:lastfm_dashboard/epics/users_epics.dart';
 import 'package:lastfm_dashboard/models/models.dart';
 import 'package:lastfm_dashboard/pages/home_page/artists_tab/artist_list_item.dart';
-import 'package:provider/provider.dart';
+import 'package:lastfm_dashboard/services/local_database/database_service.dart';
 
-class AllArtistsList extends StatelessWidget {
-  const AllArtistsList();
+class AllArtistsList extends StatefulWidget {
+  @override
+  _AllArtistsListState createState() => _AllArtistsListState();
+}
+
+class _AllArtistsListState extends EpicState<AllArtistsList> {
+  List<UserArtistDetails> userArtists;
+  Map<String, ArtistSelection> selections;
+  bool userRefreshing;
+  String userId;
+
+  @override
+  Future<void> onLoad() async {
+    final db = await provider.get<LocalDatabaseService>();
+    final currentUser = await provider.get<User>(CurrentUser);
+    userId = currentUser.id;
+    userArtists = await db.userArtistDetails.getWhere(userIds: [userId]);
+    final selectionList = await db.artistSelections.getWhere(userId: userId);
+    selections = Map.fromEntries(selectionList.map((e) => MapEntry(e.id, e)));
+    userRefreshing = epicManager.runned
+        .map((e) => e.epic)
+        .whereType<RefreshUserEpic>()
+        .any((e) => e.username == currentUser.username);
+
+    subscribe<UserScrobblesAdded>(
+      scrobblesAdded,
+      where: (e) => e.user.username == userId,
+    );
+
+    subscribe<ArtistSelected>(
+      artistSelected,
+      where: (e) => e.selection.userId == userId,
+    );
+
+    subscribe<ArtistSelectionRemoved>(
+      artistSelectionRemoved,
+      where: (e) => e.userId == userId,
+    );
+  }
+
+  Future<void> scrobblesAdded(UserScrobblesAdded e) async {
+    final db = await provider.get<LocalDatabaseService>();
+    userArtists = await db.userArtistDetails.getWhere(userIds: [userId]);
+  }
+
+  void artistSelected(ArtistSelected e) {
+    selections[e.selection.artistId] = e.selection;
+  }
+
+  void artistSelectionRemoved(ArtistSelectionRemoved e) {
+    selections.remove(e.artistId);
+  }
 
   @override
   Widget build(BuildContext context) {
-    final user = Provider.of<User>(context);
     return Card(
       margin: EdgeInsets.all(10),
       child: Padding(
         padding: EdgeInsets.all(0),
-        child: Consumer<ArtistsViewModel>(builder: (_, vm, snap) {
-          if (vm.artistsDetailed == null ||
-              (vm.artistsDetailed.isEmpty &&
-                  Provider.of<UsersBloc>(context).isUserRefreshing(user.id)))
-            return Center(
-              child: CircularProgressIndicator(),
-            );
-          final selectionsById = vm.artistSelections
-              ?.asMap()
-              ?.map((key, value) => MapEntry(value.artistId, value))
-              ?? {};
-          final artistSelection = (artistIndex) =>
-              selectionsById[vm.artistsDetailed[artistIndex].name];
-          return ListView.builder(
-            padding: EdgeInsets.symmetric(vertical: 10),
-            itemCount: vm.artistsDetailed.length,
-            itemBuilder: (_, i) => ArtistListItem(
-              selection: artistSelection(i),
-              artistDetails: vm.artistsDetailed[i],
-            ),
-          );
-        }),
+        child: loading || userArtists.isEmpty && userRefreshing
+            ? Center(
+                child: CircularProgressIndicator(),
+              )
+            : ListView.builder(
+                padding: EdgeInsets.symmetric(vertical: 10),
+                itemCount: userArtists.length,
+                itemBuilder: (_, i) => ArtistListItem(
+                  selection: selections[userArtists[i].artistId],
+                  artistDetails: userArtists[i],
+                ),
+              ),
       ),
     );
   }

@@ -151,6 +151,11 @@ class MobileDatabaseService extends LocalDatabaseService {
   Future<T> transaction<T>(FutureOr<T> Function(SqliteExecutorWrapper) action) {
     return database.transaction((t) => action(SqliteExecutorWrapper(t)));
   }
+
+  @override
+  Future<void> dispose() async {
+    await database.close();
+  }
 }
 
 class DatabaseReadOnlyEntity<T extends DatabaseMappedModel>
@@ -517,6 +522,20 @@ class ArtistSelectionsCollection extends DatabaseCollection<ArtistSelection>
     return params;
   }
 
+  Future<List<Map<String, dynamic>>> _getValues(
+    List<String> statements,
+    List<dynamic> params,
+  ) async {
+    final idsQuery = [
+      'SELECT * FROM $tableName',
+      if (statements.isNotEmpty) 'WHERE ' + statements.join(' and\n'),
+    ].join('\n');
+    final idsMap = await database.rawQuery(idsQuery, [
+      ...params,
+    ]);
+    return idsMap;
+  }
+
   @override
   Stream<List<ArtistSelection>> changesWhere({String userId}) async* {
     final statements = _getWhereStatements(
@@ -526,28 +545,31 @@ class ArtistSelectionsCollection extends DatabaseCollection<ArtistSelection>
     final params = _getWhereParams(
       userId: userId,
     );
-    Future<List<Map<String, dynamic>>> getValues() async {
-      final idsQuery = [
-        'SELECT * FROM $tableName',
-        if (statements.isNotEmpty) 'WHERE ' + statements.join(' and\n'),
-      ].join('\n');
-      final idsMap = await database.rawQuery(idsQuery, [
-        ...params,
-      ]);
-      return idsMap;
-    }
 
-    var watching = await getValues();
+    var watching = await _getValues(statements, params);
     yield watching.map((e) => constructor(e[cid], e)).toList();
     yield* events
         .where((e) => e.tableName == tableName)
-        .asyncMap((event) => getValues())
+        .asyncMap((event) => _getValues(statements, params))
         .where((newValues) =>
             !const DeepCollectionEquality().equals(watching, newValues))
         .map((newValues) {
       watching = newValues;
       return newValues.map((e) => constructor(e[cid], e)).toList();
     });
+  }
+
+  @override
+  Future<List<ArtistSelection>> getWhere({String userId}) async {
+    final statements = _getWhereStatements(
+      userId: userId,
+    );
+    assert(statements.isNotEmpty);
+    final params = _getWhereParams(
+      userId: userId,
+    );
+    final values = await _getValues(statements, params);
+    return values.map((e) => constructor(e[cid], e)).toList();
   }
 }
 
@@ -568,42 +590,53 @@ class UserArtistDetailsCollection
 
   List<String> _getWhereStatements({
     List<String> ids,
-    String userId,
+    List<String> userIds,
+    List<String> artistIds,
   }) {
+    final cuserId = UserArtistDetails.properties.userId;
+    final cartistId = UserArtistDetails.properties.artistId;
     final statements = [
       if (ids != null && ids.isNotEmpty)
         '$cid in  (${List.filled(ids.length, '?').join(', ')})',
-      if (userId != null) UserArtistDetails.properties.userId + ' = ?',
+      if (userIds != null && userIds.isNotEmpty)
+        '$cuserId in  (${List.filled(userIds.length, '?').join(', ')})',
+      if (artistIds != null && artistIds.isNotEmpty)
+        '$cartistId in  (${List.filled(artistIds.length, '?').join(', ')})',
     ];
     return statements;
   }
 
   List<dynamic> _getWhereParams({
     List<String> ids,
-    String userId,
+    List<String> userIds,
+    List<String> artistIds,
   }) {
     final params = [
       if (ids != null && ids.isNotEmpty) ...ids,
-      if (userId != null) userId,
+      if (artistIds != null && artistIds.isNotEmpty) ...artistIds,
+      if (userIds != null && userIds.isNotEmpty) ...userIds,
     ];
     return params;
   }
 
   @override
-  Stream<List<UserArtistDetails>> changesWhere(
-      {List<String> ids,
-      String userId,
-      int skip,
-      int take,
-      SortDirection scrobblesSort}) async* {
+  Stream<List<UserArtistDetails>> changesWhere({
+    List<String> ids,
+    List<String> userIds,
+    List<String> artistIds,
+    int skip,
+    int take,
+    SortDirection scrobblesSort,
+  }) async* {
     final statements = _getWhereStatements(
       ids: ids,
-      userId: userId,
+      userIds: userIds,
     );
     assert(statements.isNotEmpty || skip != null || take != null);
     final params = _getWhereParams(
       ids: ids,
-      userId: userId,
+      userIds: userIds,
+      artistIds: artistIds,
     );
     Future<List<Map<String, dynamic>>> getValues() async {
       final idsQuery = [
@@ -637,15 +670,21 @@ class UserArtistDetailsCollection
   }
 
   @override
-  Stream<int> countWhere({List<String> ids, String userId}) async* {
+  Stream<int> countWhere({
+    List<String> ids,
+    List<String> userIds,
+    List<String> artistIds,
+  }) async* {
     final statements = _getWhereStatements(
       ids: ids,
-      userId: userId,
+      userIds: userIds,
+      artistIds: artistIds,
     );
     assert(statements.isNotEmpty);
     final params = _getWhereParams(
       ids: ids,
-      userId: userId,
+      userIds: userIds,
+      artistIds: artistIds,
     );
     final countQuery = '''
       SELECT COUNT(*) FROM $tableName WHERE
@@ -666,20 +705,24 @@ class UserArtistDetailsCollection
   }
 
   @override
-  Future<List<UserArtistDetails>> getWhere(
-      {List<String> ids,
-      String userId,
-      int skip,
-      int take,
-      SortDirection scrobblesSort}) async {
+  Future<List<UserArtistDetails>> getWhere({
+    List<String> ids,
+    List<String> userIds,
+    List<String> artistIds,
+    int skip,
+    int take,
+    SortDirection scrobblesSort,
+  }) async {
     final statements = _getWhereStatements(
       ids: ids,
-      userId: userId,
+      userIds: userIds,
+      artistIds: artistIds,
     );
     assert(statements.isNotEmpty || skip != null || take != null);
     final params = _getWhereParams(
       ids: ids,
-      userId: userId,
+      userIds: userIds,
+      artistIds: artistIds,
     );
     final selectQuery = [
       'SELECT * FROM $tableName',
@@ -735,6 +778,34 @@ class TrackScrobblesPerTimeQuery implements d.TrackScrobblesPerTimeQuery {
     return params;
   }
 
+  Future<List<Map<String, dynamic>>> _getValues(
+    List<String> statements,
+    List<dynamic> params,
+  ) async {
+    final idsQuery = [
+      'SELECT',
+      TrackScrobble.properties.date +
+          ' / ? * ?' +
+          ' as ' +
+          TrackScrobblesPerTime.properties.groupedDate +
+          ',',
+      TrackScrobble.properties.artistId + ',',
+      TrackScrobble.properties.userId + ',',
+      '? as ' + TrackScrobblesPerTime.properties.duration + ',',
+      'count(*) as ' + TrackScrobblesPerTime.properties.count,
+      'FROM $scrobblesTable',
+      if (statements.isNotEmpty) 'WHERE ' + statements.join(' and\n'),
+      'GROUP BY ',
+      TrackScrobblesPerTime.properties.groupedDate + ',',
+      TrackScrobble.properties.artistId + ',',
+      TrackScrobble.properties.userId,
+    ].join('\n');
+    final idsMap = await database.rawQuery(idsQuery, [
+      ...params,
+    ]);
+    return idsMap;
+  }
+
   @override
   Stream<List<TrackScrobblesPerTime>> changesByArtist({
     List<String> ids,
@@ -748,46 +819,23 @@ class TrackScrobblesPerTimeQuery implements d.TrackScrobblesPerTimeQuery {
       artistIds: artistIds,
     );
     assert(statements.isNotEmpty);
-    final params = _getWhereParams(
-      ids: ids,
-      userId: userId,
-      artistIds: artistIds,
-    );
     final durationMsec = duration.inMilliseconds;
+    final params = [
+      durationMsec,
+      durationMsec,
+      durationMsec,
+      ..._getWhereParams(
+        ids: ids,
+        userId: userId,
+        artistIds: artistIds,
+      ),
+    ];
 
-    Future<List<Map<String, dynamic>>> getValues() async {
-      final idsQuery = [
-        'SELECT',
-        TrackScrobble.properties.date +
-            ' / ? * ?' +
-            ' as ' +
-            TrackScrobblesPerTime.properties.groupedDate +
-            ',',
-        TrackScrobble.properties.artistId + ',',
-        TrackScrobble.properties.userId + ',',
-        '? as ' + TrackScrobblesPerTime.properties.duration + ',',
-        'count(*) as ' + TrackScrobblesPerTime.properties.count,
-        'FROM $scrobblesTable',
-        if (statements.isNotEmpty) 'WHERE ' + statements.join(' and\n'),
-        'GROUP BY ',
-        TrackScrobblesPerTime.properties.groupedDate + ',',
-        TrackScrobble.properties.artistId + ',',
-        TrackScrobble.properties.userId,
-      ].join('\n');
-      final idsMap = await database.rawQuery(idsQuery, [
-        durationMsec,
-        durationMsec,
-        durationMsec,
-        ...params,
-      ]);
-      return idsMap;
-    }
-
-    var watching = await getValues();
+    var watching = await _getValues(statements, params);
     yield watching.map((e) => TrackScrobblesPerTime.deserialize(e)).toList();
     yield* events
         .where((e) => e.tableName == scrobblesTable)
-        .asyncMap((event) => getValues())
+        .asyncMap((event) => _getValues(statements, params))
         .where((newValues) =>
             !const DeepCollectionEquality().equals(watching, newValues))
         .map((newValues) {
@@ -796,5 +844,34 @@ class TrackScrobblesPerTimeQuery implements d.TrackScrobblesPerTimeQuery {
           .map((e) => TrackScrobblesPerTime.deserialize(e))
           .toList();
     });
+  }
+
+  @override
+  Future<List<TrackScrobblesPerTime>> getByArtist({
+    List<String> ids,
+    List<String> artistIds,
+    String userId,
+    @required Duration duration,
+  }) async {
+    final statements = _getWhereStatements(
+      ids: ids,
+      userId: userId,
+      artistIds: artistIds,
+    );
+    assert(statements.isNotEmpty);
+    final durationMsec = duration.inMilliseconds;
+    final params = [
+      durationMsec,
+      durationMsec,
+      durationMsec,
+      ..._getWhereParams(
+        ids: ids,
+        userId: userId,
+        artistIds: artistIds,
+      ),
+    ];
+
+    final values = await _getValues(statements, params);
+    return values.map((e) => TrackScrobblesPerTime.deserialize(e)).toList();
   }
 }

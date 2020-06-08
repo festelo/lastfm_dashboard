@@ -22,6 +22,8 @@ abstract class LocalDatabaseService {
 
   Future<T> transaction<T>(
       FutureOr<T> Function(ExecutorWrapper transaction) action);
+
+  FutureOr<void> dispose();
 }
 
 abstract class Query {
@@ -30,6 +32,12 @@ abstract class Query {
 
 abstract class TrackScrobblesPerTimeQuery extends Query {
   Stream<List<TrackScrobblesPerTime>> changesByArtist({
+    @required Duration duration,
+    List<String> ids,
+    String userId,
+    List<String> artistIds,
+  });
+  Future<List<TrackScrobblesPerTime>> getByArtist({
     @required Duration duration,
     List<String> ids,
     String userId,
@@ -46,6 +54,9 @@ abstract class Queryable<T> extends Query {
 }
 
 abstract class ArtistSelectionCollection extends Collection<ArtistSelection> {
+  Future<List<ArtistSelection>> getWhere({
+    String userId,
+  });
   Stream<List<ArtistSelection>> changesWhere({
     String userId,
   });
@@ -54,7 +65,8 @@ abstract class ArtistSelectionCollection extends Collection<ArtistSelection> {
 abstract class UserArtistDetailsQueryable extends Queryable<UserArtistDetails> {
   Stream<List<UserArtistDetails>> changesWhere({
     List<String> ids,
-    String userId,
+    List<String> userIds,
+    List<String> artistIds,
     int skip,
     int take,
     SortDirection scrobblesSort,
@@ -62,13 +74,18 @@ abstract class UserArtistDetailsQueryable extends Queryable<UserArtistDetails> {
 
   Future<List<UserArtistDetails>> getWhere({
     List<String> ids,
-    String userId,
+    List<String> artistIds,
+    List<String> userIds,
     int skip,
     int take,
     SortDirection scrobblesSort,
   });
 
-  Stream<int> countWhere({List<String> ids, String userId});
+  Stream<int> countWhere({
+    List<String> ids,
+    List<String> userIds,
+    List<String> artistIds,
+  });
 }
 
 abstract class Collection<T> extends Queryable<T> {

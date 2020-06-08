@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'package:lastfm_dashboard/bloc.dart';
 import 'package:lastfm_dashboard/models/exceptions.dart';
 import 'package:lastfm_dashboard/models/models.dart';
 import 'package:lastfm_dashboard/config.dart';
@@ -27,17 +26,22 @@ class LastFMScrobble {
       );
 }
 
+class GetUserScrobblesResponse {
+  List<LastFMScrobble> scrobbles;
+  int pagesCount;
+  GetUserScrobblesResponse(this.scrobbles, this.pagesCount);
+}
+
 class LastFMApi {
   static const apiKey = Config.lastFmKey;
   final _client = http.Client();
 
   Future<T> _retryOnThrow<T>(Future<T> Function() fun, {int times = 3}) async {
     final errors = [];
-    for(var i = 0; i < times; i++) {
+    for (var i = 0; i < times; i++) {
       try {
         return await fun();
-      }
-      catch (e) {
+      } catch (e) {
         errors.add(e);
       }
     }
@@ -61,7 +65,7 @@ class LastFMApi {
       }
       return decoded;
     });
-    
+
     return decoded;
   }
 
@@ -132,50 +136,47 @@ class LastFMApi {
     );
   }
 
-  Stream<LastFMScrobble> getUserScrobbles(
+  Future<GetUserScrobblesResponse> getUserScrobbles(
     String username, {
     DateTime from,
     DateTime to,
-    Cancelled cancelled,
-    int requestLimit = 200,
-  }) async* {
-    assert(requestLimit != null && requestLimit > 0 && requestLimit <= 200);
-    for (var i = 1;; i++) {
-      var scrobbles = <dynamic>[];
-      final resp = await _request('user.getrecenttracks', {
-        'user': username,
-        'extended': '1',
-        'limit': requestLimit.toString(),
-        'page': i.toString(),
-        if (from != null) 'from': from.secondsSinceEpoch.toString(),
-        if (to != null) 'to': to.secondsSinceEpoch.toString()
-      });
+    int count = 200,
+    int page = 1,
+  }) async {
+    assert(count != null && count > 0 && count <= 200);
+    var scrobbles = <dynamic>[];
+    final resp = await _request('user.getrecenttracks', {
+      'user': username,
+      'extended': '1',
+      'limit': count.toString(),
+      'page': page.toString(),
+      if (from != null) 'from': from.secondsSinceEpoch.toString(),
+      if (to != null) 'to': to.secondsSinceEpoch.toString()
+    });
 
-      if (resp['recenttracks']['track'].isEmpty) break;
+    if (resp['recenttracks']['track'].isEmpty)
+      return GetUserScrobblesResponse([], page);
 
-      if (resp['recenttracks']['track'] is Map) {
-        scrobbles.add(resp['recenttracks']['track']);
-      } else {
-        scrobbles.addAll(resp['recenttracks']['track']);
-      }
-
-      scrobbles = scrobbles
-          .where((scrobble) =>
-              scrobble['@attr'] == null ||
-              scrobble['@attr']['nowplaying'] != 'true')
-          .toList();
-
-      final totalPages =
-          int.tryParse(resp['recenttracks']['@attr']['totalPages']);
-
-      if (cancelled != null && cancelled()) throw CancelledException();
-
-      for (final scrobble in scrobbles) {
-        yield _deserializeScrobble(scrobble);
-      }
-
-      print('$i/$totalPages');
-      if (i >= totalPages) break;
+    if (resp['recenttracks']['track'] is Map) {
+      scrobbles.add(resp['recenttracks']['track']);
+    } else {
+      scrobbles.addAll(resp['recenttracks']['track']);
     }
+
+    scrobbles = scrobbles
+        .where((scrobble) =>
+            scrobble['@attr'] == null ||
+            scrobble['@attr']['nowplaying'] != 'true')
+        .toList();
+
+    final totalPages =
+        int.tryParse(resp['recenttracks']['@attr']['totalPages']);
+
+    return GetUserScrobblesResponse(
+        scrobbles.map(_deserializeScrobble).toList(), totalPages);
+  }
+
+  void dispose() {
+    _client.close();
   }
 }

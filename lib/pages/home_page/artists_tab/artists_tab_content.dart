@@ -56,7 +56,7 @@ class _ArtistsTabContentState extends State<ArtistsTabContent>
               opacity: 1 - animation.value,
               child: Column(
                 children: [
-                  Expanded(child: const ArtistsChart()),
+                  Expanded(child: ArtistsChart()),
                   Expanded(
                     child: SelectedArtistsList(
                       addArtistPressed: () {
@@ -77,7 +77,7 @@ class _ArtistsTabContentState extends State<ArtistsTabContent>
               opacity: animation.value,
               child: Column(
                 children: [
-                  Expanded(child: const AllArtistsList()),
+                  Expanded(child: AllArtistsList()),
                   RaisedButton(onPressed: () {
                     controller.reverse();
                   })

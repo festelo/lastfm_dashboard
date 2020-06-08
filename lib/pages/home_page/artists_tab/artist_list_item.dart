@@ -1,6 +1,6 @@
+import 'package:epic/epic.dart';
 import 'package:flutter/material.dart';
-import 'package:lastfm_dashboard/bloc.dart';
-import 'package:lastfm_dashboard/events/artitsts_events.dart';
+import 'package:lastfm_dashboard/epics/artists_epics.dart';
 import 'package:lastfm_dashboard/models/models.dart';
 import 'package:provider/provider.dart';
 
@@ -23,16 +23,14 @@ class ArtistListItem extends StatelessWidget {
   });
 
   void addSelection(BuildContext context, String artistId, Color color) {
-    Provider.of<EventsContext>(context, listen: false).push(
-      SelectArtistEventInfo(artistId: artistId, selectionColor: color),
-      selectArtist,
+    Provider.of<EpicManager>(context, listen: false).start(
+      SelectArtistEpic(artistId, color),
     );
   }
 
   void removeSelection(BuildContext context, String artistId) {
-    Provider.of<EventsContext>(context, listen: false).push(
-      RemoveArtistSelectionEventInfo(artistId: artistId),
-      removeArtistSelection,
+    Provider.of<EpicManager>(context, listen: false).start(
+      RemoveArtistSelectionEpic(artistId),
     );
   }
 

@@ -1,8 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:lastfm_dashboard/bloc.dart';
-import 'package:lastfm_dashboard/blocs/artists_bloc.dart';
-import 'package:lastfm_dashboard/events/artitsts_events.dart';
-import 'package:provider/provider.dart';
 
 class DurationSwitcher extends StatelessWidget {
   final double width;
@@ -29,11 +25,8 @@ class DurationSwitcher extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final duration = context.select(
-      (ArtistsViewModel v) => v.scrobblesDuration,
-    );
-    final i = durations.indexOf(duration);
-    final text = durationNames[i];
+    const i = 0;
+    final text = durationNames[0];
     return Card(
       color: Theme.of(context).canvasColor,
       margin: EdgeInsets.all(margin),
@@ -61,12 +54,14 @@ class DurationSwitcher extends StatelessWidget {
               child: IconButton(
                 icon: Icon(Icons.add, size: 18),
                 onPressed: () {
+                  /*
                   context.read<EventsContext>().push(
                         SetArtistScrobblesDurationEventInfo(
                           duration: durations[(i + 1) % durations.length],
                         ),
                         setArtistScrobblesDuration,
                       );
+                      */
                 },
               ),
             ),
@@ -77,12 +72,14 @@ class DurationSwitcher extends StatelessWidget {
                 onPressed: () {
                   var newI = i - 1;
                   if (newI == -1) newI = durations.length - 1;
+                  /*
                   context.read<EventsContext>().push(
                         SetArtistScrobblesDurationEventInfo(
                           duration: durations[newI],
                         ),
                         setArtistScrobblesDuration,
                       );
+                      */
                 },
               ),
             ),

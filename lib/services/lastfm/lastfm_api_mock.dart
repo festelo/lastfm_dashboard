@@ -68,15 +68,22 @@ class LastFMApiMock implements LastFMApi {
   }
 
   @override
-  Stream<LastFMScrobble> getUserScrobbles(String username,
-      {DateTime from, DateTime to, cancelled, int requestLimit = 200}) {
-    if (_userScrobbles[username] == null) return Stream<LastFMScrobble>.empty();
-    return Stream<LastFMScrobble>.fromIterable(_userScrobbles[username].where(
-            (s) =>
-                (from == null || s.date.isAfter(from)) &&
-                (to == null || s.date.isBefore(to))))
-        .bufferCount(200)
-        .interval(Duration(seconds: 3))
-        .flatMapIterable<LastFMScrobble>((c) => Stream.value(c));
+  Future<GetUserScrobblesResponse> getUserScrobbles(
+    String username, {
+    DateTime from,
+    DateTime to,
+    int count = 200,
+    int page = 1,
+  }) async {
+    if (_userScrobbles[username] == null)
+      return GetUserScrobblesResponse([], 1);
+    return GetUserScrobblesResponse(
+      _userScrobbles[username].skip(page * count).take(count),
+      (_userScrobbles[username].length / count).ceil(),
+    );
+  }
+
+  @override
+  void dispose() {
   }
 }

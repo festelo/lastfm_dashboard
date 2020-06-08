@@ -13,7 +13,6 @@ import 'package:collection/collection.dart';
 import 'db_setup.dart' if (dart.library.html) 'db_setup_web.dart';
 
 import 'migrations.dart';
-
 typedef Constructor<T> = T Function(String id, Map<String, dynamic> data);
 
 class SembastExecutorWrapper extends ExecutorWrapper {
