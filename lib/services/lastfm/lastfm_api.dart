@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:lastfm_dashboard/bloc.dart';
+import 'package:lastfm_dashboard/models/exceptions.dart';
 import 'package:lastfm_dashboard/models/models.dart';
 import 'package:lastfm_dashboard/config.dart';
 import 'package:lastfm_dashboard/extensions.dart';
@@ -30,19 +31,37 @@ class LastFMApi {
   static const apiKey = Config.lastFmKey;
   final _client = http.Client();
 
+  Future<T> _retryOnThrow<T>(Future<T> Function() fun, {int times = 3}) async {
+    final errors = [];
+    for(var i = 0; i < times; i++) {
+      try {
+        return await fun();
+      }
+      catch (e) {
+        errors.add(e);
+      }
+    }
+    throw AccumulatedException(errors);
+  }
+
   Future<dynamic> _request(
     String method,
     Map<String, String> parameters,
   ) async {
     final uri = Uri.http('ws.audioscrobbler.com', '/2.0',
         {'method': method, 'api_key': apiKey, 'format': 'json', ...parameters});
-    final response = await _client.get(uri);
-    final body = utf8.decode(response.bodyBytes);
-    final decoded = json.decode(body);
-    if (decoded['error'] != null) {
-      throw LastFMException(
-          message: decoded['message'], code: decoded['error']);
-    }
+
+    final decoded = await _retryOnThrow(() async {
+      final response = await _client.get(uri);
+      final body = utf8.decode(response.bodyBytes);
+      final decoded = json.decode(body);
+      if (decoded['error'] != null) {
+        throw LastFMException(
+            message: decoded['message'], code: decoded['error']);
+      }
+      return decoded;
+    });
+    
     return decoded;
   }
 
