@@ -4,9 +4,6 @@ import './artists_chart.dart';
 import 'all_artists_list.dart';
 import 'selected_artists_list.dart';
 
-/// Providers required:
-/// - AuthService
-/// - LocalDatabaseService
 class ArtistsTabContent extends StatefulWidget {
   final double height;
   final double width;
@@ -31,10 +28,6 @@ class _ArtistsTabContentState extends State<ArtistsTabContent>
     super.initState();
     controller = AnimationController(
       duration: _animationDuration,
-      vsync: this,
-    );
-    controller = AnimationController(
-      duration: const Duration(milliseconds: 250),
       vsync: this,
     );
     animation = Tween<double>(begin: 0, end: 1).animate(controller)
