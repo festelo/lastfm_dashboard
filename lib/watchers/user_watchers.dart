@@ -1,28 +1,40 @@
+import 'dart:async';
+
 import 'package:epic/epic.dart';
-import 'package:lastfm_dashboard/constants.dart';
+import 'package:epic/watcher.dart';
 import 'package:lastfm_dashboard/epics/users_epics.dart';
+import 'package:lastfm_dashboard/models/models.dart';
 import 'package:lastfm_dashboard/services/local_database/database_service.dart';
 
-class UserRefreshWatcher extends Epic {
+class RefreshWatcher extends Watcher {
+  final LocalDatabaseService db;
+  final EpicManager manager;
+  final RefreshConfig config;
+
+  RefreshWatcher(this.manager, this.db, this.config);
+
   @override
-  Future<void> call(EpicContext context, notify) async {
-    final db = await context.provider.get<LocalDatabaseService>();
-    while (true) {
-      context.throwIfCancelled();
-      final users = await db.users.getAll();
+  Future<void> start() async {
+    Timer.periodic(
+      config.period,
+      (_) => refresh()
+    );
+    refresh();
+  }
 
-      for (final u in users) {
-        final syncNeeded = u.lastSync == null ||
-            u.lastSync.isBefore(DateTime.now().subtract(UpdaterConfig.period));
+  Future<void> refresh() async {
+    final users = await db.users.getAll();
 
-        final alreadySyncing =
-            context.manager.runned.any((e) => e.epic is RefreshUserEpic);
+    for (final u in users) {
+      final syncNeeded = u.lastSync == null ||
+          u.lastSync.isBefore(DateTime.now().subtract(config.period));
 
-        if (syncNeeded && !alreadySyncing) {
-          context.manager.start(RefreshUserEpic(u.username));
-        }
+      final alreadySyncing =
+          manager.runned.any((e) => e.epic is RefreshUserEpic);
+
+      if (syncNeeded && !alreadySyncing) {
+        manager.start(RefreshUserEpic(u.username));
       }
-      await Future.delayed(UpdaterConfig.period);
     }
   }
 }

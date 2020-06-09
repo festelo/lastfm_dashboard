@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:lastfm_dashboard/extensions.dart';
 import 'package:lastfm_dashboard/epics/artists_epics.dart';
 import 'package:lastfm_dashboard/epics/epic_state.dart';
 import 'package:lastfm_dashboard/epics/users_epics.dart';
@@ -22,7 +23,7 @@ class _AllArtistsListState extends EpicState<AllArtistsList> {
   @override
   Future<void> onLoad() async {
     final db = await provider.get<LocalDatabaseService>();
-    final currentUser = await provider.get<User>(CurrentUser);
+    final currentUser = await provider.get(currentUserKey);
     userId = currentUser.id;
     userArtists = await db.userArtistDetails.getWhere(userIds: [userId]);
     final selectionList = await db.artistSelections.getWhere(userId: userId);
@@ -50,7 +51,28 @@ class _AllArtistsListState extends EpicState<AllArtistsList> {
 
   Future<void> scrobblesAdded(UserScrobblesAdded e) async {
     final db = await provider.get<LocalDatabaseService>();
-    userArtists = await db.userArtistDetails.getWhere(userIds: [userId]);
+
+    final updatedArtistIds =
+        e.newScrobbles.map((e) => e.artistId).toSet().toList();
+    final updatedArtistList =
+        await db.userArtistDetails.getWhere(artistIds: updatedArtistIds);
+    final updatedArtistMap =
+        Map.fromEntries(updatedArtistList.map((e) => MapEntry(e.artistId, e)));
+
+    for (var i = 0; i < userArtists.length; i++) {
+      final updatedArtist = updatedArtistMap[userArtists[i].artistId];
+      if (updatedArtist != null) {
+        userArtists[i] = updatedArtist;
+      }
+    }
+
+    for (var i = 0; i < updatedArtistList.length; i++) {
+      final contains =
+          userArtists.any((c) => c.artistId == updatedArtistList[i].artistId);
+      if (!contains) {
+        userArtists.add(updatedArtistList[i]);
+      }
+    }
   }
 
   void artistSelected(ArtistSelected e) {

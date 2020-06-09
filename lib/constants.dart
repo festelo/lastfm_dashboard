@@ -1,3 +1,5 @@
+import 'models/models.dart';
+
 class WebDatabaseInfo {
   static const String databaseFileName = 'app.db';
   static const String usersPath = 'users';
@@ -26,6 +28,4 @@ class MobileDatabaseInfo {
   static const int databaseVersion = 2;
 }
 
-class UpdaterConfig {
-  static const Duration period = Duration(minutes: 5);
-}
+const defaultRefreshConfig = RefreshConfig(Duration(minutes: 5));

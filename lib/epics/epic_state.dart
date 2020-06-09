@@ -110,7 +110,13 @@ abstract class EpicState<T extends StatefulWidget> extends State<T> {
   Future<void> onEvent(dynamic event) async {
     bool handled = false;
     for (final mapper in _mappers) {
-      if (await mapper.process(event)) handled = true;
+      try {
+        if (await mapper.process(event)) handled = true;
+      } catch (e) {
+        if (scope.closed)
+          return;
+        rethrow;
+      }
     }
     if (handled) apply();
   }

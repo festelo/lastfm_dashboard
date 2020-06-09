@@ -8,7 +8,6 @@ import 'package:lastfm_dashboard/models/models.dart';
 import 'package:lastfm_dashboard/extensions.dart';
 import 'package:epic/epic.dart';
 import 'package:lastfm_dashboard/services/local_database/database_service.dart';
-import 'package:provider/provider.dart';
 
 class UserAccountModal extends StatelessWidget {
   final User user;
@@ -78,13 +77,15 @@ class UserAccountModal extends StatelessWidget {
                   height: 40,
                   width: 40,
                   decoration: BoxDecoration(
-                    image: DecorationImage(
-                      image: NetworkImage(
-                        user.imageInfo?.small,
-                      ),
-                      colorFilter: colorFilter,
-                      fit: BoxFit.cover,
-                    ),
+                    image: user.imageInfo?.small != null
+                      ? DecorationImage(
+                        image: NetworkImage(
+                          user.imageInfo?.small,
+                        ),
+                        colorFilter: colorFilter,
+                        fit: BoxFit.cover,
+                      )
+                      : null,
                     shape: BoxShape.circle,
                     border: border,
                   ),
@@ -134,7 +135,7 @@ class _AccountsModalState extends EpicState<AccountsModal> {
   Future<void> onLoad() async {
     final db = await provider.get<LocalDatabaseService>();
     users = await db.users.getAll();
-    currentUser = await provider.get<User>(CurrentUser);
+    currentUser = await provider.get<User>(currentUserKey);
 
     refresingUsers = epicManager.runned
         .whereType<RefreshUserEpic>()
@@ -196,23 +197,34 @@ class _AccountsModalState extends EpicState<AccountsModal> {
   Future<void> addPress(String username) async {
     try {
       setState(() => _errorText = null);
-      await add(username).completed;
+      await add(username);
       Navigator.of(context).pop();
     } on Exception catch (e) {
       setState(() => _errorText = e.toString());
     }
   }
 
-  RunnedEpic add(String username) {
-    return context.read<EpicManager>().start(AddUserEpic(username));
+  Future<void> add(String username) async {
+    final addRunned = epicManager.start(AddUserEpic(username));
+    await addRunned.completed;
+
+    final switchRunned = epicManager.start(SwitchUserEpic(username));
+    await switchRunned.completed;
+
+    epicManager.start(RefreshUserEpic(username));
   }
 
-  void remove(String username) {
-    context.read<EpicManager>().start(RemoveUserEpic(username));
+  Future<void> remove(String username) async {
+    final current = await provider.get(currentUserKey);
+    if (username == current.username) {
+      final switchUser = epicManager.start(SwitchUserEpic(null));
+      await switchUser.completed;
+    }
+    epicManager.start(RemoveUserEpic(username));
   }
 
   void switchAccount(String username) {
-    context.read<EpicManager>().start(SwitchUserEpic(username));
+    epicManager.start(SwitchUserEpic(username));
   }
 
   @override

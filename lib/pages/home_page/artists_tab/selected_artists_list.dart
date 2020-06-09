@@ -25,7 +25,7 @@ class _SelectedArtistsListState extends EpicState<SelectedArtistsList> {
   @override
   Future<void> onLoad() async {
     final db = await provider.get<LocalDatabaseService>();
-    final currentUser = await provider.get<User>(CurrentUser);
+    final currentUser = await provider.get<User>(currentUserKey);
     userId = currentUser.id;
     selections = await db.artistSelections.getWhere(userId: userId);
     if (selections.isNotEmpty) {
@@ -50,6 +50,11 @@ class _SelectedArtistsListState extends EpicState<SelectedArtistsList> {
       artistSelectionRemoved,
       where: (e) => e.userId == userId,
     );
+
+    subscribe<UserScrobblesAdded>(
+      scrobblesAdded,
+      where: (e) => e.user.username == userId,
+    );
   }
 
   Future<void> artistSelected(ArtistSelected e) async {
@@ -57,8 +62,10 @@ class _SelectedArtistsListState extends EpicState<SelectedArtistsList> {
     artists[e.selection.artistId] = await db.userArtistDetails
         .getWhere(artistIds: [e.selection.artistId]).then((e) => e.first);
     final i = selections.indexWhere((s) => s.artistId == e.selection.artistId);
-    if (i != -1) selections[i] = e.selection;
-    else selections.add(e.selection);
+    if (i != -1)
+      selections[i] = e.selection;
+    else
+      selections.add(e.selection);
   }
 
   void artistSelectionRemoved(ArtistSelectionRemoved e) {
@@ -67,9 +74,15 @@ class _SelectedArtistsListState extends EpicState<SelectedArtistsList> {
 
   Future<void> scrobblesAdded(UserScrobblesAdded e) async {
     final db = await provider.get<LocalDatabaseService>();
-    final artistList = await db.userArtistDetails
-        .getWhere(ids: selections.map((e) => e.artistId).toList());
-    artists = Map.fromEntries(artistList.map((e) => MapEntry(e.artistId, e)));
+
+    final updatedArtistIds =
+        e.newScrobbles.map((e) => e.artistId).toSet().toList();
+    final updatedArtistList =
+        await db.userArtistDetails.getWhere(artistIds: updatedArtistIds);
+    
+    for (final artist in updatedArtistList) {
+      artists[artist.artistId] = artist;
+    }
   }
 
   @override

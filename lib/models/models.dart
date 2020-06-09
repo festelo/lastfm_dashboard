@@ -3,6 +3,7 @@ export 'artist_selection.dart';
 export 'database_mapped_model.dart';
 export 'identifiers.dart';
 export 'image_info.dart';
+export 'refresh_config.dart';
 export 'track.dart';
 export 'track_scrobble.dart';
 export 'track_scrobbles_per_time.dart';

@@ -444,8 +444,8 @@ class UserArtistDetailsSembastQueryable extends UserArtistDetailsQueryable {
   @override
   Stream<List<UserArtistDetails>> changesWhere(
       {List<String> ids,
-      bool selected, // +
-      String userId, // +
+      bool selected,
+      String userId,
       int skip,
       int take,
       SortDirection scrobblesSort}) {

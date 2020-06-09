@@ -30,6 +30,19 @@ abstract class Epic {
 
 class RunnedEpicBuilder {}
 
+class EpicChain extends Epic {
+  final List<Epic> epics;
+  EpicChain(this.epics);
+
+  @override
+  Future<void> call(EpicContext context, Notifier notify) async {
+    for(final e in epics) {
+      final r = context.manager.start(e);
+      await r.completed;
+    }
+  }
+}
+
 class RunnedEpic {
   final Epic epic;
   final Stream<void> _epicStream;
@@ -67,19 +80,27 @@ class EpicStarted {
 
 class EpicEnded {
   final RunnedEpic runned;
+  final dynamic error;
+  bool get succesfully => error != null;
 
-  EpicEnded(this.runned);
+  EpicEnded(this.runned, [this.error]);
 }
 
 class EpicManager {
-  final EpicContainer container;
+  EpicContainer _container;
+  EpicContainer get container => _container;
   final List<RunnedEpic> _runned = [];
   List<RunnedEpic> get runned => [..._runned];
 
   Stream<dynamic> get events => _controller.stream;
   final StreamController<dynamic> _controller = StreamController.broadcast();
 
-  EpicManager(this.container);
+  EpicManager();
+
+  void registerContainer(EpicContainer container) {
+    _container = container;
+    _container.addSingleton(() => this);
+  }
 
   RunnedEpic start(Epic epic) {
     final cancelled = Wrapper(false);
@@ -97,9 +118,10 @@ class EpicManager {
       stream,
     );
     _epicStarted(runnedEpic);
-    runnedEpic.completed.whenComplete(() {
-      _epicComplete(runnedEpic);
-    });
+    runnedEpic.completed.then(
+      (_) => _epicComplete(runnedEpic),
+      onError: (e) => _epicComplete(runnedEpic, e),
+    );
     return runnedEpic;
   }
 
@@ -108,9 +130,9 @@ class EpicManager {
     _notify(EpicStarted(runnedEpic));
   }
 
-  void _epicComplete(RunnedEpic runnedEpic) {
+  void _epicComplete(RunnedEpic runnedEpic, [dynamic error]) {
     _runned.remove(runnedEpic);
-    _notify(EpicEnded(runnedEpic));
+    _notify(EpicEnded(runnedEpic, error));
   }
 
   void _notify(dynamic event) {

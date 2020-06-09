@@ -20,7 +20,7 @@ class _ArtistsChartState extends EpicState<ArtistsChart> {
 
   @override
   Future<void> onLoad() async {
-    final currentUser = await provider.get<User>(CurrentUser);
+    final currentUser = await provider.get<User>(currentUserKey);
     final userId = currentUser.id;
 
     subscribe<UserScrobblesAdded>(
@@ -55,7 +55,7 @@ class _ArtistsChartState extends EpicState<ArtistsChart> {
 
   Future<void> refreshData() async {
     final db = await provider.get<LocalDatabaseService>();
-    final currentUser = await provider.get<User>(CurrentUser);
+    final currentUser = await provider.get<User>(currentUserKey);
     final selections = await db.artistSelections.getAll();
     final scrobblesList = await db.trackScrobblesPerTimeQuery.getByArtist(
         duration: Duration(days: 30),
@@ -79,9 +79,17 @@ class _ArtistsChartState extends EpicState<ArtistsChart> {
 
   @override
   Widget build(BuildContext context) {
+    Widget child;
+    if (loading)
+      child = CircularProgressIndicator();
+    else if (data.series.isEmpty)
+      child = Container();
+    else
+      child = BaseChart(data);
+
     return Container(
       padding: EdgeInsets.all(10),
-      child: loading ? CircularProgressIndicator() : BaseChart(data),
+      child: child,
     );
   }
 }

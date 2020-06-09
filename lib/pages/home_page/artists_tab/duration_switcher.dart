@@ -1,5 +1,15 @@
 import 'package:flutter/material.dart';
 
+
+abstract class Foo {
+  String get a;
+}
+
+class Bar extends Foo {
+  final String a;
+  Bar(this.a);
+}
+
 class DurationSwitcher extends StatelessWidget {
   final double width;
   final double height;

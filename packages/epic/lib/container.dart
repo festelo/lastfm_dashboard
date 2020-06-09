@@ -7,6 +7,8 @@ typedef ValueBuilderComplex<T> = FutureOr<T> Function(EpicProvider provider);
 
 class Scope {
   final List<ScopeListener> _listeners = [];
+  var _closed = false;
+  bool get closed => _closed;
 
   Scope();
 
@@ -19,6 +21,7 @@ class Scope {
   }
 
   void close() {
+    _closed = true;
     for (final l in _listeners) {
       l();
     }
@@ -35,6 +38,34 @@ abstract class ValueStoreComplex<T> {
   final dynamic key;
   ValueStoreComplex(this.key);
   FutureOr<T> build(Scope scope, EpicProvider provider);
+}
+
+abstract class BaseSingleton<T> {
+  final dynamic key;
+  T _value;
+  BaseSingleton(this.key);
+
+  FutureOr<T> _build(ValueBuilder<T> builder) {
+    if (_value == null) {
+      final futureOrValue = builder();
+      return save(futureOrValue);
+    }
+    return _value;
+  }
+
+  FutureOr<T> save(FutureOr<T> futureOrValue) {
+    if (futureOrValue is Future<T>) {
+      return Future(() async {
+        final value = await futureOrValue;
+        _value = value;
+        return value;
+      });
+    } else {
+      final value = futureOrValue;
+      _value = value;
+      return value;
+    }
+  }
 }
 
 abstract class BaseScoped<T> {
@@ -80,7 +111,6 @@ abstract class BaseTransient<T> {
 
   final Map<Scope, List<T>> _scoped = {};
 
-  @override
   FutureOr<T> _build(Scope scope, ValueBuilder<T> builder) {
     if (!_scoped.containsKey(scope)) {
       _scoped[scope] = [];
@@ -109,49 +139,28 @@ abstract class BaseTransient<T> {
   }
 }
 
-class SingletoneStore<T> extends ValueStore<T> {
-  final dynamic value;
-  SingletoneStore(this.value, {dynamic key}) : super(key);
-
-  @override
-  T build(Scope scope) {
-    return value;
-  }
-}
-
-class TransientStore<T> extends ValueStore<T> {
+class SingletoneStore<T> extends BaseSingleton<T> implements ValueStore<T> {
   final ValueBuilder<T> builder;
-  final ValueDisposer<T> _disposer;
-  TransientStore(this.builder, this._disposer, {dynamic key}) : super(key);
-
-  Map<Scope, List<T>> _scoped;
+  SingletoneStore(this.builder, {dynamic key}) : super(key);
 
   @override
   FutureOr<T> build(Scope scope) {
-    if (!_scoped.containsKey(scope)) {
-      _scoped[scope] = [];
-      scope.addListener(() => _unregister(scope));
-    }
-    final futureOrValue = builder();
-
-    if (futureOrValue is Future<T>) {
-      return Future(() async {
-        final value = await futureOrValue;
-        _scoped[scope].add(value);
-        return value;
-      });
-    } else {
-      final value = futureOrValue;
-      _scoped[scope].add(value);
-      return value;
-    }
+    return _build(builder);
   }
+}
 
-  void _unregister(Scope scope) {
-    if (_disposer != null) {
-      _scoped[scope]?.forEach(_disposer);
-    }
-    _scoped.remove(scope);
+class TransientStore<T> extends BaseTransient<T> implements ValueStore<T> {
+  final ValueBuilder<T> builder;
+
+  TransientStore(
+    this.builder,
+    ValueDisposer<T> _disposer, {
+    dynamic key,
+  }) : super(_disposer, key);
+
+  @override
+  FutureOr<T> build(Scope scope) {
+    return _build(scope, builder);
   }
 }
 
@@ -163,6 +172,17 @@ class ScopedStore<T> extends BaseScoped<T> implements ValueStore<T> {
   @override
   FutureOr<T> build(Scope scope) {
     return _build(scope, builder);
+  }
+}
+
+class SingletoneStoreComplex<T> extends BaseSingleton<T>
+    implements ValueStoreComplex<T> {
+  final ValueBuilderComplex<T> builder;
+  SingletoneStoreComplex(this.builder, {dynamic key}) : super(key);
+
+  @override
+  FutureOr<T> build(Scope scope, EpicProvider provider) {
+    return _build(() => builder(provider));
   }
 }
 
@@ -204,8 +224,8 @@ class EpicContainer {
 
   EpicContainer();
 
-  void addSingleton<T>(T value, {dynamic key}) {
-    stores.add(SingletoneStore<T>(value, key: key));
+  void addSingleton<T>(ValueBuilder<T> builder, {dynamic key}) {
+    stores.add(SingletoneStore<T>(builder, key: key));
   }
 
   void addScoped<T>(
@@ -222,6 +242,10 @@ class EpicContainer {
     dynamic key,
   }) {
     stores.add(TransientStore<T>(builder, dispose, key: key));
+  }
+
+  void addSingletonComplex<T>(ValueBuilder<T> builder, {dynamic key}) {
+    stores.add(SingletoneStore<T>(builder, key: key));
   }
 
   void addScopedComplex<T>(
@@ -245,12 +269,14 @@ class EpicContainer {
   }
 }
 
+class Key<T> { const Key();}
+
 class EpicProvider {
   final EpicContainer container;
   final Scope scope;
   EpicProvider(this.container, this.scope);
 
-  FutureOr<T> get<T>([dynamic key]) {
+  FutureOr<T> get<T>([Key<T> key]) {
     for (final s in container.stores) {
       if (s is ValueStore<T> && (key == null || s.key == key)) {
         return s.build(scope);

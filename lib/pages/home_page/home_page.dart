@@ -5,6 +5,8 @@ import 'package:lastfm_dashboard/epics/epic_state.dart';
 import 'package:lastfm_dashboard/epics/users_epics.dart';
 import 'package:lastfm_dashboard/models/models.dart';
 import 'package:lastfm_dashboard/pages/home_page/accounts_modal.dart';
+import 'package:lastfm_dashboard/services/auth/auth_service.dart';
+import 'package:lastfm_dashboard/services/local_database/database_service.dart';
 
 import 'artists_tab/artists_tab.dart';
 
@@ -40,8 +42,8 @@ class _HomePageState extends EpicState<HomePage> {
     await refreshUser();
   }
 
-  Future<void> refreshUser() async {
-    user = await provider.get<User>(CurrentUser);
+  Future<void> refreshUser([String username]) async {
+    user = await provider.get<User>(currentUserKey);
   }
 
   @override

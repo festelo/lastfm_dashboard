@@ -23,7 +23,7 @@ class SelectArtistEpic extends Epic {
   @override
   Future<void> call(EpicContext context, notify) async {
     final db = await context.provider.get<LocalDatabaseService>();
-    final user = await context.provider.get<User>(CurrentUser);
+    final user = await context.provider.get<User>(currentUserKey);
 
     if (user == null) throw Exception('User can\'t be null');
 
@@ -49,7 +49,7 @@ class RemoveArtistSelectionEpic extends Epic {
   @override
   Future<void> call(EpicContext context, notify) async {
     final db = await context.provider.get<LocalDatabaseService>();
-    final user = await context.provider.get<User>(CurrentUser);
+    final user = await context.provider.get<User>(currentUserKey);
     if (user == null) throw Exception('User can\'t be null');
 
     final artistSelection = ArtistSelection(
