@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:epic/container.dart';
 import 'package:lastfm_dashboard/models/identifiers.dart';
+import 'package:lastfm_dashboard/pages/home/home_page.dart';
 import 'package:lastfm_dashboard/services/auth/auth_service.dart';
 import 'package:lastfm_dashboard/services/lastfm/lastfm_api.dart';
 import 'package:lastfm_dashboard/services/local_database/database_service.dart';
@@ -11,7 +12,6 @@ import 'package:epic/epic.dart';
 import 'package:epic/watcher.dart';
 import 'constants.dart';
 import 'models/models.dart';
-import 'pages/home_page/home_page.dart';
 
 Future<void> main() async {
   print('ok, let\'s start');

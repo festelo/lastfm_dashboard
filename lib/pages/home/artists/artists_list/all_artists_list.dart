@@ -1,13 +1,12 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:lastfm_dashboard/extensions.dart';
 import 'package:lastfm_dashboard/epics/artists_epics.dart';
 import 'package:lastfm_dashboard/epics/epic_state.dart';
 import 'package:lastfm_dashboard/epics/users_epics.dart';
 import 'package:lastfm_dashboard/models/models.dart';
-import 'package:lastfm_dashboard/pages/home_page/artists_tab/artist_list_item.dart';
 import 'package:lastfm_dashboard/services/local_database/database_service.dart';
+import '../artist_list_item.dart';
 
 class AllArtistsList extends StatefulWidget {
   @override

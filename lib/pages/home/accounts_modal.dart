@@ -156,7 +156,7 @@ class _AccountsModalState extends EpicState<AccountsModal> {
       where: (e) => e.runned.epic is RemoveUserEpic,
     );
     map<EpicStarted, String>(
-      userRemovingStarted,
+      userRefresingStarted,
       (e) => (e.runned.epic as RefreshUserEpic).username,
       where: (e) => e.runned.epic is RefreshUserEpic,
     );

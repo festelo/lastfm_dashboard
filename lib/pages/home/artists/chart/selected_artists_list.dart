@@ -5,8 +5,8 @@ import 'package:lastfm_dashboard/epics/artists_epics.dart';
 import 'package:lastfm_dashboard/epics/epic_state.dart';
 import 'package:lastfm_dashboard/epics/users_epics.dart';
 import 'package:lastfm_dashboard/models/models.dart';
-import 'package:lastfm_dashboard/pages/home_page/artists_tab/artist_list_item.dart';
 import 'package:lastfm_dashboard/services/local_database/database_service.dart';
+import '../artist_list_item.dart';
 
 class SelectedArtistsList extends StatefulWidget {
   final VoidCallback addArtistPressed;
@@ -55,6 +55,10 @@ class _SelectedArtistsListState extends EpicState<SelectedArtistsList> {
       scrobblesAdded,
       where: (e) => e.user.username == userId,
     );
+    
+    subscribe<UserRefreshed>(userRefreshed, 
+      where: (e) => e.newUser.username == userId,
+    );
   }
 
   Future<void> artistSelected(ArtistSelected e) async {
@@ -83,6 +87,11 @@ class _SelectedArtistsListState extends EpicState<SelectedArtistsList> {
     for (final artist in updatedArtistList) {
       artists[artist.artistId] = artist;
     }
+  }
+
+  void userRefreshed(UserRefreshed event) {
+    userRefreshing = false;
+    apply();
   }
 
   @override

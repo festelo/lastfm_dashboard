@@ -76,14 +76,28 @@ class EpicStarted {
   final RunnedEpic runned;
 
   EpicStarted(this.runned);
+
+  @override
+  String toString() {
+    return 'EpicStarted - ${runned.epic.runtimeType}';
+  }
 }
 
 class EpicEnded {
   final RunnedEpic runned;
   final dynamic error;
-  bool get succesfully => error != null;
+  bool get succesfully => error == null;
 
   EpicEnded(this.runned, [this.error]);
+
+  @override
+  String toString() {
+    if (succesfully) {
+      return 'EpicEnded - ${runned.epic.runtimeType}';
+    } else {
+      return 'EpicEnded - ${runned.epic.runtimeType} with error: $error';
+    }
+  }
 }
 
 class EpicManager {

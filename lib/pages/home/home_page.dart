@@ -4,11 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:lastfm_dashboard/epics/epic_state.dart';
 import 'package:lastfm_dashboard/epics/users_epics.dart';
 import 'package:lastfm_dashboard/models/models.dart';
-import 'package:lastfm_dashboard/pages/home_page/accounts_modal.dart';
-import 'package:lastfm_dashboard/services/auth/auth_service.dart';
-import 'package:lastfm_dashboard/services/local_database/database_service.dart';
+import 'accounts_modal.dart';
 
-import 'artists_tab/artists_tab.dart';
+import 'artists/artists_tab.dart';
 
 
 class HomePage extends StatefulWidget {

@@ -174,6 +174,8 @@ class RefreshUserEpic extends Epic {
       final lastSyncUpdater = (User u) => u.copyWith(lastSync: lastTime);
       await db.users[user.id].updateSelective(lastSyncUpdater);
       notify(UserRefreshed(user, lastSyncUpdater(user)));
+    } else {
+      notify(UserRefreshed(user, user));
     }
   }
 }
