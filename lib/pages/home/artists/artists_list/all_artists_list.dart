@@ -24,7 +24,10 @@ class _AllArtistsListState extends EpicState<AllArtistsList> {
     final db = await provider.get<LocalDatabaseService>();
     final currentUser = await provider.get(currentUserKey);
     userId = currentUser.id;
-    userArtists = await db.userArtistDetails.getWhere(userIds: [userId]);
+    userArtists = await db.userArtistDetails.getWhere(
+      userIds: [userId],
+      scrobblesSort: SortDirection.descending,
+    );
     final selectionList = await db.artistSelections.getWhere(userId: userId);
     selections = Map.fromEntries(selectionList.map((e) => MapEntry(e.id, e)));
     userRefreshing = epicManager.runned
