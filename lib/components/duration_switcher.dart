@@ -14,11 +14,13 @@ class DurationSwitcher extends StatelessWidget {
   final double width;
   final double height;
   final double margin;
+
   DurationSwitcher({
+    Key key,
     this.width = 160,
     this.height = 40,
     this.margin = 20
-  });
+  }): super(key: key);
   
   final durations = [
     Duration(hours: 1),
