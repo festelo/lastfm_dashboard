@@ -5,14 +5,9 @@ import '../routes.dart';
 import './artists_chart.dart';
 import 'selected_artists_list.dart';
 
-class ChartPage extends StatefulWidget {
+class ChartPage extends StatelessWidget {
   const ChartPage();
 
-  @override
-  _ArtistsTabContentState createState() => _ArtistsTabContentState();
-}
-
-class _ArtistsTabContentState extends State<ChartPage> {
   @override
   Widget build(BuildContext context) {
     return Stack(
@@ -31,14 +26,10 @@ class _ArtistsTabContentState extends State<ChartPage> {
           ],
         ),
         FloatingArea(
-          (_) => DurationSwitcher()
+          (_) => DurationSwitcher(),
+          alignment: Alignment.topRight,
         ),
       ],
     );
-  }
-
-  @override
-  void dispose() {
-    super.dispose();
   }
 }
