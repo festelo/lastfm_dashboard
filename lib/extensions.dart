@@ -1,11 +1,9 @@
+import 'package:intl/intl.dart';
+
 extension DateTimeExtensions on DateTime {
-  String toHumanable() {
-    String _pad(int s) => s.toString().padLeft(2, '0');
-    final sday = _pad(day);
-    final smonth = _pad(month);
-    final shour = _pad(hour);
-    final sminute = _pad(minute);
-    return '$sday.$smonth.$year $shour:$sminute';
+  String toHumanable([String pattern = 'dd.MM.yyyy HH:mm']) {
+    final formatter = DateFormat(pattern);
+    return formatter.format(this);
   }
 
   int get secondsSinceEpoch => (millisecondsSinceEpoch / 1000).round();

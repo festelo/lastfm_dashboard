@@ -25,7 +25,8 @@ dependencies:
   epic:
     path: packages/epic
   f_charts: 
-    git: https://github.com/festelo/f_charts
+    path: ../f_charts
+  intl: ^0.16.1
 
 dev_dependencies:
   pubspec_semver:

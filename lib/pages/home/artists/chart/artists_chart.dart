@@ -42,15 +42,15 @@ class _ArtistsChartState extends EpicState<ArtistsChart> {
   }
 
   Future<void> scrobblesAdded(UserScrobblesAdded e) async {
-    refreshData();
+    await refreshData();
   }
 
-  void artistSelected(ArtistSelected e) {
-    refreshData();
+  Future<void> artistSelected(ArtistSelected e) async {
+    await refreshData();
   }
 
-  void artistSelectionRemoved(ArtistSelectionRemoved e) {
-    refreshData();
+  Future<void> artistSelectionRemoved(ArtistSelectionRemoved e) async {
+    await refreshData();
   }
 
   Future<void> refreshData() async {
@@ -87,9 +87,6 @@ class _ArtistsChartState extends EpicState<ArtistsChart> {
     else
       child = BaseChart(data);
 
-    return Container(
-      padding: EdgeInsets.all(10),
-      child: child,
-    );
+    return child;
   }
 }
