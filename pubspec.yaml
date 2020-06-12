@@ -1,7 +1,7 @@
 name: lastfm_dashboard
 description: Last.fm Dashboard
 
-version: 0.1.0+1
+version: 0.1.1+1
 
 environment:
   sdk: ">=2.8.0-dev.12 <3.0.0"

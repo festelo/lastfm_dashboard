@@ -83,7 +83,7 @@ class _HomePageState extends EpicState<HomePage> {
         )
         : Column(
           children: [
-            Expanded(child: ArtistsTab()),
+            Expanded(child: ArtistsTab(ValueKey(user.id))),
             // Not in bottomNavigationBar property to let bottom sheet 
             // be over the bottom nav bar
             BottomNavigationBar(

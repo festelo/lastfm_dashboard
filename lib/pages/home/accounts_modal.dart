@@ -78,14 +78,14 @@ class UserAccountModal extends StatelessWidget {
                   width: 40,
                   decoration: BoxDecoration(
                     image: user.imageInfo?.small != null
-                      ? DecorationImage(
-                        image: NetworkImage(
-                          user.imageInfo?.small,
-                        ),
-                        colorFilter: colorFilter,
-                        fit: BoxFit.cover,
-                      )
-                      : null,
+                        ? DecorationImage(
+                            image: NetworkImage(
+                              user.imageInfo?.small,
+                            ),
+                            colorFilter: colorFilter,
+                            fit: BoxFit.cover,
+                          )
+                        : null,
                     shape: BoxShape.circle,
                     border: border,
                   ),
@@ -231,8 +231,11 @@ class _AccountsModalState extends EpicState<AccountsModal> {
   Widget build(BuildContext context) {
     Widget content;
     if (loading) {
-      content = Center(
-        child: CircularProgressIndicator(),
+      content = Container(
+        height: 50,
+        child: Center(
+          child: CircularProgressIndicator(),
+        ),
       );
     } else if (users.isEmpty) {
       content = Padding(
