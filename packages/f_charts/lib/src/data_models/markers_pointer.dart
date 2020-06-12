@@ -46,13 +46,20 @@ class DateTimeMarkersPointer implements MarkersPointer<DateTime> {
 
 class DatePeriodMarkersPointer implements MarkersPointer<DateTime> {
   final DatePeriod period;
-  DatePeriodMarkersPointer(this.period);
+  final int showEvery;
+  DatePeriodMarkersPointer(this.period, {this.showEvery = 1});
 
   @override
   List<DateTime> getPoints(min, max) {
     final ret = <DateTime>[];
+    var i = 0;
     for (final p in period.iterateBounds(min, max)) {
+      i++;
+      if (showEvery == i) {
+        i = 0;
       ret.add(p);
+        continue;
+      }
     }
     return ret;
   }

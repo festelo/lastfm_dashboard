@@ -32,18 +32,11 @@ class BaseChart extends StatelessWidget {
     }
   }
 
-  Duration getChartXStep() {
+  int get yShowEvery {
     switch (range) {
-      case DatePeriod.month:
-        return Duration(days: 60);
-      case DatePeriod.week:
-        return Duration(days: 3);
-      case DatePeriod.day:
-        return Duration(days: 1);
-      case DatePeriod.hour:
-        return Duration(hours: 2);
-      default:
-        return Duration(hours: 2);
+      case DatePeriod.month: return 2;
+      case DatePeriod.hour: return 3;
+      default: return 1;
     }
   }
 
@@ -92,9 +85,7 @@ class BaseChart extends StatelessWidget {
       pointPressed: pointPressed,
       gestureHandlerBuilder: const HybridHandlerBuilder(),
       markersPointer: ChartMarkersPointer(
-        DateTimeMarkersPointer(
-          getChartXStep(),
-        ),
+        DatePeriodMarkersPointer(range, showEvery: yShowEvery),
         IntMarkersPointer(
           getChartYStep(),
         ),
