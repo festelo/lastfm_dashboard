@@ -26,7 +26,7 @@ class BaseChart extends StatelessWidget {
       case DatePeriod.week:
         return t.toHumanable('d');
       case DatePeriod.hour:
-        return t.toHumanable('h');
+        return t.toHumanable('H');
       default:
         return t.toString();
     }

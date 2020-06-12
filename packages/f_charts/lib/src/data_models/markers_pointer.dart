@@ -53,7 +53,7 @@ class DatePeriodMarkersPointer implements MarkersPointer<DateTime> {
   List<DateTime> getPoints(min, max) {
     final ret = <DateTime>[];
     var i = 0;
-    for (final p in period.iterateBounds(min, max)) {
+    for (final p in period.iterateBounds(min, max, includingTo: true)) {
       i++;
       if (showEvery == i) {
         i = 0;
