@@ -755,8 +755,13 @@ class TrackScrobblesPerTimeQuery implements d.TrackScrobblesPerTimeQuery {
         database.executor, events, scrobblesTable);
   }
 
-  List<String> _getWhereStatements(
-      {List<String> ids, String userId, List<String> artistIds}) {
+  List<String> _getWhereStatements({
+    List<String> ids,
+    String userId,
+    List<String> artistIds,
+    DateTime start,
+    DateTime end,
+  }) {
     final statements = [
       if (ids != null && ids.isNotEmpty)
         '$cid in  (${List.filled(ids.length, '?').join(', ')})',
@@ -764,16 +769,25 @@ class TrackScrobblesPerTimeQuery implements d.TrackScrobblesPerTimeQuery {
       if (artistIds != null && artistIds.isNotEmpty)
         TrackScrobble.properties.artistId +
             ' in  (${List.filled(artistIds.length, '?').join(', ')})',
+      if (start != null) TrackScrobble.properties.date + ' >= ?',
+      if (end != null) TrackScrobble.properties.date + ' < ?',
     ];
     return statements;
   }
 
-  List<dynamic> _getWhereParams(
-      {List<String> ids, String userId, List<String> artistIds}) {
+  List<dynamic> _getWhereParams({
+    List<String> ids,
+    String userId,
+    List<String> artistIds,
+    DateTime start,
+    DateTime end,
+  }) {
     final params = [
       if (ids != null) ...ids,
       if (userId != null) userId,
       if (artistIds != null) ...artistIds,
+      if (start != null) start.millisecondsSinceEpoch,
+      if (end != null) end.millisecondsSinceEpoch,
     ];
     return params;
   }
@@ -812,11 +826,15 @@ class TrackScrobblesPerTimeQuery implements d.TrackScrobblesPerTimeQuery {
     List<String> artistIds,
     String userId,
     @required Duration duration,
+    DateTime start,
+    DateTime end,
   }) async* {
     final statements = _getWhereStatements(
       ids: ids,
       userId: userId,
       artistIds: artistIds,
+      start: start,
+      end: end,
     );
     assert(statements.isNotEmpty);
     final durationMsec = duration.inMilliseconds;
@@ -828,6 +846,8 @@ class TrackScrobblesPerTimeQuery implements d.TrackScrobblesPerTimeQuery {
         ids: ids,
         userId: userId,
         artistIds: artistIds,
+        start: start,
+        end: end,
       ),
     ];
 
@@ -852,11 +872,15 @@ class TrackScrobblesPerTimeQuery implements d.TrackScrobblesPerTimeQuery {
     List<String> artistIds,
     String userId,
     @required Duration duration,
+    DateTime start,
+    DateTime end,
   }) async {
     final statements = _getWhereStatements(
       ids: ids,
       userId: userId,
       artistIds: artistIds,
+      start: start,
+      end: end,
     );
     assert(statements.isNotEmpty);
     final durationMsec = duration.inMilliseconds;
@@ -868,6 +892,8 @@ class TrackScrobblesPerTimeQuery implements d.TrackScrobblesPerTimeQuery {
         ids: ids,
         userId: userId,
         artistIds: artistIds,
+        start: start,
+        end: end,
       ),
     ];
 

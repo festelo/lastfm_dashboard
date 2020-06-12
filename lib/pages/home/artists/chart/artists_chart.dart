@@ -17,6 +17,9 @@ class ArtistsChart extends StatefulWidget {
 
 class _ArtistsChartState extends EpicState<ArtistsChart> {
   ChartData<DateTime, int> data;
+  ChartDateRange dateRange = ChartDateRange.month;
+  DateTime start;
+  DateTime end;
 
   @override
   Future<void> onLoad() async {
@@ -57,13 +60,30 @@ class _ArtistsChartState extends EpicState<ArtistsChart> {
     final db = await provider.get<LocalDatabaseService>();
     final currentUser = await provider.get<User>(currentUserKey);
     final selections = await db.artistSelections.getAll();
+
+    Duration duration;
+    if (dateRange == ChartDateRange.month) {
+      duration = Duration(days: 30);
+    }
+    if (dateRange == ChartDateRange.day) {
+      duration = Duration(days: 1);
+    }
+    if (dateRange == ChartDateRange.hour) {
+      duration = Duration(hours: 1);
+    }
+
     final scrobblesList = await db.trackScrobblesPerTimeQuery.getByArtist(
-        duration: Duration(days: 30),
-        artistIds: selections.map((e) => e.artistId).toList(),
-        userId: currentUser.id);
+      duration: duration,
+      artistIds: selections.map((e) => e.artistId).toList(),
+      userId: currentUser.id,
+      start: start,
+      end: end,
+    );
+
     final scrobbles = groupBy<TrackScrobblesPerTime, String>(
         scrobblesList, (s) => s.artistId);
     final series = selections
+        .where((e) => scrobbles[e.artistId] != null)
         .map(
           (e) => ChartSeries(
             color: e.selectionColor,
@@ -77,15 +97,48 @@ class _ArtistsChartState extends EpicState<ArtistsChart> {
     data = ChartData(series);
   }
 
+  Future<void> updateRange(DateTime time, ChartDateRange newRange) async {
+    if (newRange == ChartDateRange.month) {
+      start = DateTime(time.year, time.month);
+      end = DateTime(time.year, time.month + 1);
+    }
+    if (newRange == ChartDateRange.day) {
+      start = DateTime(time.year, time.month, time.day);
+      end = DateTime(time.year, time.month, time.day + 1);
+    }
+    if (newRange == ChartDateRange.hour) {
+      start = DateTime(time.year, time.month, time.day, time.hour);
+      end = DateTime(time.year, time.month, time.day, time.hour + 1);
+    }
+    dateRange = newRange;
+    await refreshData();
+    apply();
+  }
+
+  ChartDateRange getNextRange() {
+    final nextIndex = (ChartDateRange.values.indexOf(dateRange) + 1) %
+        ChartDateRange.values.length;
+    return ChartDateRange.values[nextIndex];
+  }
+
   @override
   Widget build(BuildContext context) {
     Widget child;
     if (loading)
-      child = CircularProgressIndicator();
+      child = Center(
+        child: CircularProgressIndicator(),
+      );
     else if (data.series.isEmpty)
       child = Container();
     else
-      child = BaseChart(data);
+      child = BaseChart(
+        data,
+        range: dateRange,
+        pointPressed: (e) => updateRange(
+          e.abscissa,
+          getNextRange(),
+        ),
+      );
 
     return child;
   }

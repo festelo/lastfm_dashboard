@@ -36,12 +36,16 @@ abstract class TrackScrobblesPerTimeQuery extends Query {
     List<String> ids,
     String userId,
     List<String> artistIds,
+    DateTime start,
+    DateTime end,
   });
   Future<List<TrackScrobblesPerTime>> getByArtist({
     @required Duration duration,
     List<String> ids,
     String userId,
     List<String> artistIds,
+    DateTime start,
+    DateTime end,
   });
 }
 

@@ -132,10 +132,12 @@ class EpicManager {
       stream,
     );
     _epicStarted(runnedEpic);
+    
     runnedEpic.completed.then(
       (_) => _epicComplete(runnedEpic),
       onError: (e) => _epicComplete(runnedEpic, e),
-    );
+    ).whenComplete(() => scope.close());
+    
     return runnedEpic;
   }
 
