@@ -114,7 +114,6 @@ class ChartController<T1, T2> implements Listenable {
     var draggingOffset = state.draggingOffset;
 
     state.isDragging = false;
-    state.draggingOffset = Offset(0, 0);
 
     if (swiped == null || !withAnimation) {
       notifyListeners();
@@ -183,6 +182,7 @@ class ChartController<T1, T2> implements Listenable {
         animation = MoveAnimation.between(data, to, mapper);
       }
     }
+    state.draggingOffset = Offset(0, 0);
 
     var fromToPointsDifferent = animation.series.any(
       (e) => !const DeepCollectionEquality().equals(
