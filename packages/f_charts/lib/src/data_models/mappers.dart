@@ -53,12 +53,25 @@ class ChartMapper<TAbscissa, TOrdinate> {
   ChartBounds<TAbscissa, TOrdinate> getBounds(
     ChartData<TAbscissa, TOrdinate> data, {
     ChartBounds<TAbscissa, TOrdinate> or,
+    bool safe = true,
   }) {
+    final minA = or?.minAbscissa ?? minAbscissa(data);
+    var maxA = or?.maxAbscissa ?? maxAbscissa(data);
+    final minO = or?.minOrdinate ?? minOrdinate(data);
+    var maxO = or?.maxOrdinate ?? maxOrdinate(data);
+    if (safe) {
+      if (minA == maxA) {
+        maxA = abscissaMapper.fromDouble(abscissaMapper.toDouble(maxA) + 1);
+      }
+      if (minO == maxO) {
+        maxO = ordinateMapper.fromDouble(ordinateMapper.toDouble(maxO) + 1);
+      }
+    }
     return ChartBounds(
-      or?.minAbscissa ?? minAbscissa(data),
-      or?.maxAbscissa ?? maxAbscissa(data),
-      or?.minOrdinate ?? minOrdinate(data),
-      or?.maxOrdinate ?? maxOrdinate(data),
+      minA,
+      maxA,
+      minO,
+      maxO,
     );
   }
 }

@@ -123,6 +123,7 @@ class _ArtistsChartState extends EpicState<ArtistsChart> {
     for (final date in period.iterateBounds(start, end)) {
       final used = <String>{};
       for (final scrobble in perDate[date] ?? <TrackScrobblesPerTime>[]) {
+        if (series[scrobble.artistId] == null) continue;
         series[scrobble.artistId]
             .entities
             .add(ChartEntity(date, scrobble.count));

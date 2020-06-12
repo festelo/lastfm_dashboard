@@ -13,6 +13,7 @@ extension OffsetExtenstions on Offset {
   Point toPoint() {
     return Point(this.dx, this.dy);
   }
+
   Offset abs() {
     return Offset(this.dx.abs(), this.dy.abs());
   }
@@ -44,11 +45,13 @@ extension ChartEntityExtensions<T1, T2> on ChartEntity<T1, T2> {
         mapper.abscissaMapper.toDouble(this.abscissa) - bounds.minAbscissa;
     var ordinateVal =
         mapper.ordinateMapper.toDouble(this.ordinate) - bounds.minOrdinate;
+    final height = bounds.maxOrdinate - bounds.minOrdinate;
+    final width = bounds.maxAbscissa - bounds.minAbscissa;
+    var size = Size(width == 0 ? 1 : width, height == 0 ? 1 : height);
     return RelativeOffset.withViewport(
       abscissaVal,
       ordinateVal,
-      Size(bounds.maxAbscissa - bounds.minAbscissa,
-          bounds.maxOrdinate - bounds.minOrdinate),
+      size,
     ).reverseY();
   }
 }
