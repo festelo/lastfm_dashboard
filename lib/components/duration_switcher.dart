@@ -20,14 +20,7 @@ class DurationSwitcher extends StatefulWidget {
 }
 
 class _DurationSwitcherState extends EpicState<DurationSwitcher> {
-  final durationNames = [
-    'Hour',
-    'Day',
-    'Week',
-    'Month',
-  ];
-
-  ChartViewModel vm;
+  ChartViewModel get vm => Provider.of(context, listen: false);
 
   String getDurationName() {
     switch (vm.period) {
@@ -46,8 +39,7 @@ class _DurationSwitcherState extends EpicState<DurationSwitcher> {
 
   @override
   FutureOr<void> onLoad() {
-    vm = context.read<ChartViewModel>();
-    subscribeVM<ChartViewModel>(vm);
+    subscribeVM<ChartViewModel>();
   }
 
   DatePeriod get nextPeriod {

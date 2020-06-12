@@ -40,6 +40,7 @@ abstract class EpicState<T extends StatefulWidget> extends State<T> {
   final Scope scope = Scope();
 
   final List<EpicMapper> _mappers = [];
+  final Map<Type, dynamic> _vmMap = {};
 
   bool loading = true;
 
@@ -82,20 +83,43 @@ abstract class EpicState<T extends StatefulWidget> extends State<T> {
     setState(() => loading = false);
   }
 
-  void subscribeVM<T>(T instance) {
-    subscribe<ViewModelChanged<T>>(where: 
-      (c) => c.viewModel == instance);
+  void _subscribeVM<T>() {
+    _vmMap[T] = Provider.of<T>(context, listen: false);
+    handle<ViewModelReplaced<T>>(
+      (e) => _vmMap[T] = e,
+      where: (e) => e.oldViewModel == _vmMap[T],
+    );
+  }
+
+  void subscribeVM<T>({
+    Checker<ViewModelChanged<T>> where,
+  }) {
+    _subscribeVM<T>();
+    subscribe<ViewModelChanged<T>>(
+      where: (c) => c.viewModel == _vmMap[T] && (where == null || where(c)),
+    );
   }
 
   void subscribe<T>({
     Checker<T> where,
   }) {
-    _mappers.add(EpicMapper<T, T> (
+    _mappers.add(EpicMapper<T, T>(
       handler: (_) => apply(),
       map: (e) => e,
       where: where ?? (e) => true,
       typeFits: (e) => e is T,
     ));
+  }
+
+  void handleVM<T>(
+    Handler<ViewModelChanged<T>> handler, {
+    Checker<ViewModelChanged<T>> where,
+  }) {
+    _subscribeVM<T>();
+    handle<ViewModelChanged<T>>(
+      handler,
+      where: (c) => c.viewModel == _vmMap[T] && (where == null || where(c)),
+    );
   }
 
   void handle<T>(
@@ -110,7 +134,20 @@ abstract class EpicState<T extends StatefulWidget> extends State<T> {
     ));
   }
 
-  T1 map<T1, T2>(
+  void mapVM<T1, T2>(
+    Handler<T2> handler,
+    Mapper<ViewModelChanged<T>, T2> mapper, {
+    Checker<ViewModelChanged<T>> where,
+  }) {
+    _subscribeVM<T>();
+    map<ViewModelChanged<T>, T2>(
+      handler,
+      mapper,
+      where: (c) => c.viewModel == _vmMap[T] && (where == null || where(c)),
+    );
+  }
+
+  void map<T1, T2>(
     Handler<T2> handler,
     Mapper<T1, T2> mapper, {
     Checker<T1> where,
@@ -121,7 +158,6 @@ abstract class EpicState<T extends StatefulWidget> extends State<T> {
       where: where ?? (e) => true,
       typeFits: (e) => e is T1,
     ));
-    return null;
   }
 
   Future<void> onEvent(dynamic event) async {
@@ -130,8 +166,7 @@ abstract class EpicState<T extends StatefulWidget> extends State<T> {
       try {
         if (await mapper.process(event)) handled = true;
       } catch (e) {
-        if (scope.closed)
-          return;
+        if (scope.closed) return;
         rethrow;
       }
     }

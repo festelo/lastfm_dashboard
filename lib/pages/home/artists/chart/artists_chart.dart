@@ -34,9 +34,8 @@ class _ArtistsChartState extends EpicState<ArtistsChart> {
     period = vm.period;
     bounds = vm.bounds;
 
-    handle<ViewModelChanged<ChartViewModel>>(
+    handleVM<ChartViewModel>(
       viewModelChanged,
-      where: (e) => e.viewModel == vm,
     );
 
     handle<UserScrobblesAdded>(
