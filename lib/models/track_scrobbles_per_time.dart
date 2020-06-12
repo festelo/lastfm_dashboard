@@ -35,9 +35,14 @@ class TrackScrobblesPerTime {
       : artistId = map[properties.artistId],
         trackId = map[properties.trackId],
         userId = map[properties.userId],
-        period = null, // TODO: db mappers
+        period = DatePeriod.values.firstWhere(
+          (e) => e.name == map[properties.period] as String,
+          orElse: () => null,
+        ),
         count = map[properties.count],
         groupedDate = map[properties.groupedDate] == null
             ? null
-            : DateTime.fromMillisecondsSinceEpoch(map[properties.groupedDate]);
+            : DateTime.fromMillisecondsSinceEpoch(
+                map[properties.groupedDate],
+              ).subtract(DateTime.now().timeZoneOffset);
 }

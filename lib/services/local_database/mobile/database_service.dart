@@ -807,16 +807,7 @@ class TrackScrobblesPerTimeQuery implements d.TrackScrobblesPerTimeQuery {
     final ccount = TrackScrobblesPerTime.properties.count;
     final cartistId = TrackScrobble.properties.artistId;
 
-    String periodStr;
-    if (period == DatePeriod.day) {
-      periodStr = 'day';
-    }
-    if (period == DatePeriod.hour) {
-      periodStr = 'hour';
-    }
-    if (period == DatePeriod.month) {
-      periodStr = 'month';
-    }
+    String periodStr = period.name;
 
     String groupedQuery;
     if (period == DatePeriod.day) {
@@ -826,6 +817,10 @@ class TrackScrobblesPerTimeQuery implements d.TrackScrobblesPerTimeQuery {
     if (period == DatePeriod.month) {
       groupedQuery =
           "CAST(strftime('%s000', date($cdate / 1000, 'unixepoch', 'start of month')) as INTEGER)";
+    }
+    if (period == DatePeriod.week) {
+      groupedQuery = 
+          "CAST(strftime('%s000', date($cdate / 1000, 'unixepoch', '-6 days', 'weekday 1')) as INTEGER)";
     }
     if (period == DatePeriod.hour) {
       groupedQuery = '''

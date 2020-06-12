@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:lastfm_dashboard/epics/epic_state.dart';
 import 'package:lastfm_dashboard/models/models.dart';
 import 'package:lastfm_dashboard/view_models/chart_view_model.dart';
-import 'package:lastfm_dashboard/view_models/epic_view_model.dart';
 import 'package:provider/provider.dart';
 
 class DurationSwitcher extends StatefulWidget {
@@ -34,6 +33,8 @@ class _DurationSwitcherState extends EpicState<DurationSwitcher> {
     switch (vm.period) {
       case DatePeriod.day:
         return 'Day';
+      case DatePeriod.week:
+        return 'Week';
       case DatePeriod.hour:
         return 'Hour';
       case DatePeriod.month:

@@ -7,12 +7,14 @@ import 'package:lastfm_dashboard/models/models.dart';
 class BaseChart extends StatelessWidget {
   final ChartData<DateTime, int> data;
   final void Function(ChartEntity<DateTime, int> entity) pointPressed;
+  final SwipedCallback swiped;
   final DatePeriod range;
 
   const BaseChart(
     this.data, {
     this.pointPressed,
     this.range,
+    this.swiped,
   });
 
   String formatDate(DateTime t) {
@@ -21,6 +23,8 @@ class BaseChart extends StatelessWidget {
         return t.toHumanable('d');
       case DatePeriod.month:
         return t.toHumanable('MMM');
+      case DatePeriod.week:
+        return t.toHumanable('d');
       case DatePeriod.hour:
         return t.toHumanable('h');
       default:
@@ -32,8 +36,10 @@ class BaseChart extends StatelessWidget {
     switch (range) {
       case DatePeriod.month:
         return Duration(days: 60);
+      case DatePeriod.week:
+        return Duration(days: 3);
       case DatePeriod.day:
-        return Duration(days: 2);
+        return Duration(days: 1);
       case DatePeriod.hour:
         return Duration(hours: 2);
       default:
@@ -44,6 +50,8 @@ class BaseChart extends StatelessWidget {
   int getChartYStep() {
     switch (range) {
       case DatePeriod.month:
+        return 300;
+      case DatePeriod.week:
         return 100;
       case DatePeriod.day:
         return 10;
@@ -79,6 +87,7 @@ class BaseChart extends StatelessWidget {
         DateMapper(formatter: formatDate),
         IntMapper(),
       ),
+      swiped: swiped,
       theme: chartTheme,
       pointPressed: pointPressed,
       gestureHandlerBuilder: const HybridHandlerBuilder(),
