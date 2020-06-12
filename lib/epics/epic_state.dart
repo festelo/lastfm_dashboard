@@ -37,7 +37,7 @@ abstract class EpicState<T extends StatefulWidget> extends State<T> {
   EpicProvider provider;
   EpicManager epicManager;
   StreamSubscription epicSubscription;
-  final Scope scope = Scope();
+  final Scope scope = Scope('stated');
 
   final List<EpicMapper> _mappers = [];
   final Map<Type, dynamic> _vmMap = {};

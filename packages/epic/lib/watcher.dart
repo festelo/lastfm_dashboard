@@ -16,7 +16,7 @@ extension WatchersExtensions on EpicContainer {
   }
 
   Future<Scope> startWatchers() async {
-    final scope = Scope();
+    final scope = Scope('watcher');
     final provider = getProvider(scope);
 
     final watchers = <Watcher>[];

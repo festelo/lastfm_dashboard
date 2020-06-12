@@ -118,7 +118,7 @@ class EpicManager {
 
   RunnedEpic start(Epic epic) {
     final cancelled = Wrapper(false);
-    final scope = Scope();
+    final scope = Scope(epic.toString());
     final context = EpicContext(
       manager: this,
       cancelled: cancelled,

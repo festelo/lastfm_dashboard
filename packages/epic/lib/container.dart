@@ -6,11 +6,12 @@ typedef ValueBuilder<T> = FutureOr<T> Function();
 typedef ValueBuilderComplex<T> = FutureOr<T> Function(EpicProvider provider);
 
 class Scope {
+  final String _debugLabel;
   final List<ScopeListener> _listeners = [];
   var _closed = false;
   bool get closed => _closed;
 
-  Scope();
+  Scope([this._debugLabel]);
 
   void addListener(ScopeListener listener) {
     _listeners.add(listener);
@@ -76,6 +77,9 @@ abstract class BaseScoped<T> {
   final Map<Scope, T> _scoped = {};
 
   FutureOr<T> _build(Scope scope, ValueBuilder<T> builder) {
+    if (scope.closed) {
+      throw Exception('Scope is closed');
+    }
     if (!_scoped.containsKey(scope)) {
       final futureOrValue = builder();
       return save(scope, futureOrValue);
@@ -88,13 +92,22 @@ abstract class BaseScoped<T> {
     if (futureOrValue is Future<T>) {
       return Future(() async {
         final value = await futureOrValue;
-        _scoped[scope] = value;
+        _addOrDispose(value, scope);
         return value;
       });
     } else {
       final value = futureOrValue;
       _scoped[scope] = value;
       return value;
+    }
+  }
+
+  void _addOrDispose(T val, Scope scope) {
+    if (!scope.closed) {
+        _scoped[scope] = val;
+    } else {
+      if (_disposer != null) _disposer(val);
+      throw Exception('Scope was closed in time of getting the value');
     }
   }
 
@@ -112,6 +125,9 @@ abstract class BaseTransient<T> {
   final Map<Scope, List<T>> _scoped = {};
 
   FutureOr<T> _build(Scope scope, ValueBuilder<T> builder) {
+    if (scope.closed) {
+      throw Exception('Scope is closed');
+    }
     if (!_scoped.containsKey(scope)) {
       _scoped[scope] = [];
       scope.addListener(() => _unregister(scope));
@@ -121,13 +137,22 @@ abstract class BaseTransient<T> {
     if (futureOrValue is Future<T>) {
       return Future(() async {
         final value = await futureOrValue;
-        _scoped[scope].add(value);
+        _addOrDispose(value, scope);
         return value;
       });
     } else {
       final value = futureOrValue;
       _scoped[scope].add(value);
       return value;
+    }
+  }
+
+  void _addOrDispose(T val, Scope scope) {
+    if (!scope.closed) {
+      _scoped[scope].add(val);
+    } else {
+      if (_disposer != null) _disposer(val);
+      throw Exception('Scope was closed in time of getting the value');
     }
   }
 
@@ -269,7 +294,9 @@ class EpicContainer {
   }
 }
 
-class Key<T> { const Key();}
+class Key<T> {
+  const Key();
+}
 
 class EpicProvider {
   final EpicContainer container;
