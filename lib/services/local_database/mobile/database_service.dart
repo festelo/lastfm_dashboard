@@ -10,6 +10,7 @@ import 'package:lastfm_dashboard/models/models.dart';
 import 'package:lastfm_dashboard/models/database_mapped_model.dart';
 import 'package:random_string/random_string.dart';
 import 'package:collection/collection.dart';
+import 'package:shared/models.dart';
 import '../database_service.dart' as d;
 import '../database_service.dart';
 import './db_setup_io.dart';

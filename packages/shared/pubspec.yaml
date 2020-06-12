@@ -1,0 +1,8 @@
+name: shared
+description: Library for shared data between lastfm_dashboard and/or packages
+
+dependencies:
+  quiver_hashcode: ^2.0.0
+
+environment:
+  sdk: '>=2.7.0 <3.0.0'

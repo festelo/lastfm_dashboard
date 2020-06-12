@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:f_charts/f_charts.dart';
 import 'package:lastfm_dashboard/extensions.dart';
-import 'package:lastfm_dashboard/models/models.dart';
+import 'package:shared/models.dart';
 
 class BaseChart extends StatelessWidget {
   final ChartData<DateTime, int> data;

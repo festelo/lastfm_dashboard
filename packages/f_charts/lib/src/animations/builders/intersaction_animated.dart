@@ -5,6 +5,7 @@ import 'package:f_charts/utils.dart';
 import 'package:f_charts/data_models.dart';
 import 'package:flutter/animation.dart';
 import '../animated_series.dart';
+import 'package:shared/models.dart';
 
 Map<RelativeOffset, RelativeOffset> _findPointsIntersactionWay(
   List<RelativeOffset> from,

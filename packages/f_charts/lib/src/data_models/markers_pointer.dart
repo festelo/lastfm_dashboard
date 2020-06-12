@@ -1,4 +1,4 @@
-import 'date_period.dart';
+import 'package:shared/models.dart';
 
 class ChartMarkersPointer<TAbscissa, TOrdinate> {
   final MarkersPointer<TAbscissa> abscissa;

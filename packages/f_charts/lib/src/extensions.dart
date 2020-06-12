@@ -3,6 +3,7 @@ import 'dart:math';
 import 'dart:ui';
 
 import 'package:f_charts/data_models.dart';
+import 'package:shared/models.dart';
 
 extension MapExtensions<T1, T2> on Map<T1, T2> {
   Map<T2, T1> reverse() => this.map((key, value) => MapEntry(value, key));

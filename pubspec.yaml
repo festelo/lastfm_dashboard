@@ -22,11 +22,14 @@ dependencies:
   random_string: ^2.0.1
   collection: ^1.14.12
   quiver: ^2.1.3
+  intl: ^0.16.1
+  
   epic:
     path: packages/epic
   f_charts:
     path: packages/f_charts
-  intl: ^0.16.1
+  shared:
+    path: packages/shared
 
 dev_dependencies:
   pubspec_semver:

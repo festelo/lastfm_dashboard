@@ -1,4 +1,5 @@
 import 'models.dart';
+import 'package:shared/models.dart';
 
 class _TrackScrobblesPerTimeProperties {
   String get name => 'name';

@@ -6,6 +6,7 @@ import 'package:f_charts/data_models.dart';
 import 'package:f_charts/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/painting.dart';
+import 'package:shared/models.dart';
 
 import 'layer.dart';
 

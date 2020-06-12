@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:lastfm_dashboard/models/models.dart';
+import 'package:shared/models.dart';
 
 enum SortDirection { ascending, descending }
 

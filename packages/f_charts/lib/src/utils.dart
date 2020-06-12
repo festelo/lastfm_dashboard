@@ -1,7 +1,7 @@
 import 'dart:math';
 
-import 'package:f_charts/data_models.dart';
 import 'package:f_charts/utils.dart';
+import 'package:shared/models.dart';
 
 Point intersection(Pair<Point> l1, Pair<Point> l2) {
   var a1 = l1.b.y - l1.a.y;

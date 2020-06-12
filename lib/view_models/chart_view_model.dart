@@ -1,5 +1,5 @@
 import 'package:epic/epic.dart';
-import 'package:lastfm_dashboard/models/models.dart';
+import 'package:shared/models.dart';
 import 'epic_view_model.dart';
 
 class ChartViewModel extends EpicViewModel {

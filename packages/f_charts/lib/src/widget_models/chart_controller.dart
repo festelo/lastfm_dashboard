@@ -6,6 +6,7 @@ import 'package:flutter/animation.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/scheduler.dart';
+import 'package:shared/models.dart';
 
 import 'package:f_charts/layers.dart';
 
