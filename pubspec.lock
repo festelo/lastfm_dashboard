@@ -130,7 +130,7 @@ packages:
   f_charts:
     dependency: "direct main"
     description:
-      path: "../f_charts"
+      path: "packages/f_charts"
       relative: true
     source: path
     version: "1.0.0+1"

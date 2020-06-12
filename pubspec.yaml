@@ -24,8 +24,8 @@ dependencies:
   quiver: ^2.1.3
   epic:
     path: packages/epic
-  f_charts: 
-    path: ../f_charts
+  f_charts:
+    path: packages/f_charts
   intl: ^0.16.1
 
 dev_dependencies:
