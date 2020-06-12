@@ -125,7 +125,7 @@ class EpicManager {
       provider: container.getProvider(scope),
     );
     final stream =
-        Stream.fromFuture(epic(context, _notify)).asBroadcastStream();
+        Stream.fromFuture(epic(context, notify)).asBroadcastStream();
     final runnedEpic = RunnedEpic(
       epic,
       cancelled,
@@ -137,21 +137,21 @@ class EpicManager {
       (_) => _epicComplete(runnedEpic),
       onError: (e) => _epicComplete(runnedEpic, e),
     ).whenComplete(() => scope.close());
-    
+
     return runnedEpic;
   }
 
   void _epicStarted(RunnedEpic runnedEpic) {
     _runned.add(runnedEpic);
-    _notify(EpicStarted(runnedEpic));
+    notify(EpicStarted(runnedEpic));
   }
 
   void _epicComplete(RunnedEpic runnedEpic, [dynamic error]) {
     _runned.remove(runnedEpic);
-    _notify(EpicEnded(runnedEpic, error));
+    notify(EpicEnded(runnedEpic, error));
   }
 
-  void _notify(dynamic event) {
+  void notify(dynamic event) {
     if (!_controller.isClosed) _controller.add(event);
   }
 

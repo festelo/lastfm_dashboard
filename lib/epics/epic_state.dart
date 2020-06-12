@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:epic/container.dart';
 import 'package:epic/epic.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:lastfm_dashboard/view_models/epic_view_model.dart';
 import 'package:provider/provider.dart';
 
 typedef Handler<T> = FutureOr<void> Function(T);
@@ -81,7 +82,23 @@ abstract class EpicState<T extends StatefulWidget> extends State<T> {
     setState(() => loading = false);
   }
 
-  void subscribe<T>(
+  void subscribeVM<T>(T instance) {
+    subscribe<ViewModelChanged<T>>(where: 
+      (c) => c.viewModel == instance);
+  }
+
+  void subscribe<T>({
+    Checker<T> where,
+  }) {
+    _mappers.add(EpicMapper<T, T> (
+      handler: (_) => apply(),
+      map: (e) => e,
+      where: where ?? (e) => true,
+      typeFits: (e) => e is T,
+    ));
+  }
+
+  void handle<T>(
     Handler<T> handler, {
     Checker<T> where,
   }) {
@@ -121,5 +138,5 @@ abstract class EpicState<T extends StatefulWidget> extends State<T> {
     if (handled) apply();
   }
 
-  FutureOr<void> onLoad();
+  FutureOr<void> onLoad() {}
 }

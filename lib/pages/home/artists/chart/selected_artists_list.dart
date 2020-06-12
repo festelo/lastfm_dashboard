@@ -41,22 +41,22 @@ class _SelectedArtistsListState extends EpicState<SelectedArtistsList> {
         .whereType<RefreshUserEpic>()
         .any((e) => e.username == currentUser.username);
 
-    subscribe<ArtistSelected>(
+    handle<ArtistSelected>(
       artistSelected,
       where: (e) => e.selection.userId == userId,
     );
 
-    subscribe<ArtistSelectionRemoved>(
+    handle<ArtistSelectionRemoved>(
       artistSelectionRemoved,
       where: (e) => e.userId == userId,
     );
 
-    subscribe<UserScrobblesAdded>(
+    handle<UserScrobblesAdded>(
       scrobblesAdded,
       where: (e) => e.user.username == userId,
     );
     
-    subscribe<UserRefreshed>(userRefreshed, 
+    handle<UserRefreshed>(userRefreshed, 
       where: (e) => e.newUser.username == userId,
     );
   }

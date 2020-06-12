@@ -1,33 +1,26 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:lastfm_dashboard/epics/epic_state.dart';
+import 'package:lastfm_dashboard/models/models.dart';
+import 'package:lastfm_dashboard/view_models/chart_view_model.dart';
+import 'package:lastfm_dashboard/view_models/epic_view_model.dart';
+import 'package:provider/provider.dart';
 
-
-abstract class Foo {
-  String get a;
-}
-
-class Bar extends Foo {
-  final String a;
-  Bar(this.a);
-}
-
-class DurationSwitcher extends StatelessWidget {
+class DurationSwitcher extends StatefulWidget {
   final double width;
   final double height;
   final double margin;
 
-  DurationSwitcher({
-    Key key,
-    this.width = 160,
-    this.height = 40,
-    this.margin = 20
-  }): super(key: key);
-  
-  final durations = [
-    Duration(hours: 1),
-    Duration(days: 1),
-    Duration(days: 7),
-    Duration(days: 30),
-  ];
+  const DurationSwitcher(
+      {Key key, this.width = 160, this.height = 40, this.margin = 20})
+      : super(key: key);
+
+  @override
+  _DurationSwitcherState createState() => _DurationSwitcherState();
+}
+
+class _DurationSwitcherState extends EpicState<DurationSwitcher> {
   final durationNames = [
     'Hour',
     'Day',
@@ -35,13 +28,47 @@ class DurationSwitcher extends StatelessWidget {
     'Month',
   ];
 
+  ChartViewModel vm;
+
+  String getDurationName() {
+    switch (vm.period) {
+      case DatePeriod.day:
+        return 'Day';
+      case DatePeriod.hour:
+        return 'Hour';
+      case DatePeriod.month:
+        return 'Month';
+      default:
+        return 'Month';
+    }
+  }
+
+  @override
+  FutureOr<void> onLoad() {
+    vm = context.read<ChartViewModel>();
+    subscribeVM<ChartViewModel>(vm);
+  }
+
+  DatePeriod get nextPeriod {
+    final i = DatePeriod.values.indexOf(vm.period);
+    final newI = i + 1;
+    if (newI == DatePeriod.values.length) return null;
+    return DatePeriod.values[newI];
+  }
+
+  DatePeriod get previousPeriod {
+    final i = DatePeriod.values.indexOf(vm.period);
+    final newI = i - 1;
+    if (newI == -1) return null;
+    return DatePeriod.values[newI];
+  }
+
   @override
   Widget build(BuildContext context) {
-    const i = 0;
-    final text = durationNames[0];
+    final text = getDurationName();
     return Card(
       color: Theme.of(context).canvasColor,
-      margin: EdgeInsets.all(margin),
+      margin: EdgeInsets.all(widget.margin),
       child: Container(
         height: 40,
         width: 160,
@@ -65,34 +92,23 @@ class DurationSwitcher extends StatelessWidget {
               width: 40,
               child: IconButton(
                 icon: Icon(Icons.add, size: 18),
-                onPressed: () {
-                  /*
-                  context.read<EventsContext>().push(
-                        SetArtistScrobblesDurationEventInfo(
-                          duration: durations[(i + 1) % durations.length],
-                        ),
-                        setArtistScrobblesDuration,
-                      );
-                      */
-                },
+                onPressed: nextPeriod == null || vm.bounds[nextPeriod] == null
+                    ? null
+                    : () {
+                        vm.period = nextPeriod;
+                      },
               ),
             ),
             Container(
               width: 40,
               child: IconButton(
                 icon: Icon(Icons.remove, size: 18),
-                onPressed: () {
-                  var newI = i - 1;
-                  if (newI == -1) newI = durations.length - 1;
-                  /*
-                  context.read<EventsContext>().push(
-                        SetArtistScrobblesDurationEventInfo(
-                          duration: durations[newI],
-                        ),
-                        setArtistScrobblesDuration,
-                      );
-                      */
-                },
+                onPressed:
+                    previousPeriod == null || vm.bounds[previousPeriod] == null
+                        ? null
+                        : () {
+                            vm.period = previousPeriod;
+                          },
               ),
             ),
           ],

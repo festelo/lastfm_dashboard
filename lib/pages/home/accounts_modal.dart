@@ -147,9 +147,9 @@ class _AccountsModalState extends EpicState<AccountsModal> {
         .map((e) => e.username)
         .toList();
 
-    subscribe(userAdded);
-    subscribe(userRemoved);
-    subscribe(userRefreshed);
+    handle(userAdded);
+    handle(userRemoved);
+    handle(userRefreshed);
     map<EpicStarted, String>(
       userRemovingStarted,
       (e) => (e.runned.epic as RemoveUserEpic).username,

@@ -32,7 +32,7 @@ class _HomePageState extends EpicState<HomePage> {
 
   @override
   Future<void> onLoad() async {
-    subscribe<UserSwitched>(userSwitched);
+    handle<UserSwitched>(userSwitched);
     await refreshUser();
   }
 

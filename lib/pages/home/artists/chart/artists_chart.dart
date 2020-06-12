@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:collection/collection.dart';
-import 'package:f_charts/f_charts.dart';
+import 'package:f_charts/f_charts.dart' hide Pair;
 import 'package:flutter/material.dart';
 import 'package:lastfm_dashboard/components/base_chart.dart';
 import 'package:lastfm_dashboard/epics/artists_epics.dart';
@@ -9,6 +9,9 @@ import 'package:lastfm_dashboard/epics/epic_state.dart';
 import 'package:lastfm_dashboard/epics/users_epics.dart';
 import 'package:lastfm_dashboard/models/models.dart';
 import 'package:lastfm_dashboard/services/local_database/database_service.dart';
+import 'package:lastfm_dashboard/view_models/chart_view_model.dart';
+import 'package:lastfm_dashboard/view_models/epic_view_model.dart';
+import 'package:provider/provider.dart';
 
 class ArtistsChart extends StatefulWidget {
   @override
@@ -16,32 +19,56 @@ class ArtistsChart extends StatefulWidget {
 }
 
 class _ArtistsChartState extends EpicState<ArtistsChart> {
+  DatePeriod period;
   ChartData<DateTime, int> data;
-  ChartDateRange dateRange = ChartDateRange.month;
-  DateTime start;
-  DateTime end;
+
+  Map<DatePeriod, Pair<DateTime>> bounds;
 
   @override
   Future<void> onLoad() async {
     final currentUser = await provider.get<User>(currentUserKey);
     final userId = currentUser.id;
 
-    subscribe<UserScrobblesAdded>(
+    final vm = context.read<ChartViewModel>();
+    period = vm.period;
+    bounds = vm.bounds;
+
+    handle<ViewModelChanged<ChartViewModel>>(
+      viewModelChanged,
+      where: (e) => e.viewModel == vm,
+    );
+
+    handle<UserScrobblesAdded>(
       scrobblesAdded,
       where: (e) => e.user.username == userId,
     );
 
-    subscribe<ArtistSelected>(
+    handle<ArtistSelected>(
       artistSelected,
       where: (e) => e.selection.userId == userId,
     );
 
-    subscribe<ArtistSelectionRemoved>(
+    handle<ArtistSelectionRemoved>(
       artistSelectionRemoved,
       where: (e) => e.userId == userId,
     );
 
     await refreshData();
+  }
+
+  Future<void> viewModelChanged(ViewModelChanged<ChartViewModel> e) async {
+    var refresh = false;
+    if (e.viewModel.period != period) {
+      period = e.viewModel.period;
+      refresh = true;
+    }
+    if (e.viewModel.bounds != bounds) {
+      bounds = e.viewModel.bounds;
+      refresh = true;
+    }
+    if (refresh) {
+      await refreshData();
+    }
   }
 
   Future<void> scrobblesAdded(UserScrobblesAdded e) async {
@@ -61,23 +88,12 @@ class _ArtistsChartState extends EpicState<ArtistsChart> {
     final currentUser = await provider.get<User>(currentUserKey);
     final selections = await db.artistSelections.getAll();
 
-    Duration duration;
-    if (dateRange == ChartDateRange.month) {
-      duration = Duration(days: 30);
-    }
-    if (dateRange == ChartDateRange.day) {
-      duration = Duration(days: 1);
-    }
-    if (dateRange == ChartDateRange.hour) {
-      duration = Duration(hours: 1);
-    }
-
     final scrobblesList = await db.trackScrobblesPerTimeQuery.getByArtist(
-      duration: duration,
+      period: period,
       artistIds: selections.map((e) => e.artistId).toList(),
       userId: currentUser.id,
-      start: start,
-      end: end,
+      start: bounds[period].a,
+      end: bounds[period].b,
     );
 
     final scrobbles = groupBy<TrackScrobblesPerTime, String>(
@@ -97,28 +113,35 @@ class _ArtistsChartState extends EpicState<ArtistsChart> {
     data = ChartData(series);
   }
 
-  Future<void> updateRange(DateTime time, ChartDateRange newRange) async {
-    if (newRange == ChartDateRange.month) {
-      start = DateTime(time.year, time.month);
-      end = DateTime(time.year, time.month + 1);
+  Future<void> updateRange(DateTime time, DatePeriod newRange) async {
+    if (newRange == DatePeriod.month) {
+      bounds[newRange] = Pair(
+        DateTime(time.year),
+        DateTime(time.year + 1),
+      );
     }
-    if (newRange == ChartDateRange.day) {
-      start = DateTime(time.year, time.month, time.day);
-      end = DateTime(time.year, time.month, time.day + 1);
+    if (newRange == DatePeriod.day) {
+      bounds[newRange] = Pair(
+        DateTime(time.year, time.month),
+        DateTime(time.year, time.month + 1),
+      );
     }
-    if (newRange == ChartDateRange.hour) {
-      start = DateTime(time.year, time.month, time.day, time.hour);
-      end = DateTime(time.year, time.month, time.day, time.hour + 1);
+    if (newRange == DatePeriod.hour) {
+      bounds[newRange] = Pair(
+        DateTime(time.year, time.month, time.day),
+        DateTime(time.year, time.month, time.day + 1),
+      );
     }
-    dateRange = newRange;
+    period = newRange;
     await refreshData();
-    apply();
+    context.read<ChartViewModel>().period = newRange;
+    context.read<ChartViewModel>().bounds = bounds;
   }
 
-  ChartDateRange getNextRange() {
-    final nextIndex = (ChartDateRange.values.indexOf(dateRange) + 1) %
-        ChartDateRange.values.length;
-    return ChartDateRange.values[nextIndex];
+  DatePeriod getNextRange() {
+    final nextIndex = DatePeriod.values.indexOf(period) + 1;
+    if (nextIndex == DatePeriod.values.length) return null;
+    return DatePeriod.values[nextIndex];
   }
 
   @override
@@ -133,11 +156,13 @@ class _ArtistsChartState extends EpicState<ArtistsChart> {
     else
       child = BaseChart(
         data,
-        range: dateRange,
-        pointPressed: (e) => updateRange(
-          e.abscissa,
-          getNextRange(),
-        ),
+        range: period,
+        pointPressed: getNextRange() == null
+            ? null
+            : (e) => updateRange(
+                  e.abscissa,
+                  getNextRange(),
+                ),
       );
 
     return child;

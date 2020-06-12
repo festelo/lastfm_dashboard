@@ -32,7 +32,7 @@ abstract class Query {
 
 abstract class TrackScrobblesPerTimeQuery extends Query {
   Stream<List<TrackScrobblesPerTime>> changesByArtist({
-    @required Duration duration,
+    @required DatePeriod period,
     List<String> ids,
     String userId,
     List<String> artistIds,
@@ -40,7 +40,7 @@ abstract class TrackScrobblesPerTimeQuery extends Query {
     DateTime end,
   });
   Future<List<TrackScrobblesPerTime>> getByArtist({
-    @required Duration duration,
+    @required DatePeriod period,
     List<String> ids,
     String userId,
     List<String> artistIds,

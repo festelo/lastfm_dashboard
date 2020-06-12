@@ -762,15 +762,18 @@ class TrackScrobblesPerTimeQuery implements d.TrackScrobblesPerTimeQuery {
     DateTime start,
     DateTime end,
   }) {
+    final cdate = TrackScrobble.properties.date;
+    final cuserId = TrackScrobble.properties.userId;
+    final cartistId = TrackScrobble.properties.artistId;
+
     final statements = [
       if (ids != null && ids.isNotEmpty)
         '$cid in  (${List.filled(ids.length, '?').join(', ')})',
-      if (userId != null) TrackScrobble.properties.userId + ' = ?',
+      if (userId != null) '$cuserId = ?',
       if (artistIds != null && artistIds.isNotEmpty)
-        TrackScrobble.properties.artistId +
-            ' in  (${List.filled(artistIds.length, '?').join(', ')})',
-      if (start != null) TrackScrobble.properties.date + ' >= ?',
-      if (end != null) TrackScrobble.properties.date + ' < ?',
+        '$cartistId in  (${List.filled(artistIds.length, '?').join(', ')})',
+      if (start != null) '$cdate >= ?',
+      if (end != null) '$cdate < ?',
     ];
     return statements;
   }
@@ -795,24 +798,57 @@ class TrackScrobblesPerTimeQuery implements d.TrackScrobblesPerTimeQuery {
   Future<List<Map<String, dynamic>>> _getValues(
     List<String> statements,
     List<dynamic> params,
+    DatePeriod period,
   ) async {
+    final cdate = TrackScrobble.properties.date;
+    final cgroupedDate = TrackScrobblesPerTime.properties.groupedDate;
+    final cuserId = TrackScrobble.properties.userId;
+    final cperiod = TrackScrobblesPerTime.properties.period;
+    final ccount = TrackScrobblesPerTime.properties.count;
+    final cartistId = TrackScrobble.properties.artistId;
+
+    String periodStr;
+    if (period == DatePeriod.day) {
+      periodStr = 'day';
+    }
+    if (period == DatePeriod.hour) {
+      periodStr = 'hour';
+    }
+    if (period == DatePeriod.month) {
+      periodStr = 'month';
+    }
+
+    String groupedQuery;
+    if (period == DatePeriod.day) {
+      groupedQuery =
+          "CAST(strftime('%s000', date($cdate / 1000, 'unixepoch', 'start of day')) as INTEGER)";
+    }
+    if (period == DatePeriod.month) {
+      groupedQuery =
+          "CAST(strftime('%s000', date($cdate / 1000, 'unixepoch', 'start of month')) as INTEGER)";
+    }
+    if (period == DatePeriod.hour) {
+      groupedQuery = '''
+        (CAST(strftime('%s', date($cdate / 1000, 'unixepoch', 'start of day')) as INTEGER) + (($cdate / 1000) - 
+         CAST(strftime('%s', date($cdate / 1000, 'unixepoch', 'start of day')) as INTEGER)) / 3600 * 3600) * 1000
+      ''';
+    }
+
     final idsQuery = [
-      'SELECT',
-      TrackScrobble.properties.date +
-          ' / ? * ?' +
-          ' as ' +
-          TrackScrobblesPerTime.properties.groupedDate +
-          ',',
-      TrackScrobble.properties.artistId + ',',
-      TrackScrobble.properties.userId + ',',
-      '? as ' + TrackScrobblesPerTime.properties.duration + ',',
-      'count(*) as ' + TrackScrobblesPerTime.properties.count,
-      'FROM $scrobblesTable',
+      '''
+      SELECT
+        $groupedQuery as $cgroupedDate,
+        '$periodStr' as $cperiod,
+        $cuserId,
+        $cartistId,
+        count(*) as $ccount
+      FROM $scrobblesTable''',
       if (statements.isNotEmpty) 'WHERE ' + statements.join(' and\n'),
-      'GROUP BY ',
-      TrackScrobblesPerTime.properties.groupedDate + ',',
-      TrackScrobble.properties.artistId + ',',
-      TrackScrobble.properties.userId,
+      '''
+      GROUP BY
+        $cgroupedDate,
+        $cartistId,
+        $cuserId''',
     ].join('\n');
     final idsMap = await database.rawQuery(idsQuery, [
       ...params,
@@ -825,7 +861,7 @@ class TrackScrobblesPerTimeQuery implements d.TrackScrobblesPerTimeQuery {
     List<String> ids,
     List<String> artistIds,
     String userId,
-    @required Duration duration,
+    @required DatePeriod period,
     DateTime start,
     DateTime end,
   }) async* {
@@ -837,25 +873,19 @@ class TrackScrobblesPerTimeQuery implements d.TrackScrobblesPerTimeQuery {
       end: end,
     );
     assert(statements.isNotEmpty);
-    final durationMsec = duration.inMilliseconds;
-    final params = [
-      durationMsec,
-      durationMsec,
-      durationMsec,
-      ..._getWhereParams(
-        ids: ids,
-        userId: userId,
-        artistIds: artistIds,
-        start: start,
-        end: end,
-      ),
-    ];
+    final params = _getWhereParams(
+      ids: ids,
+      userId: userId,
+      artistIds: artistIds,
+      start: start,
+      end: end,
+    );
 
-    var watching = await _getValues(statements, params);
+    var watching = await _getValues(statements, params, period);
     yield watching.map((e) => TrackScrobblesPerTime.deserialize(e)).toList();
     yield* events
         .where((e) => e.tableName == scrobblesTable)
-        .asyncMap((event) => _getValues(statements, params))
+        .asyncMap((event) => _getValues(statements, params, period))
         .where((newValues) =>
             !const DeepCollectionEquality().equals(watching, newValues))
         .map((newValues) {
@@ -871,7 +901,7 @@ class TrackScrobblesPerTimeQuery implements d.TrackScrobblesPerTimeQuery {
     List<String> ids,
     List<String> artistIds,
     String userId,
-    @required Duration duration,
+    @required DatePeriod period,
     DateTime start,
     DateTime end,
   }) async {
@@ -883,21 +913,15 @@ class TrackScrobblesPerTimeQuery implements d.TrackScrobblesPerTimeQuery {
       end: end,
     );
     assert(statements.isNotEmpty);
-    final durationMsec = duration.inMilliseconds;
-    final params = [
-      durationMsec,
-      durationMsec,
-      durationMsec,
-      ..._getWhereParams(
-        ids: ids,
-        userId: userId,
-        artistIds: artistIds,
-        start: start,
-        end: end,
-      ),
-    ];
+    final params = _getWhereParams(
+      ids: ids,
+      userId: userId,
+      artistIds: artistIds,
+      start: start,
+      end: end,
+    );
 
-    final values = await _getValues(statements, params);
+    final values = await _getValues(statements, params, period);
     return values.map((e) => TrackScrobblesPerTime.deserialize(e)).toList();
   }
 }
