@@ -12,6 +12,7 @@ class Chart<T1, T2> extends StatefulWidget {
   final ChartMarkersPointer<T1, T2> markersPointer;
   final ChartTheme theme;
   final ChartGestureHandlerBuilder gestureHandlerBuilder;
+  final String title;
 
   final PointPressedCallback<T1, T2> pointPressed;
   final SwipedCallback swiped;
@@ -23,6 +24,7 @@ class Chart<T1, T2> extends StatefulWidget {
     this.pointPressed,
     this.markersPointer,
     this.swiped,
+    this.title,
     this.gestureHandlerBuilder = const PointerHandlerBuilder(),
     this.bounds,
   }) : assert((theme.yMarkers != null || theme.xMarkers != null) &&
@@ -44,6 +46,7 @@ class _ChartState<T1, T2> extends State<Chart<T1, T2>>
       widget.mapper,
       widget.markersPointer,
       this,
+      state: ChartState()..title = widget.title,
       theme: widget.theme,
       pointPressed: widget.pointPressed,
       swiped: widget.swiped,
@@ -80,6 +83,9 @@ class _ChartState<T1, T2> extends State<Chart<T1, T2>>
     }
     if (oldWidget.bounds != widget.bounds) {
       chartController.bounds = widget.bounds;
+    }
+    if (oldWidget.title != widget.title) {
+      chartController.state.title = widget.title;
     }
     if (oldWidget.chartData != widget.chartData) {
       await startAnimation(

@@ -10,7 +10,6 @@ import 'package:lastfm_dashboard/epics/users_epics.dart';
 import 'package:lastfm_dashboard/models/models.dart';
 import 'package:lastfm_dashboard/services/local_database/database_service.dart';
 import 'package:lastfm_dashboard/view_models/chart_view_model.dart';
-import 'package:lastfm_dashboard/view_models/epic_view_model.dart';
 import 'package:provider/provider.dart';
 import 'package:shared/models.dart';
 
@@ -20,66 +19,36 @@ class ArtistsChart extends StatefulWidget {
 }
 
 class _ArtistsChartState extends EpicState<ArtistsChart> {
-  DatePeriod period;
   ChartData<DateTime, int> data;
-
-  Map<DatePeriod, Pair<DateTime>> bounds;
+  ChartViewModel get vm => Provider.of<ChartViewModel>(context, listen: false);
+  DatePeriod get period => vm.period;
+  DatePeriod get nextPeriod => vm.nextPeriod;
+  Map<DatePeriod, Pair<DateTime>> get bounds => vm.bounds;
 
   @override
   Future<void> onLoad() async {
     final currentUser = await provider.get<User>(currentUserKey);
     final userId = currentUser.id;
 
-    final vm = context.read<ChartViewModel>();
-    period = vm.period;
-    bounds = vm.bounds;
-
     handleVM<ChartViewModel>(
-      viewModelChanged,
+      (_) => refreshData(),
     );
 
     handle<UserScrobblesAdded>(
-      scrobblesAdded,
+      (_) => refreshData(),
       where: (e) => e.user.username == userId,
     );
 
     handle<ArtistSelected>(
-      artistSelected,
+      (_) => refreshData(),
       where: (e) => e.selection.userId == userId,
     );
 
     handle<ArtistSelectionRemoved>(
-      artistSelectionRemoved,
+      (_) => refreshData(),
       where: (e) => e.userId == userId,
     );
 
-    await refreshData();
-  }
-
-  Future<void> viewModelChanged(ViewModelChanged<ChartViewModel> e) async {
-    var refresh = false;
-    if (e.viewModel.period != period) {
-      period = e.viewModel.period;
-      refresh = true;
-    }
-    if (e.viewModel.bounds != bounds) {
-      bounds = e.viewModel.bounds;
-      refresh = true;
-    }
-    if (refresh) {
-      await refreshData();
-    }
-  }
-
-  Future<void> scrobblesAdded(UserScrobblesAdded e) async {
-    await refreshData();
-  }
-
-  Future<void> artistSelected(ArtistSelected e) async {
-    await refreshData();
-  }
-
-  Future<void> artistSelectionRemoved(ArtistSelectionRemoved e) async {
     await refreshData();
   }
 
@@ -140,53 +109,11 @@ class _ArtistsChartState extends EpicState<ArtistsChart> {
 
   Future<void> updateRange(DateTime time, DatePeriod newRange,
       [int offset = 0]) async {
-    if (newRange == DatePeriod.month) {
-      bounds[newRange] = Pair(
-        DateTime(time.year + offset),
-        DateTime(time.year + 1 + offset),
-      );
-    }
-    if (newRange == DatePeriod.week) {
-      bounds[newRange] = Pair(
-        DateTime(time.year, time.month + offset),
-        DateTime(time.year, time.month + 1 + offset),
-      );
-    }
-    if (newRange == DatePeriod.day) {
-      bounds[newRange] = Pair(
-        DateTime(
-          time.year,
-          time.month,
-          time.day - time.weekday + 1 + offset * 7,
-        ),
-        DateTime(
-          time.year,
-          time.month,
-          time.day - time.weekday + 1 + (1 + offset) * 7,
-        ),
-      );
-    }
-    if (newRange == DatePeriod.hour) {
-      bounds[newRange] = Pair(
-        DateTime(time.year, time.month, time.day + offset),
-        DateTime(time.year, time.month, time.day + 1 + offset),
-      );
-    }
-    period = newRange;
-    await refreshData();
-    context.read<ChartViewModel>().period = newRange;
-    context.read<ChartViewModel>().bounds = bounds;
-    apply();
+    await context.read<ChartViewModel>().updateRange(time, newRange, offset);
   }
 
   Future<void> moveBounds({bool forward = true}) async {
-    await updateRange(bounds[period].a, period, forward ? 1 : -1);
-  }
-
-  DatePeriod getNextRange() {
-    final nextIndex = DatePeriod.values.indexOf(period) + 1;
-    if (nextIndex == DatePeriod.values.length) return null;
-    return DatePeriod.values[nextIndex];
+    await context.read<ChartViewModel>().moveBounds(forward: forward);
   }
 
   bool get swipesAvailable =>
@@ -205,6 +132,7 @@ class _ArtistsChartState extends EpicState<ArtistsChart> {
       child = BaseChart(
         data,
         range: period,
+        bounds: bounds[period],
         swiped: !swipesAvailable
             ? null
             : (a) {
@@ -213,11 +141,11 @@ class _ArtistsChartState extends EpicState<ArtistsChart> {
                 moveBounds(forward: a == AxisDirection.right ? true : false);
                 return true;
               },
-        pointPressed: getNextRange() == null
+        pointPressed: nextPeriod == null
             ? null
             : (e) => updateRange(
                   e.abscissa,
-                  getNextRange(),
+                  nextPeriod,
                 ),
       );
 

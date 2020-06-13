@@ -9,6 +9,7 @@ import 'layer.dart';
 class ChartDecorationLayer extends Layer {
   final List<ChartLine> axisMarkers;
   final List<ChartText> axisTextMarkers;
+  final ChartState state;
   ChartLine _xAxisLine;
   ChartLine _yAxisLine;
 
@@ -18,6 +19,7 @@ class ChartDecorationLayer extends Layer {
     List<ChartLine> axisMarkers,
     List<ChartText> axisTextMarkers,
     @required this.theme,
+    @required this.state,
   })  : assert(theme != null),
         axisMarkers = axisMarkers ?? [],
         axisTextMarkers = axisTextMarkers ?? [];
@@ -27,10 +29,11 @@ class ChartDecorationLayer extends Layer {
     @required ChartTheme theme,
     @required ChartMarkersPointer markersPointer,
     @required ChartMapper mapper,
+    @required ChartState state,
     ChartBounds bounds,
   }) {
     bounds = mapper.getBounds(data, or: bounds);
-    final layer = ChartDecorationLayer(theme: theme);
+    final layer = ChartDecorationLayer(theme: theme, state: state);
     layer.placeXAxisLine();
     layer.placeYAxisLine();
     layer.placeYMarkers(bounds, mapper, markersPointer);
@@ -189,6 +192,20 @@ class ChartDecorationLayer extends Layer {
         Paint()
           ..strokeWidth = _yAxisLine.width
           ..color = _yAxisLine.color,
+      );
+    }
+
+    if (theme.titleStyle != null) {
+      var painter = TextPainter(
+        textDirection: TextDirection.ltr,
+        text: TextSpan(
+          style: theme.titleStyle,
+          text: state.title,
+        ),
+      )..layout();
+      painter.paint(
+        canvas,
+        Offset(size.width - painter.width, 0),
       );
     }
   }

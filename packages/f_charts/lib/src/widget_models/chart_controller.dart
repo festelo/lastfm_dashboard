@@ -79,6 +79,7 @@ class ChartController<T1, T2> implements Listenable {
       markersPointer: markersPointer,
       mapper: mapper,
       bounds: bounds,
+      state: state,
     );
   }
 

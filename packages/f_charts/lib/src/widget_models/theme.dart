@@ -14,6 +14,7 @@ class ChartTheme {
   final CircleTheme point;
   final EdgeInsets outerSpace;
   final Color background;
+  final TextStyle titleStyle;
 
   const ChartTheme({
     this.xPointer = const LineTheme(color: Colors.grey),
@@ -27,6 +28,7 @@ class ChartTheme {
     this.background = Colors.white,
     this.xHighlightMarker = const HighlightMarker(),
     this.yHighlightMarker = const HighlightMarker(),
+    this.titleStyle = const TextStyle(color: Colors.grey, fontSize: 18),
   });
 
   ChartTheme copyWith({

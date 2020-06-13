@@ -9,13 +9,32 @@ class BaseChart extends StatelessWidget {
   final void Function(ChartEntity<DateTime, int> entity) pointPressed;
   final SwipedCallback swiped;
   final DatePeriod range;
+  final Pair<DateTime> bounds;
 
   const BaseChart(
     this.data, {
     this.pointPressed,
     this.range,
     this.swiped,
+    this.bounds,
   });
+
+  String get title {
+    switch (range) {
+      case DatePeriod.month:
+        return bounds.a.toHumanable('y');
+      case DatePeriod.week:
+        return bounds.a.toHumanable('MMM y');
+      case DatePeriod.day:
+        return bounds.b
+            .toHumanable('# - d MMM y')
+            .replaceFirst('#', bounds.a.day.toString());
+      case DatePeriod.hour:
+        return bounds.a.toHumanable('E, d MMM y');
+      default:
+        return bounds.a.toString();
+    }
+  }
 
   String formatDate(DateTime t) {
     switch (range) {
@@ -34,9 +53,12 @@ class BaseChart extends StatelessWidget {
 
   int get yShowEvery {
     switch (range) {
-      case DatePeriod.month: return 2;
-      case DatePeriod.hour: return 3;
-      default: return 1;
+      case DatePeriod.month:
+        return 2;
+      case DatePeriod.hour:
+        return 3;
+      default:
+        return 1;
     }
   }
 
@@ -80,6 +102,7 @@ class BaseChart extends StatelessWidget {
         DateMapper(formatter: formatDate),
         IntMapper(),
       ),
+      title: title,
       swiped: swiped,
       theme: chartTheme,
       pointPressed: pointPressed,
