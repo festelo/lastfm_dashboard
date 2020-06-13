@@ -55,7 +55,9 @@ class _ArtistsChartState extends EpicState<ArtistsChart> {
   Future<void> refreshData() async {
     final db = await provider.get<LocalDatabaseService>();
     final currentUser = await provider.get<User>(currentUserKey);
-    final selections = await db.artistSelections.getAll();
+    final selections = await db.artistSelections.getWhere(
+      userId: currentUser.id,
+    );
 
     final scrobblesList = await db.trackScrobblesPerTimeQuery.getByArtist(
       period: period,

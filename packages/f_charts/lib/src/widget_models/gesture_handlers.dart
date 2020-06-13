@@ -20,17 +20,24 @@ abstract class ChartGestureHandler {
     this._context = context;
   }
 
+  bool interact(Offset offset) {
+    if (_controller.tap(offset)) return true;
+    return false;
+  }
+
+  @mustCallSuper
   bool tapDown(Offset offset) {
     _location = offset;
-    if (_controller.tap(offset)) return false;
     _tapped = true;
     return true;
   }
 
+  @mustCallSuper
   void tapUp() {
     _tapped = false;
   }
 
+  @mustCallSuper
   void tapMove(Offset offset, Offset delta) {
     _location = offset;
   }
@@ -48,12 +55,18 @@ enum HybridBehavior { pointer, gesture, none }
 class HybridHandler extends ChartGestureHandler {
   HybridBehavior behavior;
 
-  HybridHandler(ChartController controller)
-      : super(controller);
+  HybridHandler(ChartController controller) : super(controller);
+
+  DateTime tapStartTime;
+  Offset offset;
+  bool tapHandled;
 
   @override
   bool tapDown(Offset offset) {
-    if (!super.tapDown(offset)) return false;
+    super.tapDown(offset);
+    tapStartTime = DateTime.now();
+    tapHandled = false;
+    this.offset = offset;
     if (_controller.theme.xPointer != null && _controller.swiped != null) {
       behavior = HybridBehavior.gesture;
       handleTapDelay(offset);
@@ -73,7 +86,7 @@ class HybridHandler extends ChartGestureHandler {
 
   Future<void> handleTapDelay(Offset offset) async {
     await Future.delayed(Duration(milliseconds: 200));
-    if ((offset - _location).abs() < Offset(5, 20)) {
+    if (!tapHandled && (offset - _location).abs() < Offset(5, 20)) {
       behavior = HybridBehavior.pointer;
       _controller.setXPointerPosition(offset.dx);
       _controller.endDrag(_size, withAnimation: false);
@@ -83,6 +96,7 @@ class HybridHandler extends ChartGestureHandler {
   @override
   void tapMove(Offset offset, Offset delta) async {
     super.tapMove(offset, delta);
+    this.offset = offset;
     if (!_tapped) return;
 
     if (behavior == HybridBehavior.pointer) {
@@ -95,6 +109,12 @@ class HybridHandler extends ChartGestureHandler {
   @override
   void tapUp() {
     super.tapUp();
+    final curTime = DateTime.now();
+    tapHandled = true;
+    if (curTime.difference(tapStartTime).inMilliseconds < 200 &&
+        (offset - _location).abs() < Offset(5, 20)) {
+      if (super.interact(offset)) return;
+    }
     if (behavior == HybridBehavior.pointer) {
       _controller.setXPointerPosition(null);
     } else if (behavior == HybridBehavior.gesture) {
@@ -112,8 +132,7 @@ class PointerHandlerBuilder extends ChartGestureHandlerBuilder {
 }
 
 class PointerHandler extends ChartGestureHandler {
-  PointerHandler(ChartController controller)
-      : super(controller);
+  PointerHandler(ChartController controller) : super(controller);
 
   @override
   bool tapDown(Offset offset) {
@@ -144,8 +163,7 @@ class GestureHandlerBuilder extends ChartGestureHandlerBuilder {
 }
 
 class GestureHandler extends ChartGestureHandler {
-  GestureHandler(ChartController controller)
-      : super(controller);
+  GestureHandler(ChartController controller) : super(controller);
 
   @override
   bool tapDown(Offset offset) {

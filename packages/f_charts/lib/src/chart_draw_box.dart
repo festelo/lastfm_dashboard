@@ -37,15 +37,20 @@ class ChartDrawBox extends StatelessWidget {
 
   Widget gestureDetector(BuildContext context) {
     void Function(DragDownDetails) onHorizontalDragDown;
-    void Function(DragEndDetails) onHorizontalDragEnd;
+    void Function(TapUpDetails) onTapUp;
     void Function(DragUpdateDetails) onHorizontalDragUpdate;
+    void Function(DragEndDetails) onHorizontalDragEnd;
 
     onHorizontalDragDown = (d) {
       final offset = controller.translateOuterOffset(d.localPosition);
       modeHandler.tapDown(offset);
     };
 
-    onHorizontalDragEnd = (d) {
+    onTapUp = (d) {
+      modeHandler.tapUp();
+    };
+
+    onHorizontalDragEnd = (_) {
       modeHandler.tapUp();
     };
 
@@ -56,6 +61,7 @@ class ChartDrawBox extends StatelessWidget {
 
     return GestureDetector(
       onHorizontalDragDown: onHorizontalDragDown,
+      onTapUp: onTapUp,
       onHorizontalDragEnd: onHorizontalDragEnd,
       onHorizontalDragUpdate: onHorizontalDragUpdate,
     );

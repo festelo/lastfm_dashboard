@@ -36,7 +36,7 @@ class ChartPage extends StatelessWidget {
             ),
             FloatingArea(
               (_) => DurationSwitcher(),
-              alignment: Alignment.topRight,
+              alignment: Alignment.topLeft,
             ),
           ],
         ));

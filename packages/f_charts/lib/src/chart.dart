@@ -65,7 +65,19 @@ class _ChartState<T1, T2> extends State<Chart<T1, T2>>
     asyncUpdate(oldWidget);
   }
 
+  Completer _updateCompleter;
+
   Future<void> asyncUpdate(Chart<T1, T2> oldWidget) async {
+    await _updateCompleter?.future;
+    if (oldWidget.chartData != widget.chartData) {
+      _updateCompleter = Completer();
+      await startAnimation(
+        widget.chartData,
+        boundsFrom: oldWidget.bounds,
+        boundsTo: widget.bounds,
+      );
+      _updateCompleter.complete();
+    }
     if (oldWidget.theme != widget.theme) {
       chartController.theme = widget.theme;
     }
@@ -87,15 +99,7 @@ class _ChartState<T1, T2> extends State<Chart<T1, T2>>
     if (oldWidget.title != widget.title) {
       chartController.state.title = widget.title;
     }
-    if (oldWidget.chartData != widget.chartData) {
-      await startAnimation(
-        widget.chartData,
-        boundsFrom: oldWidget.bounds,
-        boundsTo: widget.bounds,
-      );
-    } else {
-      chartController.redraw();
-    }
+    chartController.redraw();
   }
 
   @override
