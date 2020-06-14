@@ -74,6 +74,10 @@ class ChartDrawBaseLayer extends Layer {
         color: color ?? theme.line.color, width: theme.line.width));
   }
 
+  bool shouldRepaint() {
+    return !state.isSwitching;
+  }
+
   @override
   bool themeChangeAffected(ChartTheme theme) {
     return theme.line != this.theme.line || theme.point != this.theme.point;

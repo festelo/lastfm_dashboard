@@ -19,11 +19,15 @@ class ArtistsChart extends StatefulWidget {
 }
 
 class _ArtistsChartState extends EpicState<ArtistsChart> {
-  ChartData<DateTime, int> data;
   ChartViewModel get vm => Provider.of<ChartViewModel>(context, listen: false);
   DatePeriod get period => vm.period;
   DatePeriod get nextPeriod => vm.nextPeriod;
-  Map<DatePeriod, Pair<DateTime>> get bounds => vm.bounds;
+  Pair<DateTime> get nextBounds => vm.nextBounds;
+  Pair<DateTime> get bounds => vm.bounds;
+  Pair<DateTime> get previousBounds => vm.previousBounds;
+  ChartData<DateTime, int> data;
+  ChartData<DateTime, int> previousData;
+  ChartData<DateTime, int> nextData;
 
   @override
   Future<void> onLoad() async {
@@ -52,7 +56,11 @@ class _ArtistsChartState extends EpicState<ArtistsChart> {
     await refreshData();
   }
 
-  Future<void> refreshData() async {
+  Future<ChartData<DateTime, int>> getData(
+    DatePeriod period, [
+    DateTime periodStart,
+    DateTime periodEnd,
+  ]) async {
     final db = await provider.get<LocalDatabaseService>();
     final currentUser = await provider.get<User>(currentUserKey);
     final selections = await db.artistSelections.getWhere(
@@ -63,16 +71,16 @@ class _ArtistsChartState extends EpicState<ArtistsChart> {
       period: period,
       artistIds: selections.map((e) => e.artistId).toList(),
       userId: currentUser.id,
-      start: bounds[period].a,
-      end: bounds[period].b,
+      start: periodStart,
+      end: periodEnd,
     );
 
-    final start = bounds[period].a ??
+    final start = periodStart ??
         scrobblesList
             .map((c) => c.groupedDate)
             .reduce((a, b) => a.compareTo(b) == 1 ? b : a);
 
-    final end = bounds[period].b ??
+    final end = periodEnd ??
         scrobblesList
             .map((c) => c.groupedDate)
             .reduce((a, b) => a.compareTo(b) == 1 ? a : b)
@@ -105,21 +113,25 @@ class _ArtistsChartState extends EpicState<ArtistsChart> {
         series[sel.artistId].entities.add(ChartEntity(date, 0));
       }
     }
+    return ChartData(series.values.toList());
+  }
 
-    data = ChartData(series.values.toList());
+  Future<void> refreshData() async {
+    previousData = await getData(period, previousBounds?.a, previousBounds?.b);
+    data = await getData(period, bounds?.a, bounds?.b);
+    nextData = await getData(period, nextBounds?.a, nextBounds?.b);
   }
 
   Future<void> updateRange(DateTime time, DatePeriod newRange,
       [int offset = 0]) async {
-    await context.read<ChartViewModel>().updateRange(time, newRange, offset);
+    context.read<ChartViewModel>().updateRange(time, newRange, offset);
   }
 
   Future<void> moveBounds({bool forward = true}) async {
-    await context.read<ChartViewModel>().moveBounds(forward: forward);
+    context.read<ChartViewModel>().moveBounds(forward: forward);
   }
 
-  bool get swipesAvailable =>
-      bounds[period].a != null && bounds[period].b != null;
+  bool get swipesAvailable => bounds.a != null && bounds.b != null;
 
   @override
   Widget build(BuildContext context) {
@@ -134,15 +146,15 @@ class _ArtistsChartState extends EpicState<ArtistsChart> {
       child = BaseChart(
         data,
         range: period,
-        bounds: bounds[period],
-        swiped: !swipesAvailable
-            ? null
-            : (a) {
-                if (a == AxisDirection.up || a == AxisDirection.down)
-                  return false;
-                moveBounds(forward: a == AxisDirection.right ? true : false);
-                return true;
-              },
+        bounds: bounds,
+        previousData: previousData,
+        nextData: nextData,
+        beforeSwipe: (_) => swipesAvailable,
+        afterSwipe: (_, a) {
+          if (a == AxisDirection.up || a == AxisDirection.down) return false;
+          moveBounds(forward: a == AxisDirection.right ? true : false);
+          return true;
+        },
         pointPressed: nextPeriod == null
             ? null
             : (e) => updateRange(

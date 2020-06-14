@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:f_charts/src/widget_models/drag_controller.dart';
 import 'package:f_charts/widgets.dart';
 import 'package:f_charts/widget_models.dart';
 import 'package:f_charts/data_models.dart';
@@ -12,10 +13,10 @@ class Chart<T1, T2> extends StatefulWidget {
   final ChartMarkersPointer<T1, T2> markersPointer;
   final ChartTheme theme;
   final ChartGestureHandlerBuilder gestureHandlerBuilder;
+  final DragController<T1, T2> drag;
   final String title;
 
   final PointPressedCallback<T1, T2> pointPressed;
-  final SwipedCallback swiped;
 
   Chart({
     @required this.chartData,
@@ -23,8 +24,8 @@ class Chart<T1, T2> extends StatefulWidget {
     this.theme = const ChartTheme(),
     this.pointPressed,
     this.markersPointer,
-    this.swiped,
     this.title,
+    this.drag,
     this.gestureHandlerBuilder = const PointerHandlerBuilder(),
     this.bounds,
   }) : assert((theme.yMarkers != null || theme.xMarkers != null) &&
@@ -34,7 +35,7 @@ class Chart<T1, T2> extends StatefulWidget {
 }
 
 class _ChartState<T1, T2> extends State<Chart<T1, T2>>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   ChartController<T1, T2> chartController;
   ChartGestureHandler gestureHandler;
 
@@ -49,7 +50,7 @@ class _ChartState<T1, T2> extends State<Chart<T1, T2>>
       state: ChartState()..title = widget.title,
       theme: widget.theme,
       pointPressed: widget.pointPressed,
-      swiped: widget.swiped,
+      drag: widget.drag,
       bounds: widget.bounds,
     );
     gestureHandler = widget.gestureHandlerBuilder.build(chartController);
@@ -65,18 +66,14 @@ class _ChartState<T1, T2> extends State<Chart<T1, T2>>
     asyncUpdate(oldWidget);
   }
 
-  Completer _updateCompleter;
-
   Future<void> asyncUpdate(Chart<T1, T2> oldWidget) async {
-    await _updateCompleter?.future;
+    await chartController.replaceLock;
     if (oldWidget.chartData != widget.chartData) {
-      _updateCompleter = Completer();
       await startAnimation(
         widget.chartData,
         boundsFrom: oldWidget.bounds,
         boundsTo: widget.bounds,
       );
-      _updateCompleter.complete();
     }
     if (oldWidget.theme != widget.theme) {
       chartController.theme = widget.theme;
@@ -90,8 +87,8 @@ class _ChartState<T1, T2> extends State<Chart<T1, T2>>
     if (oldWidget.pointPressed != widget.pointPressed) {
       chartController.pointPressed = widget.pointPressed;
     }
-    if (oldWidget.swiped != widget.swiped) {
-      chartController.swiped = widget.swiped;
+    if (oldWidget.drag != widget.drag) {
+      chartController.drag = widget.drag;
     }
     if (oldWidget.bounds != widget.bounds) {
       chartController.bounds = widget.bounds;
@@ -113,7 +110,7 @@ class _ChartState<T1, T2> extends State<Chart<T1, T2>>
     ChartBounds<T1, T2> boundsFrom,
     ChartBounds<T1, T2> boundsTo,
   }) async {
-    await chartController.move(to);
+    await chartController.replaceData(to);
   }
 
   @override

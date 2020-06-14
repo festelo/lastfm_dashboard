@@ -9,15 +9,14 @@ abstract class ChartGestureHandlerBuilder {
 
 abstract class ChartGestureHandler {
   final ChartController _controller;
-  BuildContext _context;
 
   bool _tapped = false;
   Offset _location;
-  Size get _size => _context?.size;
+  Size _size;
   ChartGestureHandler(this._controller);
 
   void attachContext(BuildContext context) {
-    this._context = context;
+    _size = MediaQuery.of(context).size;
   }
 
   bool interact(Offset offset) {
@@ -33,7 +32,13 @@ abstract class ChartGestureHandler {
   }
 
   @mustCallSuper
-  void tapUp() {
+  void tapUp(Offset offset) {
+    _location = offset;
+    _tapped = false;
+  }
+
+  @mustCallSuper
+  void dragEnd(Velocity velocity) {
     _tapped = false;
   }
 
@@ -59,6 +64,7 @@ class HybridHandler extends ChartGestureHandler {
 
   DateTime tapStartTime;
   Offset offset;
+  Offset startOffset;
   bool tapHandled;
 
   @override
@@ -66,13 +72,14 @@ class HybridHandler extends ChartGestureHandler {
     super.tapDown(offset);
     tapStartTime = DateTime.now();
     tapHandled = false;
+    startOffset = offset;
     this.offset = offset;
-    if (_controller.theme.xPointer != null && _controller.swiped != null) {
+    if (_controller.theme.xPointer != null && _controller.drag != null) {
       behavior = HybridBehavior.gesture;
       handleTapDelay(offset);
       return true;
     }
-    if (_controller.swiped != null) {
+    if (_controller.drag != null) {
       behavior = HybridBehavior.gesture;
       return true;
     }
@@ -89,7 +96,7 @@ class HybridHandler extends ChartGestureHandler {
     if (!tapHandled && (offset - _location).abs() < Offset(5, 20)) {
       behavior = HybridBehavior.pointer;
       _controller.setXPointerPosition(offset.dx);
-      _controller.endDrag(_size, withAnimation: false);
+      _controller.drag.end();
     }
   }
 
@@ -102,24 +109,32 @@ class HybridHandler extends ChartGestureHandler {
     if (behavior == HybridBehavior.pointer) {
       _controller.setXPointerPosition(offset.dx);
     } else if (behavior == HybridBehavior.gesture) {
-      _controller.addDraggingOffset(delta);
+      _controller.drag.addOffset(delta);
     }
   }
 
   @override
-  void tapUp() {
-    super.tapUp();
+  void tapUp(Offset offset) {
+    super.tapUp(offset);
     final curTime = DateTime.now();
     tapHandled = true;
     if (curTime.difference(tapStartTime).inMilliseconds < 200 &&
-        (offset - _location).abs() < Offset(5, 20)) {
+        (startOffset - _location).abs() < Offset(5, 20)) {
       if (super.interact(offset)) return;
     }
     if (behavior == HybridBehavior.pointer) {
       _controller.setXPointerPosition(null);
+    }
+  }
+
+  @override
+  void dragEnd(Velocity velocity) {
+    super.dragEnd(velocity);
+    if (behavior == HybridBehavior.pointer) {
+      _controller.setXPointerPosition(null);
     } else if (behavior == HybridBehavior.gesture) {
       if (!_controller.state.isDragging) return;
-      _controller.endDrag(_size);
+      _controller.drag.endWithAnimation(velocity, _size);
     }
   }
 }
@@ -149,8 +164,14 @@ class PointerHandler extends ChartGestureHandler {
   }
 
   @override
-  void tapUp() {
-    super.tapUp();
+  void tapUp(Offset offset) {
+    super.tapUp(offset);
+    _controller.setXPointerPosition(null);
+  }
+
+  @override
+  void dragEnd(Velocity velocity) {
+    super.dragEnd(velocity);
     _controller.setXPointerPosition(null);
   }
 }
@@ -169,7 +190,7 @@ class GestureHandler extends ChartGestureHandler {
   bool tapDown(Offset offset) {
     if (!super.tapDown(offset)) return false;
     if (_controller.state.isSwitching) return false;
-    _controller.startDragging();
+    _controller.drag.start();
     return true;
   }
 
@@ -177,13 +198,20 @@ class GestureHandler extends ChartGestureHandler {
   void tapMove(Offset offset, Offset delta) async {
     super.tapMove(offset, delta);
     if (!_controller.state.isDragging) return;
-    _controller.addDraggingOffset(delta);
+    _controller.drag.addOffset(delta);
   }
 
   @override
-  void tapUp() {
-    super.tapUp();
+  void tapUp(Offset offset) {
+    super.tapUp(offset);
     if (!_controller.state.isDragging) return;
-    _controller.endDrag(_size);
+    _controller.drag.end();
+  }
+
+  @override
+  void dragEnd(Velocity velocity) {
+    super.dragEnd(velocity);
+    if (!_controller.state.isDragging) return;
+    _controller.drag.endWithAnimation(velocity, _size);
   }
 }

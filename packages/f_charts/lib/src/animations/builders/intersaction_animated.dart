@@ -52,7 +52,7 @@ class IntersactionAnimatedSeriesBuilder implements AnimatedSeriesBuilder {
   }) : this((a, b) => Tween(begin: a, end: b).chain(CurveTween(curve: curve)));
 
   @override
-  AnimatedSeries build(SeriesAnimationBuilderData data) {
+  SeriesTween build(SeriesAnimationBuilderData data) {
     final seriesFrom = data.seriesFrom;
     final seriesTo = data.seriesTo;
     final boundsFrom = data.boundsFrom;
@@ -103,7 +103,7 @@ class IntersactionAnimatedSeriesBuilder implements AnimatedSeriesBuilder {
 
     var values = pairs.map((e) => animatableBuilder(e.a, e.b)).toList();
 
-    return AnimatedSeries(
+    return SeriesTween(
       from: seriesFrom,
       to: seriesTo,
       offsetAnimatables: values,

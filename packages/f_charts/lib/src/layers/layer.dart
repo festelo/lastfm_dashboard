@@ -12,4 +12,8 @@ abstract class Layer {
   bool shouldDraw() {
     return true;
   }
+
+  bool shouldRepaint() {
+    return false;
+  }
 }

@@ -72,19 +72,19 @@ class _MyHomePageState extends State<MyHomePage> {
   ) {
     return Stack(
       children: [
-        Chart(
+        Chart<int, int>(
           theme: ChartTheme(),
           mapper: ChartMapper(IntMapper(), IntMapper()),
           markersPointer:
               ChartMarkersPointer(IntMarkersPointer(1), IntMarkersPointer(2)),
           chartData: data[dataIndexes[dataIndexNumber]],
           gestureHandlerBuilder: gestureHandler,
-          swiped: (a) {
-            setState(() {
-              dataIndexes[dataIndexNumber] = (dataIndexes[dataIndexNumber] + 1) % data.length;
-            });
-            return true;
-          },
+          drag: DragController(
+            afterSwipe: (d, _) {
+              setState(() => dataIndexes[dataIndexNumber] = data.indexOf(d));
+            },
+            rightData: data[(dataIndexes[dataIndexNumber] + 1) % data.length],
+          ),
           pointPressed: (_) => setState(() => dataIndexes[dataIndexNumber] =
               (dataIndexes[dataIndexNumber] + 1) % data.length),
         ),

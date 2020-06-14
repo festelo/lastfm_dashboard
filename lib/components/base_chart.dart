@@ -5,9 +5,12 @@ import 'package:lastfm_dashboard/extensions.dart';
 import 'package:shared/models.dart';
 
 class BaseChart extends StatelessWidget {
+  final ChartData<DateTime, int> previousData;
+  final ChartData<DateTime, int> nextData;
   final ChartData<DateTime, int> data;
   final void Function(ChartEntity<DateTime, int> entity) pointPressed;
-  final SwipedCallback swiped;
+  final BeforeSwipeCallback<DateTime, int> beforeSwipe;
+  final AfterSwipeCallback<DateTime, int> afterSwipe;
   final DatePeriod range;
   final Pair<DateTime> bounds;
 
@@ -15,8 +18,11 @@ class BaseChart extends StatelessWidget {
     this.data, {
     this.pointPressed,
     this.range,
-    this.swiped,
+    this.beforeSwipe,
+    this.afterSwipe,
     this.bounds,
+    this.previousData,
+    this.nextData,
   });
 
   String get title {
@@ -103,7 +109,12 @@ class BaseChart extends StatelessWidget {
         IntMapper(),
       ),
       title: title,
-      swiped: swiped,
+      drag: DragController(
+        beforeSwipe: beforeSwipe,
+        afterSwipe: afterSwipe,
+        leftData: previousData,
+        rightData: nextData,
+      ),
       theme: chartTheme,
       pointPressed: pointPressed,
       gestureHandlerBuilder: const HybridHandlerBuilder(),

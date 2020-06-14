@@ -19,7 +19,7 @@ class SimpleAnimatedSeriesBuilderSingle implements AnimatedSeriesBuilderSingle {
   }): this((a, b) => Tween(begin: a, end: b).chain(CurveTween(curve: curve)), initialOffset);
 
   @override
-  AnimatedSeries build(SeriesAnimationBuilderDataSingle data) {
+  SeriesTween build(SeriesAnimationBuilderDataSingle data) {
     final series = data.series;
     final bounds = data.bounds;
     final mapper = data.mapper;
@@ -30,7 +30,7 @@ class SimpleAnimatedSeriesBuilderSingle implements AnimatedSeriesBuilderSingle {
 
     final values = offsets.map((e) => animatableBuilder(e + initialOffset, e)).toList();
 
-    return AnimatedSeries(
+    return SeriesTween(
       from: series,
       to: series,
       offsetAnimatables: values,

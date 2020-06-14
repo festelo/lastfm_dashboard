@@ -13,7 +13,7 @@ class ChartPaint extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    canvas.clipRect(Offset(0,0) & size);
+    canvas.clipRect(Offset(0, 0) & size);
     canvas.translate(chartPadding.left, chartPadding.top);
     final newSize = Size(
       size.width - chartPadding.left - chartPadding.right,
@@ -26,7 +26,10 @@ class ChartPaint extends CustomPainter {
 
   @override
   bool shouldRepaint(CustomPainter oldDelegate) {
-    return true;
+    for (final layer in layers) {
+      if (layer.shouldRepaint()) return true;
+    }
+    return false;
   }
 }
 
@@ -47,11 +50,12 @@ class ChartDrawBox extends StatelessWidget {
     };
 
     onTapUp = (d) {
-      modeHandler.tapUp();
+      final offset = controller.translateOuterOffset(d.localPosition);
+      modeHandler.tapUp(offset);
     };
 
-    onHorizontalDragEnd = (_) {
-      modeHandler.tapUp();
+    onHorizontalDragEnd = (e) {
+      modeHandler.dragEnd(e.velocity);
     };
 
     onHorizontalDragUpdate = (d) {
@@ -70,13 +74,18 @@ class ChartDrawBox extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     modeHandler.attachContext(context);
-    return CustomPaint(
-      size: Size.infinite,
-      foregroundPainter: ChartPaint(
-        layers: controller.layers,
-        chartPadding: controller.theme.outerSpace,
-      ),
-      child: gestureDetector(context),
+    return Stack(
+      children: [
+        for(final l in controller.layers) 
+          CustomPaint(
+            size: Size.infinite,
+            foregroundPainter: ChartPaint(
+              layers: [l],
+              chartPadding: controller.theme.outerSpace,
+            ),
+          ),
+        gestureDetector(context),
+      ],
     );
   }
 }

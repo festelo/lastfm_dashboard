@@ -85,23 +85,24 @@ class _DurationSwitcherState extends EpicState<DurationSwitcher> {
               width: 40,
               child: IconButton(
                 icon: Icon(Icons.add, size: 18),
-                onPressed: nextPeriod == null || vm.bounds[nextPeriod] == null
-                    ? null
-                    : () {
-                        vm.period = nextPeriod;
-                      },
+                onPressed:
+                    nextPeriod == null || vm.boundsMap[nextPeriod] == null
+                        ? null
+                        : () {
+                            vm.period = nextPeriod;
+                          },
               ),
             ),
             Container(
               width: 40,
               child: IconButton(
                 icon: Icon(Icons.remove, size: 18),
-                onPressed:
-                    previousPeriod == null || vm.bounds[previousPeriod] == null
-                        ? null
-                        : () {
-                            vm.period = previousPeriod;
-                          },
+                onPressed: previousPeriod == null ||
+                        vm.boundsMap[previousPeriod] == null
+                    ? null
+                    : () {
+                        vm.period = previousPeriod;
+                      },
               ),
             ),
           ],

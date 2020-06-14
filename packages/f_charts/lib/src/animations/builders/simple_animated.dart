@@ -75,7 +75,7 @@ class SimpleAnimatedSeriesBuilder implements AnimatedSeriesBuilder {
   }
 
   @override
-  AnimatedSeries build(SeriesAnimationBuilderData data) {
+  SeriesTween build(SeriesAnimationBuilderData data) {
     final seriesFrom = data.seriesFrom;
     final seriesTo = data.seriesTo;
     final boundsFrom = data.boundsFrom;
@@ -93,7 +93,7 @@ class SimpleAnimatedSeriesBuilder implements AnimatedSeriesBuilder {
     var fromValues = fromOffsets.map((e) => animatableBuilder(e, null));
     var toValues = toOffsets.map((e) => animatableBuilder(null, e));
 
-    return AnimatedSeries(
+    return SeriesTween(
       from: seriesFrom,
       to: seriesTo,
       offsetAnimatables: [...fromValues, ...toValues],

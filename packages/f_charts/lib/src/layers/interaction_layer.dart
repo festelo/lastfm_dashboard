@@ -149,7 +149,12 @@ class ChartInteractionLayer<T1, T2> extends Layer {
   }
 
   @override
-  bool shouldDraw() => !state.isSwitching && !state.isDragging;
+  bool shouldDraw() => !state.isSwitching;
+
+  @override
+  bool shouldRepaint() {
+    return !state.isSwitching;
+  }
 
   @override
   void draw(Canvas canvas, Size size) {

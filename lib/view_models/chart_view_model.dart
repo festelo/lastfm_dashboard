@@ -3,12 +3,10 @@ import 'package:shared/models.dart';
 import 'epic_view_model.dart';
 
 class ChartViewModel extends EpicViewModel {
-  ChartViewModel(EpicManager manager): super(manager) {
+  ChartViewModel(EpicManager manager) : super(manager) {
     final time = DateTime.now();
-    _bounds[DatePeriod.month] = Pair(
-      DateTime(time.year),
-      DateTime(time.year + 1)
-    );
+    _bounds[DatePeriod.month] =
+        Pair(DateTime(time.year), DateTime(time.year + 1));
   }
 
   Pair<DateTime> _allTimeBounds;
@@ -17,15 +15,20 @@ class ChartViewModel extends EpicViewModel {
     _allTimeBounds = value;
     notify(this);
   }
-  
+
   Map<DatePeriod, Pair<DateTime>> _bounds = {
     DatePeriod.month: Pair(DateTime.now(), null)
   };
-  Map<DatePeriod, Pair<DateTime>> get bounds => _bounds;
-  set bounds(value) {
+  Map<DatePeriod, Pair<DateTime>> get boundsMap => _bounds;
+  set boundsMap(value) {
     _bounds = value;
     notify(this);
   }
+  Pair<DateTime> get bounds => boundsMap[period];
+  Pair<DateTime> _nextBounds;
+  Pair<DateTime> _previousBounds;
+  Pair<DateTime> get nextBounds => _nextBounds;
+  Pair<DateTime> get previousBounds => _previousBounds;
 
   DatePeriod _period = DatePeriod.month;
   DatePeriod get period => _period;
@@ -40,23 +43,22 @@ class ChartViewModel extends EpicViewModel {
     return DatePeriod.values[nextIndex];
   }
 
-  
-  Future<void> updateRange(DateTime time, DatePeriod newRange,
-      [int offset = 0]) async {
-    if (newRange == DatePeriod.month) {
-      bounds[newRange] = Pair(
+  Pair<DateTime> getBoundsForRange(DateTime time, DatePeriod range,
+      [int offset = 0]) {
+    if (range == DatePeriod.month) {
+      return Pair(
         DateTime(time.year + offset),
         DateTime(time.year + 1 + offset),
       );
     }
-    if (newRange == DatePeriod.week) {
-      bounds[newRange] = Pair(
+    if (range == DatePeriod.week) {
+      return Pair(
         DateTime(time.year, time.month + offset),
         DateTime(time.year, time.month + 1 + offset),
       );
     }
-    if (newRange == DatePeriod.day) {
-      bounds[newRange] = Pair(
+    if (range == DatePeriod.day) {
+      return Pair(
         DateTime(
           time.year,
           time.month,
@@ -69,17 +71,23 @@ class ChartViewModel extends EpicViewModel {
         ),
       );
     }
-    if (newRange == DatePeriod.hour) {
-      bounds[newRange] = Pair(
+    if (range == DatePeriod.hour) {
+      return Pair(
         DateTime(time.year, time.month, time.day + offset),
         DateTime(time.year, time.month, time.day + 1 + offset),
       );
     }
+  }
+
+  void updateRange(DateTime time, DatePeriod newRange, [int offset = 0]) {
     period = newRange;
+    _previousBounds = getBoundsForRange(time, newRange, offset - 1);
+    boundsMap[newRange] = getBoundsForRange(time, newRange, offset);
+    _nextBounds = getBoundsForRange(time, newRange, offset + 1);
     notify(this);
   }
 
-  Future<void> moveBounds({bool forward = true}) async {
-    await updateRange(bounds[period].a, period, forward ? -1 : 1);
+  void moveBounds({bool forward = true}) {
+    updateRange(bounds.a, period, forward ? -1 : 1);
   }
 }
