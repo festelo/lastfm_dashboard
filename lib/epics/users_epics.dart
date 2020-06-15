@@ -1,8 +1,29 @@
+import 'package:epic/container.dart';
 import 'package:epic/epic.dart';
 import 'package:lastfm_dashboard/models/models.dart';
 import 'package:lastfm_dashboard/services/auth/auth_service.dart';
 import 'package:lastfm_dashboard/services/lastfm/lastfm_api.dart';
 import 'package:lastfm_dashboard/services/local_database/database_service.dart';
+
+void defineUserHelpers(EpicContainer container) {
+  container.addTransientComplex<User>((p) async {
+    final db = await p.get<LocalDatabaseService>();
+    final auth = await p.get<AuthService>();
+    return auth.currentUser.value == null
+        ? null
+        : db.users[auth.currentUser.value].get();
+  }, key: currentUserKey);
+
+  container.addTransientComplex((provider) async {
+    final user = await provider.get(currentUserKey);
+    if (user == null) return false;
+    final epicManager = await provider.get<EpicManager>();
+    epicManager.runned
+      .map((e) => e.epic)
+      .whereType<RefreshUserEpic>()
+      .any((e) => e.username == user.username);
+  }, key: userRefreshingKey);
+}
 
 class UserAdded {
   final User user;

@@ -30,10 +30,7 @@ class _AllArtistsListState extends EpicState<AllArtistsList> {
     );
     final selectionList = await db.artistSelections.getWhere(userId: userId);
     selections = Map.fromEntries(selectionList.map((e) => MapEntry(e.id, e)));
-    userRefreshing = epicManager.runned
-        .map((e) => e.epic)
-        .whereType<RefreshUserEpic>()
-        .any((e) => e.username == currentUser.username);
+    userRefreshing = await provider.get(userRefreshingKey);
 
     handle<UserScrobblesAdded>(
       scrobblesAdded,

@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:epic/container.dart';
+import 'package:lastfm_dashboard/epics/users_epics.dart';
 import 'package:lastfm_dashboard/models/identifiers.dart';
 import 'package:lastfm_dashboard/pages/home/home_page.dart';
 import 'package:lastfm_dashboard/services/auth/auth_service.dart';
@@ -66,13 +67,7 @@ void addDependencies(EpicContainer container) {
     () => AuthService.load(),
   );
 
-  container.addTransientComplex<User>((p) async {
-    final db = await p.get<LocalDatabaseService>();
-    final auth = await p.get<AuthService>();
-    return auth.currentUser.value == null
-        ? null
-        : db.users[auth.currentUser.value].get();
-  }, key: currentUserKey);
+  defineUserHelpers(container);
 
   container.addWatcher<RefreshWatcher>((p) async {
     final db = await p.get<LocalDatabaseService>();

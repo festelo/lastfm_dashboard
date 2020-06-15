@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:epic/epic.dart';
 import 'package:flutter/material.dart';
 import 'package:lastfm_dashboard/epics/epic_state.dart';
 import 'package:lastfm_dashboard/epics/users_epics.dart';
@@ -17,6 +18,7 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends EpicState<HomePage> {
   final GlobalKey<ScaffoldState> scaffoldKey = GlobalKey();
   User user;
+  bool isRefreshing;
   
   void accountsManagement(BuildContext context) {
     scaffoldKey.currentState.showBottomSheet(
@@ -32,7 +34,16 @@ class _HomePageState extends EpicState<HomePage> {
 
   @override
   Future<void> onLoad() async {
+    isRefreshing = await provider.get(userRefreshingKey);
     handle<UserSwitched>(userSwitched);
+    handle<UserRefreshed>(userRefreshed, 
+      where: (e) => e.newUser.username == user.username,
+    );
+    map<EpicStarted, String>(
+      userRefresingStarted,
+      (e) => (e.runned.epic as RefreshUserEpic).username,
+      where: (e) => e.runned.epic is RefreshUserEpic,
+    );
     await refreshUser();
   }
 
@@ -42,6 +53,14 @@ class _HomePageState extends EpicState<HomePage> {
 
   Future<void> refreshUser([String username]) async {
     user = await provider.get<User>(currentUserKey);
+  }
+
+  void userRefreshed(UserRefreshed e) {
+    isRefreshing = false;
+  }
+
+  void userRefresingStarted(String username) {
+    isRefreshing = true;
   }
 
   @override
@@ -84,6 +103,8 @@ class _HomePageState extends EpicState<HomePage> {
         : Column(
           children: [
             Expanded(child: ArtistsTab(ValueKey(user.id))),
+            if (isRefreshing) 
+              LinearProgressIndicator(),
             // Not in bottomNavigationBar property to let bottom sheet 
             // be over the bottom nav bar
             BottomNavigationBar(

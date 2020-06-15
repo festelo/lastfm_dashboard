@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:lastfm_dashboard/components/duration_switcher.dart';
 import 'package:lastfm_dashboard/components/floating_area.dart';
 import 'package:lastfm_dashboard/view_models/chart_view_model.dart';
-import 'package:lastfm_dashboard/view_models/epic_view_model.dart';
 import 'package:provider/provider.dart';
 import '../routes.dart';
 import './artists_chart.dart';
