@@ -52,7 +52,7 @@ class LastFMApi {
     String method,
     Map<String, String> parameters,
   ) async {
-    final uri = Uri.http('ws.audioscrobbler.com', '/2.0',
+    final uri = Uri.https('ws.audioscrobbler.com', '/2.0',
         {'method': method, 'api_key': apiKey, 'format': 'json', ...parameters});
 
     final decoded = await _retryOnThrow(() async {
