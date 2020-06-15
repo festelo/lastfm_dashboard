@@ -1,0 +1,54 @@
+name: Web CI/CD
+
+on:
+  push:
+    branches: [ web ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - uses: subosito/flutter-action@v1.3.0
+      with:
+        channel: beta
+    - name: Enable Web
+      run: flutter config --enable-web
+    - name: Flutter get dependencies
+      run: flutter pub get
+    - name: Get application version
+      id: app_ver
+      run: echo "::set-output name=app_ver::" "$(flutter pub run pubspec_semver:get_ver)"
+    - name: Set application build number
+      run: flutter pub run pubspec_semver:set_build ${{ github.run_id }}
+    - name: Flutter config generate
+      run: flutter pub run environment_config:generate
+      env:
+          LAST_FM_API_KEY: ${{ secrets.LAST_FM_API_KEY_WEB }}
+    - name: Flutter build
+      run: flutter build web
+    - name: Upload build artifact
+      uses: actions/upload-artifact@v1
+      with:
+        name: web-build
+        path: ./build/web
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+            persist-credentials: false
+      - name: Download artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: web-build
+          path: web-build
+      - name: Deploy 🚀
+        uses: JamesIves/github-pages-deploy-action@releases/v3
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BRANCH: gh-pages
+          FOLDER: web-build
