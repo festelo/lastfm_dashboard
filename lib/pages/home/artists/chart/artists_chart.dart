@@ -118,10 +118,20 @@ class _ArtistsChartState extends EpicState<ArtistsChart> {
     return ChartData(series.values.toList());
   }
 
+  bool dataRefresing = false;
+
   Future<void> refreshData() async {
-    previousData = await getData(period, previousBounds?.a, previousBounds?.b);
+    setState(() => dataRefresing = true);
+
+    if (previousBounds != null)
+      previousData = await getData(period, previousBounds.a, previousBounds.b);
+      
     data = await getData(period, bounds?.a, bounds?.b);
-    nextData = await getData(period, nextBounds?.a, nextBounds?.b);
+
+    if (nextBounds != null)
+      nextData = await getData(period, nextBounds.a, nextBounds.b);
+
+    setState(() => dataRefresing = false);
   }
 
   Future<void> updateRange(DateTime time, DatePeriod newRange,
@@ -133,7 +143,8 @@ class _ArtistsChartState extends EpicState<ArtistsChart> {
     context.read<ChartViewModel>().moveBounds(forward: forward);
   }
 
-  bool get swipesAvailable => bounds.a != null && bounds.b != null;
+  bool get swipesAvailable =>
+      !dataRefresing && bounds.a != null && bounds.b != null;
 
   @override
   Widget build(BuildContext context) {
