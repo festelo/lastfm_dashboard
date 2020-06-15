@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:epic/container.dart';
 import 'package:lastfm_dashboard/models/identifiers.dart';
@@ -6,6 +7,7 @@ import 'package:lastfm_dashboard/services/auth/auth_service.dart';
 import 'package:lastfm_dashboard/services/lastfm/lastfm_api.dart';
 import 'package:lastfm_dashboard/services/local_database/database_service.dart';
 import 'package:lastfm_dashboard/services/local_database/mobile/database_service.dart';
+import 'package:lastfm_dashboard/services/local_database/web/database_service.dart';
 import 'package:lastfm_dashboard/watchers/user_watchers.dart';
 import 'package:provider/provider.dart';
 import 'package:epic/epic.dart';
@@ -50,9 +52,15 @@ void addDependencies(EpicContainer container) {
     dispose: (t) => t.dispose(),
   );
 
-  container.addSingleton<LocalDatabaseService>(
-    () => MobileDatabaseBuilder().build(),
-  );
+  if (kIsWeb) {
+    container.addSingleton<LocalDatabaseService>(
+      () => WebDatabaseBuilder().build(),
+    );
+  } else {
+    container.addSingleton<LocalDatabaseService>(
+      () => MobileDatabaseBuilder().build(),
+    );
+  }
 
   container.addSingleton<AuthService>(
     () => AuthService.load(),

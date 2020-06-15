@@ -1,9 +1,8 @@
 import 'package:collection/collection.dart';
 import 'package:lastfm_dashboard/extensions.dart';
 
-abstract class DatabaseMappedModel {
-  const DatabaseMappedModel();
-  String get id;
+abstract class DatabaseMappedObject {
+  const DatabaseMappedObject();
 
   /// Map which contains only properties that db
   /// should contain to succesfull deseriallization
@@ -14,7 +13,7 @@ abstract class DatabaseMappedModel {
     return dbMap.flat();
   }
 
-  Map<String, dynamic> diff(DatabaseMappedModel other) {
+  Map<String, dynamic> diff(DatabaseMappedObject other) {
     final oldMap = other.toDbMap();
     final newMap = toDbMap();
     final map = <String, dynamic>{};
@@ -28,7 +27,7 @@ abstract class DatabaseMappedModel {
     return map;
   }
 
-  Map<String, dynamic> diffFlat(DatabaseMappedModel other) {
+  Map<String, dynamic> diffFlat(DatabaseMappedObject other) {
     final oldMap = other.toDbMapFlat();
     final newMap = toDbMapFlat();
     final map = <String, dynamic>{};
@@ -41,4 +40,9 @@ abstract class DatabaseMappedModel {
     }
     return map;
   }
+}
+
+abstract class DatabaseMappedModel extends DatabaseMappedObject {
+  const DatabaseMappedModel();
+  String get id;
 }

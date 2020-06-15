@@ -17,7 +17,7 @@ abstract class LocalDatabaseService {
   Collection<Track> get tracks;
   ArtistSelectionCollection get artistSelections;
 
-  UserArtistDetailsQueryable get userArtistDetails;
+  UserArtistDetailsQuery get userArtistDetails;
 
   TrackScrobblesPerTimeQuery get trackScrobblesPerTimeQuery;
 
@@ -32,18 +32,9 @@ abstract class Query {
 }
 
 abstract class TrackScrobblesPerTimeQuery extends Query {
-  Stream<List<TrackScrobblesPerTime>> changesByArtist({
-    @required DatePeriod period,
-    List<String> ids,
-    String userId,
-    List<String> artistIds,
-    DateTime start,
-    DateTime end,
-  });
   Future<List<TrackScrobblesPerTime>> getByArtist({
     @required DatePeriod period,
-    List<String> ids,
-    String userId,
+    List<String> userIds,
     List<String> artistIds,
     DateTime start,
     DateTime end,
@@ -62,34 +53,13 @@ abstract class ArtistSelectionCollection extends Collection<ArtistSelection> {
   Future<List<ArtistSelection>> getWhere({
     String userId,
   });
-  Stream<List<ArtistSelection>> changesWhere({
-    String userId,
-  });
 }
 
-abstract class UserArtistDetailsQueryable extends Queryable<UserArtistDetails> {
-  Stream<List<UserArtistDetails>> changesWhere({
-    List<String> ids,
-    List<String> userIds,
-    List<String> artistIds,
-    int skip,
-    int take,
-    SortDirection scrobblesSort,
-  });
-
+abstract class UserArtistDetailsQuery extends Query {
   Future<List<UserArtistDetails>> getWhere({
-    List<String> ids,
     List<String> artistIds,
     List<String> userIds,
-    int skip,
-    int take,
     SortDirection scrobblesSort,
-  });
-
-  Stream<int> countWhere({
-    List<String> ids,
-    List<String> userIds,
-    List<String> artistIds,
   });
 }
 

@@ -96,7 +96,7 @@ class ArtistListItem extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
                   Text(
-                    artistDetails.name,
+                    artistDetails.artistName,
                     style: Theme.of(context).textTheme.subtitle1,
                   ),
                   Text(

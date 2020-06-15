@@ -12,12 +12,10 @@ class _UserArtistDetailsProperties {
   const _UserArtistDetailsProperties();
 }
 
-class UserArtistDetails extends DatabaseMappedModel {
+class UserArtistDetails extends DatabaseMappedObject {
   static const properties = _UserArtistDetailsProperties();
-  @override
-  final String id;
 
-  final String name;
+  final String artistName;
   final String artistId;
   final String mbid;
   final String url;
@@ -25,19 +23,20 @@ class UserArtistDetails extends DatabaseMappedModel {
   final String userId;
   final ImageInfo imageInfo;
 
-  const UserArtistDetails(this.id,
-      {this.mbid,
-      this.name,
-      this.url,
-      this.imageInfo,
-      this.scrobbles,
-      this.artistId,
-      this.userId});
+  const UserArtistDetails({
+    this.mbid,
+    this.artistName,
+    this.url,
+    this.imageInfo,
+    this.scrobbles,
+    this.artistId,
+    this.userId,
+  });
 
-  UserArtistDetails.deserialize(this.id, Map<String, dynamic> map)
+  UserArtistDetails.deserialize(Map<String, dynamic> map)
       : mbid = map['mbid'],
         url = map['url'],
-        name = map['name'],
+        artistName = map['name'],
         scrobbles = map['scrobbles'],
         artistId = map[properties.artistId],
         userId = map[properties.userId],
@@ -45,7 +44,7 @@ class UserArtistDetails extends DatabaseMappedModel {
 
   @override
   Map<String, dynamic> toDbMap() => {
-        'name': name,
+        'name': artistName,
         'mbid': mbid,
         'url': url,
         'scrobbles': scrobbles,

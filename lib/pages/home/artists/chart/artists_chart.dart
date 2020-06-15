@@ -70,10 +70,12 @@ class _ArtistsChartState extends EpicState<ArtistsChart> {
     final scrobblesList = await db.trackScrobblesPerTimeQuery.getByArtist(
       period: period,
       artistIds: selections.map((e) => e.artistId).toList(),
-      userId: currentUser.id,
+      userIds: [currentUser.id],
       start: periodStart,
       end: periodEnd,
     );
+
+    if (scrobblesList.isEmpty) return ChartData([]);
 
     final start = periodStart ??
         scrobblesList

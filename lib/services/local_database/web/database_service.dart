@@ -9,10 +9,12 @@ import 'package:lastfm_dashboard/models/models.dart';
 import 'package:lastfm_dashboard/models/database_mapped_model.dart';
 import 'package:quiver/core.dart';
 import 'package:collection/collection.dart';
+import 'package:shared/models.dart';
 
 import 'db_setup.dart' if (dart.library.html) 'db_setup_web.dart';
 
 import 'migrations.dart';
+
 typedef Constructor<T> = T Function(String id, Map<String, dynamic> data);
 
 class SembastExecutorWrapper extends ExecutorWrapper {
@@ -82,7 +84,7 @@ class WebDatabaseBuilder {
   }
 }
 
-class WebDatabaseService {
+class WebDatabaseService extends LocalDatabaseService {
   final Database database;
 
   @override
@@ -96,7 +98,11 @@ class WebDatabaseService {
   @override
   final ArtistSelectionsCollection artistSelections;
   @override
-  final UserArtistDetailsSembastQueryable userArtistDetails;
+  final TrackScrobblesPerTimeQuery trackScrobblesPerTimeQuery;
+
+  UserArtistDetailsSembastQuery _userArtistDetails;
+  @override
+  UserArtistDetailsSembastQuery get userArtistDetails => _userArtistDetails;
 
   WebDatabaseService(
     this.database, {
@@ -112,17 +118,24 @@ class WebDatabaseService {
             TrackScrobblesCollection(database, trackScrobblesStore),
         artistSelections =
             ArtistSelectionsCollection(database, artistSelectionsStore),
-        userArtistDetails = UserArtistDetailsSembastQueryable(
-            database,
-            usersStore,
-            artistsStore,
-            trackScrobblesStore,
-            artistSelectionsStore);
+        trackScrobblesPerTimeQuery =
+            TrackScrobblesPerTimeSembastQuery(database, trackScrobblesStore) {
+    _userArtistDetails = UserArtistDetailsSembastQuery(
+      database,
+      trackScrobblesStore,
+      artists,
+    );
+  }
 
   @override
   Future<T> transaction<T>(
       FutureOr<T> Function(SembastExecutorWrapper) action) {
     return database.transaction((t) => action(SembastExecutorWrapper(t)));
+  }
+
+  @override
+  Future<void> dispose() async {
+    await database.close();
   }
 }
 
@@ -372,186 +385,213 @@ class TrackScrobblesCollection extends _DatabaseCollection<TrackScrobble> {
   }
 }
 
-class ArtistSelectionsCollection extends _DatabaseCollection<ArtistSelection> {
+class ArtistSelectionsCollection extends _DatabaseCollection<ArtistSelection>
+    implements ArtistSelectionCollection {
   ArtistSelectionsCollection(
     DatabaseClient database,
     StoreRef<String, Map<String, dynamic>> store,
-  ) : super(database, store,
-            (id, data) => ArtistSelection.deserialize(data));
+  ) : super(database, store, (id, data) => ArtistSelection.deserialize(data));
 
   @override
   ArtistSelectionsCollection through(ExecutorWrapper database) {
     return ArtistSelectionsCollection(database.executor, store);
   }
-}
-
-class _ArtistWithSelectionPair {
-  final Artist artist;
-  final ArtistSelection artistSelection;
-  _ArtistWithSelectionPair(this.artist, this.artistSelection);
-}
-
-class _UserArtistPair {
-  final String userId;
-  final String artistId;
-  _UserArtistPair(this.userId, this.artistId);
-  @override
-  bool operator ==(o) =>
-      o is _UserArtistPair && o.userId == userId && o.artistId == artistId;
 
   @override
-  int get hashCode => hash2(userId.hashCode, artistId.hashCode);
+  Future<List<ArtistSelection>> getWhere({
+    String userId,
+  }) async {
+    if (userId == null) return await getAll();
+    final cuserId = ArtistSelection.properties.userId;
+    final query = store.query(
+      finder: Finder(filter: Filter.equals(cuserId, userId)),
+    );
+    final snapshots = await query.getSnapshots(database);
+    return snapshots.map((e) => constructor(e.key, e.value)).toList();
+  }
 }
 
-class _ScrobblesCountByUserArtist {
-  final String userId;
-  final String artistId;
-  final int count;
-  _ScrobblesCountByUserArtist(this.userId, this.artistId, this.count);
-  @override
-  bool operator ==(o) =>
-      o is _ScrobblesCountByUserArtist &&
-      o.userId == userId &&
-      o.artistId == artistId &&
-      o.count == count;
-
-  @override
-  int get hashCode => hash3(userId.hashCode, artistId.hashCode, count.hashCode);
-}
-
-class UserArtistDetailsSembastQueryable extends UserArtistDetailsQueryable {
+class UserArtistDetailsSembastQuery extends UserArtistDetailsQuery {
   final DatabaseClient database;
 
-  UserArtistDetailsSembastQueryable(this.database, this.usersStore,
-      this.artistsStore, this.scrobblesStore, this.artistSelectionsStore);
+  UserArtistDetailsSembastQuery(
+    this.database,
+    this.scrobblesStore,
+    this.artists,
+  );
 
-  final StoreRef<String, Map<String, dynamic>> usersStore;
-  final StoreRef<String, Map<String, dynamic>> artistsStore;
-  final StoreRef<String, Map<String, dynamic>> artistSelectionsStore;
   final StoreRef<String, Map<String, dynamic>> scrobblesStore;
+  final ArtistsCollection artists;
 
   @override
-  UserArtistDetailsSembastQueryable through(ExecutorWrapper database) {
-    return UserArtistDetailsSembastQueryable(database.executor, usersStore,
-        artistsStore, scrobblesStore, artistSelectionsStore);
+  UserArtistDetailsSembastQuery through(ExecutorWrapper database) {
+    return UserArtistDetailsSembastQuery(
+        database.executor, scrobblesStore, artists);
+  }
+
+  String _tempId(String artistId, String userId) {
+    return artistId + '###' + userId;
   }
 
   @override
-  ReadOnlyEntity<UserArtistDetails> operator [](String id) {
-    throw UnimplementedError();
-  }
+  Future<List<UserArtistDetails>> getWhere({
+    List<String> userIds,
+    List<String> artistIds,
+    SortDirection scrobblesSort,
+  }) async {
+    final cuserId = TrackScrobble.properties.userId;
+    final cartistId = TrackScrobble.properties.artistId;
 
-  @override
-  Stream<List<UserArtistDetails>> changesWhere(
-      {List<String> ids,
-      bool selected,
-      String userId,
-      int skip,
-      int take,
-      SortDirection scrobblesSort}) {
-    final users = usersStore
-        .query(
-          finder: userId == null ? null : Finder(filter: Filter.byKey(userId)),
-        )
-        .onSnapshots(database);
+    final query = scrobblesStore.query(
+      finder: Finder(
+        filter: Filter.and(
+          [
+            if (userIds != null && userIds.isNotEmpty)
+              Filter.inList(cuserId, userIds),
+            if (artistIds != null && artistIds.isNotEmpty)
+              Filter.inList(cartistId, artistIds),
+          ],
+        ),
+      ),
+    );
 
-    final scrobbles = scrobblesStore.query().onSnapshots(database).map(
-          (list) => groupBy<RecordSnapshot<String, Map<String, dynamic>>,
-                  _UserArtistPair>(
-            list,
-            (c) => _UserArtistPair(c.value[TrackScrobble.properties.userId],
-                c.value[TrackScrobble.properties.artistId]),
-          )
-              .entries
-              .map((e) => _ScrobblesCountByUserArtist(
-                  e.key.userId, e.key.artistId, e.value.length))
-              .toList(),
-        );
-    final artistSelectedPairs = artistSelectionsStore
-        .query()
-        .onSnapshots(database)
-        .switchMap((artistSelections) {
-      final artistSelectionsDeserialized = artistSelections
-          .map((e) => ArtistSelection.deserialize(e.value));
-      final artistSelectionByArtist = Map<String, ArtistSelection>.fromIterable(
-          artistSelectionsDeserialized,
-          key: (sel) => sel.artistId,
-          value: (sel) => sel);
-      return artistsStore
-          .query(
-            finder: Finder(
-                filter: selected == null
-                    ? null
-                    : Filter.custom(
-                        (artist) => selected
-                            ? artistSelectionByArtist.containsKey(artist.key)
-                            : !artistSelectionByArtist.containsKey(artist.key),
-                      )),
-          )
-          .onSnapshots(database)
-          .map((list) => list
-              .map((e) => _ArtistWithSelectionPair(
-                  Artist.deserialize(e.key, e.value),
-                  artistSelectionByArtist[e.key]))
-              .toList());
-    });
-    return Rx.combineLatest3<
-            List<RecordSnapshot<String, Map<String, dynamic>>>,
-            List<_ScrobblesCountByUserArtist>,
-            List<_ArtistWithSelectionPair>,
-            List<UserArtistDetails>>(users, scrobbles, artistSelectedPairs,
-        (u, s, a) {
-      final mapped = s.map((scrobbles) {
-        final artistSelectedPair = a
-            .firstWhere((a) => a.artist.id == scrobbles.artistId, orElse: null);
-        if (artistSelectedPair == null) return null;
-        return UserArtistDetails(scrobbles.artistId + '@' + scrobbles.userId,
-            imageInfo: artistSelectedPair.artist.imageInfo,
-            mbid: artistSelectedPair.artist.mbid,
-            name: artistSelectedPair.artist.name,
-            scrobbles: scrobbles.count,
-            url: artistSelectedPair.artist.url,
-            userId: scrobbles.userId);
-      }).toList();
-      if (scrobblesSort != null) {
-        mapped.sort((a, b) => scrobblesSort == SortDirection.ascending
-            ? a.scrobbles.compareTo(b.scrobbles)
-            : b.scrobbles.compareTo(a.scrobbles));
+    final tempMap = <String, int>{};
+    final tempList = <UserArtistDetails>[];
+    for (final scrobbleS in await query.getSnapshots(database)) {
+      final scrobble = TrackScrobble.deserialize(scrobbleS.value);
+      final tempId = _tempId(scrobble.artistId, scrobble.userId);
+      if (!tempMap.containsKey(tempId)) {
+        tempMap[tempId] = 0;
+        final artist = await artists[scrobble.artistId].get();
+        tempList.add(UserArtistDetails(
+          artistId: scrobble.artistId,
+          artistName: scrobble.artistId,
+          imageInfo: artist.imageInfo,
+          mbid: artist.mbid,
+          url: artist.url,
+          userId: scrobble.userId,
+          scrobbles: -1,
+        ));
       }
-      Iterable<UserArtistDetails> ret = mapped;
-      if (skip != null) {
-        ret = mapped.skip(skip);
+      tempMap[tempId]++;
+    }
+
+    final resList = <UserArtistDetails>[];
+    for (final s in tempList) {
+      final tempId = _tempId(s.artistId, s.userId);
+      resList.add(UserArtistDetails(
+        artistId: s.artistId,
+        artistName: s.artistName,
+        imageInfo: s.imageInfo,
+        mbid: s.mbid,
+        url: s.url,
+        userId: s.userId,
+        scrobbles: tempMap[tempId],
+      ));
+    }
+    if (scrobblesSort != null) {
+      if (scrobblesSort == SortDirection.ascending) {
+        resList.sort((a, b) => a.scrobbles.compareTo(b.scrobbles));
       }
-      if (take != null) {
-        ret = mapped.take(take);
+      if (scrobblesSort == SortDirection.descending) {
+        resList.sort((b, a) => a.scrobbles.compareTo(b.scrobbles));
       }
-      return ret.toList();
-    });
+    }
+    return resList;
+  }
+}
+
+class TrackScrobblesPerTimeSembastQuery implements TrackScrobblesPerTimeQuery {
+  final StoreRef<String, Map<String, dynamic>> scrobblesStore;
+  final DatabaseClient database;
+
+  TrackScrobblesPerTimeSembastQuery(this.database, this.scrobblesStore);
+
+  @override
+  TrackScrobblesPerTimeSembastQuery through(ExecutorWrapper database) {
+    return TrackScrobblesPerTimeSembastQuery(database.executor, scrobblesStore);
+  }
+
+  DateTime _groupDate(DatePeriod period, DateTime date) {
+    if (period == DatePeriod.day) {
+      return DateTime(date.year, date.month, date.day);
+    }
+    if (period == DatePeriod.week) {
+      return DateTime(date.year, date.month, date.day - date.weekday + 1);
+    }
+    if (period == DatePeriod.month) {
+      return DateTime(date.year, date.month);
+    }
+    if (period == DatePeriod.hour) {
+      return DateTime(date.year, date.month, date.day, date.hour);
+    }
+    throw ArgumentError('Unknown DatePeriod - $period');
+  }
+
+  String _tempId(String artistId, String trackId) {
+    return artistId + '###' + trackId;
   }
 
   @override
-  Stream<int> countWhere({List<String> ids, bool selected, String userId}) {
-    return Stream.value(0);
-  }
+  Future<List<TrackScrobblesPerTime>> getByArtist({
+    List<String> artistIds,
+    List<String> userIds,
+    @required DatePeriod period,
+    DateTime start,
+    DateTime end,
+  }) async {
+    final cdate = TrackScrobble.properties.date;
+    final cuserId = TrackScrobble.properties.userId;
+    final cartistId = TrackScrobble.properties.artistId;
 
-  @override
-  Future<List<UserArtistDetails>> getAll() {
-    throw UnimplementedError();
-  }
+    final tempMap = <String, int>{};
+    final tempList = <TrackScrobblesPerTime>[];
 
-  @override
-  Future<List<UserArtistDetails>> getWhere(
-      {List<String> ids,
-      bool selected,
-      String userId,
-      int skip,
-      int take,
-      SortDirection scrobblesSort}) {
-    throw UnimplementedError();
-  }
+    final query = scrobblesStore.query(
+      finder: Finder(
+        filter: Filter.and([
+          if (userIds != null && userIds.isNotEmpty)
+            Filter.inList(cuserId, userIds),
+          if (artistIds != null && artistIds.isNotEmpty)
+            Filter.inList(cartistId, artistIds),
+          if (start != null)
+            Filter.greaterThanOrEquals(cdate, start.millisecondsSinceEpoch),
+          if (end != null) Filter.lessThan(cdate, end.millisecondsSinceEpoch),
+        ]),
+      ),
+    );
 
-  @override
-  Stream<List<UserArtistDetails>> changes() {
-    throw UnimplementedError();
+    for (final scrobbleS in await query.getSnapshots(database)) {
+      final scrobble = TrackScrobble.deserialize(scrobbleS.value);
+      final groupedDate = _groupDate(period, scrobble.date);
+      final tempId = _tempId(scrobble.artistId, scrobble.trackId);
+      if (!tempMap.containsKey(tempId)) {
+        tempList.add(TrackScrobblesPerTime(
+          artistId: scrobble.artistId,
+          count: -1,
+          groupedDate: groupedDate,
+          period: period,
+          trackId: scrobble.trackId,
+          userId: scrobble.userId,
+        ));
+        tempMap[tempId] = 0;
+      }
+      tempMap[tempId]++;
+    }
+
+    final res = <TrackScrobblesPerTime>[];
+    for (final s in tempList) {
+      final tempId = _tempId(s.artistId, s.trackId);
+      res.add(TrackScrobblesPerTime(
+        artistId: s.artistId,
+        groupedDate: s.groupedDate,
+        period: s.period,
+        trackId: s.trackId,
+        userId: s.userId,
+        count: tempMap[tempId],
+      ));
+    }
+
+    return res;
   }
 }

@@ -77,6 +77,7 @@ class ChartViewModel extends EpicViewModel {
         DateTime(time.year, time.month, time.day + 1 + offset),
       );
     }
+    throw ArgumentError.value(range, 'Unknown DatePeriod');
   }
 
   void updateRange(DateTime time, DatePeriod newRange, [int offset = 0]) {
