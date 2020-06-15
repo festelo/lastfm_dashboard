@@ -51995,7 +51995,7 @@ t=6
 return P.f(b.ga26().oy(p.dv(a2,new V.a1j(),a0).cm(0),a6,a4,a5,H.a([a1],u.i)),$async$h9)
 case 6:o=a8
 a1=J.a6(o)
-if(a1.gI(o)){r=new T.li(H.a([],u.g1),u.RN)
+if(a1.gI(o)&&a5==null&&a6==null){r=new T.li(H.a([],u.g1),u.RN)
 t=1
 break}n=a5==null?a1.dv(o,new V.a1k(),u.Cz).iT(0,new V.a1l()):a5
 m=a6==null?J.eC(a1.dv(o,new V.a1m(),u.Cz).iT(0,new V.a1n()),P.d4(0,0,0,1)):a6
