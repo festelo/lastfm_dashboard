@@ -75,7 +75,8 @@ class _ArtistsChartState extends EpicState<ArtistsChart> {
       end: periodEnd,
     );
 
-    if (scrobblesList.isEmpty) return ChartData([]);
+    if (scrobblesList.isEmpty && periodStart == null && periodEnd == null)
+      return ChartData([]);
 
     final start = periodStart ??
         scrobblesList
@@ -125,7 +126,7 @@ class _ArtistsChartState extends EpicState<ArtistsChart> {
 
     if (previousBounds != null)
       previousData = await getData(period, previousBounds.a, previousBounds.b);
-      
+
     data = await getData(period, bounds?.a, bounds?.b);
 
     if (nextBounds != null)
