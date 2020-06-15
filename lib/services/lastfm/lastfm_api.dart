@@ -36,7 +36,7 @@ class LastFMApi {
   static const apiKey = Config.lastFmKey;
   final _client = http.Client();
 
-  Future<T> _retryOnThrow<T>(Future<T> Function() fun, {int times = 3}) async {
+  Future<T> _retryOnThrow<T>(Future<T> Function() fun, {int times = 10}) async {
     final errors = [];
     for (var i = 0; i < times; i++) {
       try {
@@ -45,6 +45,7 @@ class LastFMApi {
         errors.add(e);
       }
     }
+    await Future.delayed(Duration(milliseconds: 200));
     throw AccumulatedException(errors);
   }
 

@@ -18,7 +18,7 @@ void defineUserHelpers(EpicContainer container) {
     final user = await provider.get(currentUserKey);
     if (user == null) return false;
     final epicManager = await provider.get<EpicManager>();
-    epicManager.runned
+    return epicManager.runned
       .map((e) => e.epic)
       .whereType<RefreshUserEpic>()
       .any((e) => e.username == user.username);
