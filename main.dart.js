@@ -52419,7 +52419,7 @@ n.l(0,"api_key","bfbf329ac18c90be290290906bba7ef6")
 n.l(0,"format","json")
 for(p=b.gdH(b),p=p.gK(p);p.p();){o=p.gv(p)
 n.l(0,o.a,o.b)}t=3
-return P.f(q.pW(new M.TX(q,P.amw("http","ws.audioscrobbler.com","/2.0",n)),u.z),$async$n_)
+return P.f(q.pW(new M.TX(q,P.amw("https","ws.audioscrobbler.com","/2.0",n)),u.z),$async$n_)
 case 3:r=d
 t=1
 break
