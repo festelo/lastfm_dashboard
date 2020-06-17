@@ -20,7 +20,8 @@ class ArtistsChart extends StatefulWidget {
 
 class _ArtistsChartState extends EpicState<ArtistsChart> {
   ChartViewModel get vm => Provider.of<ChartViewModel>(context, listen: false);
-  DatePeriod get period => vm.period;
+  DatePeriod get boundsPeriod => vm.boundsPeriod;
+  DatePeriod get pointsPeriod => vm.pointsPeriod;
   DatePeriod get nextPeriod => vm.nextPeriod;
   Pair<DateTime> get nextBounds => vm.nextBounds;
   Pair<DateTime> get bounds => vm.bounds;
@@ -39,7 +40,7 @@ class _ArtistsChartState extends EpicState<ArtistsChart> {
     );
 
     handle<UserScrobblesAdded>(
-      (_) => refreshData(),
+      userScrobblesAdded,
       where: (e) => e.user.username == userId,
     );
 
@@ -68,7 +69,7 @@ class _ArtistsChartState extends EpicState<ArtistsChart> {
     );
 
     final scrobblesList = await db.trackScrobblesPerTimeQuery.getByArtist(
-      period: period,
+      period: pointsPeriod,
       artistIds: selections.map((e) => e.artistId).toList(),
       userIds: [currentUser.id],
       start: periodStart,
@@ -102,7 +103,7 @@ class _ArtistsChartState extends EpicState<ArtistsChart> {
       );
     }
 
-    for (final date in period.iterateBounds(start, end)) {
+    for (final date in pointsPeriod.iterateBounds(start, end)) {
       final used = <String>{};
       for (final scrobble in perDate[date] ?? <TrackScrobblesPerTime>[]) {
         if (series[scrobble.artistId] == null) continue;
@@ -125,12 +126,20 @@ class _ArtistsChartState extends EpicState<ArtistsChart> {
     setState(() => dataRefresing = true);
 
     if (previousBounds != null)
-      previousData = await getData(period, previousBounds.a, previousBounds.b);
+      previousData = await getData(
+        boundsPeriod,
+        previousBounds.a,
+        previousBounds.b,
+      );
 
-    data = await getData(period, bounds?.a, bounds?.b);
+    data = await getData(boundsPeriod, bounds?.a, bounds?.b);
 
     if (nextBounds != null)
-      nextData = await getData(period, nextBounds.a, nextBounds.b);
+      nextData = await getData(
+        boundsPeriod,
+        nextBounds.a,
+        nextBounds.b,
+      );
 
     setState(() => dataRefresing = false);
   }
@@ -147,6 +156,44 @@ class _ArtistsChartState extends EpicState<ArtistsChart> {
   bool get swipesAvailable =>
       !dataRefresing && bounds.a != null && bounds.b != null;
 
+  ChartData<DateTime, int> handleScrobbleAdding(
+    UserScrobblesAdded e,
+    ChartData<DateTime, int> data,
+    Map<String, List<TrackScrobble>> scrobblesPerArtist,
+  ) {
+    if (data == null) return null;
+    final newSeries = [...data.series.map((e) => e.deepCopy())];
+    for (final series in newSeries) {
+      final scrobbles = scrobblesPerArtist[series.name];
+      if (scrobbles == null) continue;
+      for (final scrobble in scrobbles) {
+        final normalized = pointsPeriod.normalize(scrobble.date);
+        final index = series.entities.indexWhere(
+          (s) => s.abscissa == normalized,
+        );
+        if (index == -1) continue;
+        series.entities[index] =
+            ChartEntity(normalized, series.entities[index].ordinate + 1);
+      }
+    }
+    return ChartData(newSeries);
+  }
+
+  void userScrobblesAdded(UserScrobblesAdded e) {
+    final scrobblesPerArtist =
+        groupBy<TrackScrobble, String>(e.newScrobbles, (c) => c.userId);
+    final previousData = this.previousData;
+    final data = this.data;
+    final nextData = this.nextData;
+    final newPreviousData =
+        handleScrobbleAdding(e, previousData, scrobblesPerArtist);
+    final newData = handleScrobbleAdding(e, data, scrobblesPerArtist);
+    final newNextData = handleScrobbleAdding(e, nextData, scrobblesPerArtist);
+    if (previousData == this.previousData) this.previousData = newPreviousData;
+    if (data == this.data) this.data = newData;
+    if (nextData == this.nextData) this.nextData = newNextData;
+  }
+
   @override
   Widget build(BuildContext context) {
     Widget child;
@@ -159,7 +206,7 @@ class _ArtistsChartState extends EpicState<ArtistsChart> {
     else
       child = BaseChart(
         data,
-        range: period,
+        range: boundsPeriod,
         bounds: bounds,
         previousData: previousData,
         nextData: nextData,

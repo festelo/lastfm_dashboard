@@ -204,10 +204,10 @@ class DatabaseEntity<T extends DatabaseMappedModel>
   Future<void> update(Map<String, dynamic> data,
       {bool createIfNotExist = false}) async {
     if (createIfNotExist) {
-      await record.add(database, data);
-    } else {
-      await record.update(database, data);
+      final key = await record.add(database, data);
+      if (key != null) return;
     }
+    await record.update(database, data);
   }
 
   /// Works slow, but updates only affected properties
@@ -513,23 +513,11 @@ class TrackScrobblesPerTimeSembastQuery implements TrackScrobblesPerTimeQuery {
   }
 
   DateTime _groupDate(DatePeriod period, DateTime date) {
-    if (period == DatePeriod.day) {
-      return DateTime(date.year, date.month, date.day);
-    }
-    if (period == DatePeriod.week) {
-      return DateTime(date.year, date.month, date.day - date.weekday + 1);
-    }
-    if (period == DatePeriod.month) {
-      return DateTime(date.year, date.month);
-    }
-    if (period == DatePeriod.hour) {
-      return DateTime(date.year, date.month, date.day, date.hour);
-    }
-    throw ArgumentError('Unknown DatePeriod - $period');
+    return period.normalize(date);
   }
 
-  String _tempId(String artistId, String trackId) {
-    return artistId + '###' + trackId;
+  String _tempId(String artistId, String userId) {
+    return artistId + '###' + userId;
   }
 
   @override
@@ -564,7 +552,7 @@ class TrackScrobblesPerTimeSembastQuery implements TrackScrobblesPerTimeQuery {
     for (final scrobbleS in await query.getSnapshots(database)) {
       final scrobble = TrackScrobble.deserialize(scrobbleS.value);
       final groupedDate = _groupDate(period, scrobble.date);
-      final tempId = _tempId(scrobble.artistId, scrobble.trackId);
+      final tempId = _tempId(scrobble.artistId, scrobble.userId);
       if (!tempMap.containsKey(tempId)) {
         tempList.add(TrackScrobblesPerTime(
           artistId: scrobble.artistId,
@@ -581,7 +569,7 @@ class TrackScrobblesPerTimeSembastQuery implements TrackScrobblesPerTimeQuery {
 
     final res = <TrackScrobblesPerTime>[];
     for (final s in tempList) {
-      final tempId = _tempId(s.artistId, s.trackId);
+      final tempId = _tempId(s.artistId, s.userId);
       res.add(TrackScrobblesPerTime(
         artistId: s.artistId,
         groupedDate: s.groupedDate,

@@ -23,7 +23,7 @@ class _DurationSwitcherState extends EpicState<DurationSwitcher> {
   ChartViewModel get vm => Provider.of(context, listen: false);
 
   String getDurationName() {
-    switch (vm.period) {
+    switch (vm.boundsPeriod) {
       case DatePeriod.day:
         return 'Day';
       case DatePeriod.week:
@@ -43,14 +43,11 @@ class _DurationSwitcherState extends EpicState<DurationSwitcher> {
   }
 
   DatePeriod get nextPeriod {
-    final i = DatePeriod.values.indexOf(vm.period);
-    final newI = i + 1;
-    if (newI == DatePeriod.values.length) return null;
-    return DatePeriod.values[newI];
+    return vm.nextPeriod;
   }
 
   DatePeriod get previousPeriod {
-    final i = DatePeriod.values.indexOf(vm.period);
+    final i = DatePeriod.values.indexOf(vm.boundsPeriod);
     final newI = i - 1;
     if (newI == -1) return null;
     return DatePeriod.values[newI];
@@ -89,7 +86,7 @@ class _DurationSwitcherState extends EpicState<DurationSwitcher> {
                     nextPeriod == null || vm.boundsMap[nextPeriod] == null
                         ? null
                         : () {
-                            vm.period = nextPeriod;
+                            vm.boundsPeriod = nextPeriod;
                           },
               ),
             ),
@@ -101,7 +98,7 @@ class _DurationSwitcherState extends EpicState<DurationSwitcher> {
                         vm.boundsMap[previousPeriod] == null
                     ? null
                     : () {
-                        vm.period = previousPeriod;
+                        vm.boundsPeriod = previousPeriod;
                       },
               ),
             ),

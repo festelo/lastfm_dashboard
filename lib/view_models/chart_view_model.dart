@@ -24,71 +24,45 @@ class ChartViewModel extends EpicViewModel {
     _bounds = value;
     notify(this);
   }
-  Pair<DateTime> get bounds => boundsMap[period];
+
+  Pair<DateTime> get bounds => boundsMap[boundsPeriod];
   Pair<DateTime> _nextBounds;
   Pair<DateTime> _previousBounds;
   Pair<DateTime> get nextBounds => _nextBounds;
   Pair<DateTime> get previousBounds => _previousBounds;
 
-  DatePeriod _period = DatePeriod.month;
-  DatePeriod get period => _period;
-  set period(DatePeriod value) {
-    _period = value;
+  DatePeriod _boundsPeriod = DatePeriod.year;
+  DatePeriod get boundsPeriod => _boundsPeriod;
+  set boundsPeriod(DatePeriod value) {
+    _boundsPeriod = value;
     notify(this);
   }
 
+  DatePeriod get pointsPeriod => nextPeriod;
+
   DatePeriod get nextPeriod {
-    final nextIndex = DatePeriod.values.indexOf(period) + 1;
+    final nextIndex = DatePeriod.values.indexOf(boundsPeriod) + 1;
     if (nextIndex == DatePeriod.values.length) return null;
     return DatePeriod.values[nextIndex];
   }
 
   Pair<DateTime> getBoundsForRange(DateTime time, DatePeriod range,
       [int offset = 0]) {
-    if (range == DatePeriod.month) {
-      return Pair(
-        DateTime(time.year + offset),
-        DateTime(time.year + 1 + offset),
-      );
-    }
-    if (range == DatePeriod.week) {
-      return Pair(
-        DateTime(time.year, time.month + offset),
-        DateTime(time.year, time.month + 1 + offset),
-      );
-    }
-    if (range == DatePeriod.day) {
-      return Pair(
-        DateTime(
-          time.year,
-          time.month,
-          time.day - time.weekday + 1 + offset * 7,
-        ),
-        DateTime(
-          time.year,
-          time.month,
-          time.day - time.weekday + 1 + (1 + offset) * 7,
-        ),
-      );
-    }
-    if (range == DatePeriod.hour) {
-      return Pair(
-        DateTime(time.year, time.month, time.day + offset),
-        DateTime(time.year, time.month, time.day + 1 + offset),
-      );
-    }
-    throw ArgumentError.value(range, 'Unknown DatePeriod');
+    return Pair(
+      range.addOffset(range.normalize(time), offset),
+      range.addOffset(range.normalize(time), offset + 1),
+    );
   }
 
   void updateRange(DateTime time, DatePeriod newRange, [int offset = 0]) {
-    period = newRange;
-    _previousBounds = getBoundsForRange(time, newRange, offset - 1);
-    boundsMap[newRange] = getBoundsForRange(time, newRange, offset);
-    _nextBounds = getBoundsForRange(time, newRange, offset + 1);
+    boundsPeriod = newRange;
+    _previousBounds = getBoundsForRange(time, boundsPeriod, offset - 1);
+    boundsMap[newRange] = getBoundsForRange(time, boundsPeriod, offset);
+    _nextBounds = getBoundsForRange(time, boundsPeriod, offset + 1);
     notify(this);
   }
 
   void moveBounds({bool forward = true}) {
-    updateRange(bounds.a, period, forward ? -1 : 1);
+    updateRange(bounds.a, boundsPeriod, forward ? -1 : 1);
   }
 }

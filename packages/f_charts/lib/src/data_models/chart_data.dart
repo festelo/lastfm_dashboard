@@ -20,6 +20,15 @@ class ChartSeries<TAbscissa, TOrdinate> {
 
   const ChartSeries({this.entities, this.color, this.name});
 
+  ChartSeries<TAbscissa, TOrdinate> deepCopy() {
+    return ChartSeries(
+      color: color,
+      name: name,
+      entities:
+          entities.map((e) => ChartEntity(e.abscissa, e.ordinate)).toList(),
+    );
+  }
+
   @override
   bool operator ==(Object other) =>
       other is ChartSeries<TAbscissa, TOrdinate> &&

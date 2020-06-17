@@ -132,10 +132,15 @@ class ChartController<T1, T2> implements Listenable {
   }
 
   Future<void> replaceData(ChartData<T1, T2> to) async {
+    await _moveCompleter?.future;
     final tween = buildAnimation(to);
     if (tween.pointsDifferent()) {
       final animation = moveAnimationController.drive(tween);
       await move(to, animation, () => moveAnimationController.forward(from: 0));
+    } else {
+      data = to;
+      initLayers();
+      notifyListeners();
     }
   }
 
