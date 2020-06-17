@@ -7,7 +7,7 @@ import 'package:lastfm_dashboard/epics/users_epics.dart';
 import 'package:lastfm_dashboard/models/models.dart';
 import 'accounts_modal.dart';
 
-import 'artists/artists_tab.dart';
+import 'artists_tab/artists_tab.dart';
 
 
 class HomePage extends StatefulWidget {

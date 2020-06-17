@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:lastfm_dashboard/pages/home/artists/chart/chart_page.dart';
-import 'artists_list/artists_list_page.dart';
+import 'artists_list_page.dart';
+import 'chart_page.dart';
 
 class Routes {
   static MaterialPageRoute artistsList() =>

@@ -3,13 +3,13 @@ import 'dart:async';
 import 'package:collection/collection.dart';
 import 'package:f_charts/f_charts.dart';
 import 'package:flutter/material.dart';
-import 'package:lastfm_dashboard/components/base_chart.dart';
 import 'package:lastfm_dashboard/epics/artists_epics.dart';
 import 'package:lastfm_dashboard/epics/epic_state.dart';
 import 'package:lastfm_dashboard/epics/users_epics.dart';
 import 'package:lastfm_dashboard/models/models.dart';
 import 'package:lastfm_dashboard/services/local_database/database_service.dart';
 import 'package:lastfm_dashboard/view_models/chart_view_model.dart';
+import 'package:lastfm_dashboard/widgets/base_chart.dart';
 import 'package:provider/provider.dart';
 import 'package:shared/models.dart';
 

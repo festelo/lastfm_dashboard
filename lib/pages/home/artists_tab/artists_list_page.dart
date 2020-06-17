@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-
-import 'all_artists_list.dart';
+import 'package:lastfm_dashboard/features/artists_list/all_artists_list.dart';
 
 class AritstsListPage extends StatelessWidget {
   @override
