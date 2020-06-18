@@ -1,0 +1,12 @@
+name: lastfm_dashboard_domain
+description: Domain package for LastFM Dashboard 
+
+dependencies:
+  shared:
+    path: ../shared
+  collection: ^1.14.12
+  intl: ^0.16.1
+  uuid: ^2.1.0
+
+environment:
+  sdk: '>=2.7.0 <3.0.0'

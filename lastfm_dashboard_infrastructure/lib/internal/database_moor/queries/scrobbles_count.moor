@@ -1,0 +1,12 @@
+import '../tables.moor';
+
+scrobbles_count:
+SELECT 
+    artistId,
+    userId,
+    count(*) as scrobbles
+FROM 
+    track_scrobbles
+GROUP BY 
+    artistId,
+    userId;

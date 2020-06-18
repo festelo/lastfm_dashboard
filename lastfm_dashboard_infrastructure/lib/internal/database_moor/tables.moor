@@ -1,0 +1,54 @@
+CREATE TABLE users (
+    id TEXT NOT NULL PRIMARY KEY,
+    username TEXT UNIQUE,
+    lastSync DateTime NOT NULL DEFAULT 0,
+    playCount INTEGER NOT NULL DEFAULT 0,
+    imageInfo_small TEXT,
+    imageInfo_medium TEXT,
+    imageInfo_large TEXT,
+    imageInfo_extraLarge TEXT,
+    setupSync_passed BOOLEAN NOT NULL DEFAULT 0,
+    setupSync_earliestScrobble DateTime
+) as MoorUser;
+
+CREATE TABLE artists (
+    id TEXT NOT NULL PRIMARY KEY,
+    mbid TEXT,
+    url TEXT,
+    name TEXT UNIQUE,
+    imageInfo_small TEXT,
+    imageInfo_medium TEXT,
+    imageInfo_large TEXT,
+    imageInfo_extraLarge TEXT
+) as MoorArtist;
+
+CREATE TABLE tracks (
+    id TEXT NOT NULL PRIMARY KEY,
+    name TEXT,
+    mbid TEXT,
+    url TEXT,
+    artistId TEXT,
+    loved BOOLEAN NOT NULL DEFAULT 0,
+    imageInfo_small TEXT,
+    imageInfo_medium TEXT,
+    imageInfo_large TEXT,
+    imageInfo_extraLarge TEXT,
+    UNIQUE(name, artistId)
+) as MoorTrack;
+
+CREATE TABLE track_scrobbles (
+    id TEXT NOT NULL PRIMARY KEY,
+    trackId TEXT,
+    artistId TEXT,
+    userId TEXT NOT NULL,
+    date DateTime,
+    UNIQUE(trackId, artistId, userId, date)
+) as MoorTrackScrobble;
+
+CREATE TABLE artist_selections (
+    id TEXT NOT NULL PRIMARY KEY,
+    artistId TEXT NOT NULL UNIQUE,
+    userId TEXT NOT NULL,
+    selectionColor INTEGER,
+    UNIQUE(artistId, userId)
+) as MoorArtistSelection;
