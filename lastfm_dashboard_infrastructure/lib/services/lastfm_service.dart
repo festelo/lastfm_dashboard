@@ -140,9 +140,9 @@ class LastFMService {
     }
     
     await tracks.transaction(() async {
-      artists.addOrUpdateAll(newArtists);
-      tracks.addOrUpdateAll(newTracks);
-      trackScrobbles.addOrUpdateAll(newScrobbles);
+      await artists.addOrUpdateAll(newArtists);
+      await tracks.addOrUpdateAll(newTracks);
+      await trackScrobbles.addOrUpdateAll(newScrobbles);
     });
 
     return UpdateInfo(

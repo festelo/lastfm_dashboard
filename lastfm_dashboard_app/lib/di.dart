@@ -18,7 +18,7 @@ import 'epics/helpers.dart';
 
 Future<MoorDatabase> buildDatabaseLazy() async {
   final folder = await getApplicationDocumentsDirectory();
-  return MoorDatabase(folder.path);
+  return MoorDatabase.isolated(folder.path);
 }
 
 void _configureInfrastructure(EpicContainer container) {
