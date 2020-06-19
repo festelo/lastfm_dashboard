@@ -33,7 +33,7 @@ class RefreshWatcher extends Watcher {
           manager.runned.any((e) => e.epic is RefreshUserEpic);
 
       if (syncNeeded && !alreadySyncing) {
-        manager.start(RefreshUserEpic(u.username));
+        manager.start(RefreshUserEpic(u.id));
       }
     }
   }

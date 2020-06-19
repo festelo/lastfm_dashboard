@@ -23,7 +23,7 @@ part 'database.g.dart';
     ArtistSelectionTableAccessor,
     TrackScrobblesPerTimeMoorDataAccessor,
     ArtistUserInfoDataAccessor,
-    ArtistsTableAccessor,
+    ArtistTableAccessor,
   ],
 )
 class MoorDatabase extends _$MoorDatabase {

@@ -5,7 +5,6 @@ import 'package:lastfm_dashboard_domain/src/models/artist_user_info.dart';
 import 'package:shared/models.dart';
 
 import '../../domain.dart';
-import '../../domain.dart';
 part 'base.dart';
 
 enum SortDirection { ascending, descending }

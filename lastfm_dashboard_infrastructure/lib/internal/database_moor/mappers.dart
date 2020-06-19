@@ -1,9 +1,10 @@
 import 'package:lastfm_dashboard_domain/domain.dart';
+import 'package:moor/moor.dart';
 import 'database.dart';
 
-abstract class MoorMapper<TDomain, TMoor> {
+abstract class MoorMapper<TDomain, TMoor extends DataClass> {
   const MoorMapper();
-  TMoor toMoor(TDomain domain);
+  Insertable<TMoor> toMoor(TDomain domain);
   TDomain toDomain(TMoor moor);
 }
 

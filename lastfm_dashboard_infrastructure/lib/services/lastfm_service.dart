@@ -43,35 +43,38 @@ class LastFMService {
       setupSync: user.setupSync,
       username: user.username,
     );
-  } 
+  }
 
-  Stream<UpdateInfo> updateUser(User user, [CancellationToken cancellationToken]) async* {
+  Stream<UpdateInfo> updateUser(User user,
+      [CancellationToken cancellationToken]) async* {
     if (!user.setupSync.passed) {
-      final substream = _updateUser(user, null, user.setupSync.earliestScrobble);
+      final substream =
+          _updateUser(user, null, user.setupSync.earliestScrobble);
       await for (final c in substream) {
         user = user.copyWith(
-          setupSync: UserSetupSync(
-            passed: false,
-            earliestScrobble: c.newScrobbles.map((c) => c.date).reduce((a, b) => a.compareTo(b) == 1 ? b : a)
-          )
-        );
+            setupSync: UserSetupSync(
+                passed: false,
+                earliestScrobble: c.newScrobbles
+                    .map((c) => c.date)
+                    .reduce((a, b) => a.compareTo(b) == 1 ? b : a)));
         await users.addOrUpdate(user);
         yield c;
       }
-    }
-    else {
+    } else {
       final substream = _updateUser(user, null, user.lastSync);
       await for (final c in substream) {
         user = user.copyWith(
-          lastSync: c.newScrobbles.map((c) => c.date).reduce((a, b) => a.compareTo(b) == 1 ? a : b)
-        );
+            lastSync: c.newScrobbles
+                .map((c) => c.date)
+                .reduce((a, b) => a.compareTo(b) == 1 ? a : b));
         await users.addOrUpdate(user);
         yield c;
       }
     }
   }
 
-  Stream<UpdateInfo> _updateUser(User user, DateTime from, DateTime to, [CancellationToken cancellationToken]) async* {
+  Stream<UpdateInfo> _updateUser(User user, DateTime from, DateTime to,
+      [CancellationToken cancellationToken]) async* {
     var pageNumbers = 2;
     for (var i = 1; i < pageNumbers; i++) {
       final response = await api.getUserScrobbles(
@@ -87,47 +90,61 @@ class LastFMService {
         return;
       }
 
-      cancellationToken.throwIfCancelled();
+      cancellationToken?.throwIfCancelled();
       yield await _addLastFmScrobbles(user.id, scrobbles);
     }
   }
 
   Future<UpdateInfo> _addLastFmScrobbles(
-      String userId, List<LastFMScrobble> scrobbles) async {
+    String userId,
+    List<LastFMScrobble> scrobbles,
+  ) async {
     List<TrackScrobble> newScrobbles = [];
     List<Artist> newArtists = [];
     List<Track> newTracks = [];
+
+    Set<String> artistIds = {};
+    Set<String> trackIds = {};
+
     for (final s in scrobbles) {
-      final artist = Artist(
-        id: '${s.artist.mbid}#@#${s.artist.name}',
-        mbid: s.artist.mbid,
-        name: s.artist.name,
-        url: s.artist.url,
-      );
-      final track = Track(
-        id: '${s.track.mbid}#@#${s.track.name}#@#${s.artist.id}',
-        artistId: artist.id,
-        imageInfo: s.track.imageInfo,
-        loved: s.track.loved,
-        mbid: s.track.mbid,
-        name: s.track.name,
-        url: s.track.url,
-      );
+      final artistId = '${s.artist.mbid}#@#${s.artist.name}';
+      if (artistIds.add(artistId)) {
+        final artist = Artist(
+          id: artistId,
+          mbid: s.artist.mbid,
+          name: s.artist.name,
+          url: s.artist.url,
+        );
+        newArtists.add(artist);
+      }
+      final trackId = '${s.track.mbid}#@#${s.track.name}#@#${s.artist.id}';
+      if (trackIds.add(trackId)) {
+        final track = Track(
+          id: trackId,
+          artistId: artistId,
+          imageInfo: s.track.imageInfo,
+          loved: s.track.loved,
+          mbid: s.track.mbid,
+          name: s.track.name,
+          url: s.track.url,
+        );
+        newTracks.add(track);
+      }
       final scrobble = TrackScrobble(
-        artistId: artist.id,
-        trackId: track.id,
+        artistId: artistId,
+        trackId: trackId,
         date: s.date,
         userId: userId,
       );
       newScrobbles.add(scrobble);
-      newTracks.add(track);
-      newArtists.add(artist);
     }
+    
     await tracks.transaction(() async {
       artists.addOrUpdateAll(newArtists);
       tracks.addOrUpdateAll(newTracks);
       trackScrobbles.addOrUpdateAll(newScrobbles);
     });
+
     return UpdateInfo(
       newScrobbles: newScrobbles,
       newArtists: newArtists,

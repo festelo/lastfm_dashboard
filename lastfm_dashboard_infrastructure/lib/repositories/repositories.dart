@@ -6,9 +6,9 @@ import 'package:shared/models/date_period.dart';
 import '../internal/database_moor/database.dart';
 import 'package:moor/moor.dart';
 
-abstract class GenericMoorRepository<TDomain,
-    TMoor extends Insertable<DataClass>> {
-  GenericTableAccessor<TDomain, TMoor> get dao;
+abstract class GenericMoorRepository<TDomain, TMoor extends DataClass,
+    TTable extends Table> {
+  GenericTableAccessor<TDomain, TMoor, TTable> get dao;
 
   Future<void> addOrUpdateAll(List<TDomain> states) {
     return dao.addOrUpdateAll(states);
@@ -37,49 +37,47 @@ abstract class GenericMoorRepository<TDomain,
   }
 }
 
-class UsersMoorRepository extends GenericMoorRepository<User, MoorUser>
+class UsersMoorRepository extends GenericMoorRepository<User, MoorUser, Users>
     implements UsersRepository {
   UsersMoorRepository(this.db);
   final MoorDatabase db;
   @override
-  GenericTableAccessor<User, MoorUser> get dao => db.userTableAccessor;
+  get dao => db.userTableAccessor;
 }
 
-class ArtistsMoorRepository
-    extends GenericMoorRepository<Artist, MoorArtist>
+class ArtistsMoorRepository extends GenericMoorRepository<Artist, MoorArtist, Artists>
     implements ArtistsRepository {
   ArtistsMoorRepository(this.db);
   final MoorDatabase db;
   @override
-  GenericTableAccessor<Artist, MoorArtist> get dao =>
-      db.artistsTableAccessor;
+  get dao => db.artistTableAccessor;
 }
 
 class TrackScrobblesMoorRepository
-    extends GenericMoorRepository<TrackScrobble, MoorTrackScrobble>
+    extends GenericMoorRepository<TrackScrobble, MoorTrackScrobble, TrackScrobbles>
     implements TrackScrobblesRepository {
   TrackScrobblesMoorRepository(this.db);
   final MoorDatabase db;
   @override
-  GenericTableAccessor<TrackScrobble, MoorTrackScrobble> get dao =>
+  get dao =>
       db.trackScrobbleTableAccessor;
 }
 
-class TracksMoorRepository extends GenericMoorRepository<Track, MoorTrack>
+class TracksMoorRepository extends GenericMoorRepository<Track, MoorTrack, Tracks>
     implements TracksRepository {
   TracksMoorRepository(this.db);
   final MoorDatabase db;
   @override
-  GenericTableAccessor<Track, MoorTrack> get dao => db.trackTableAccessor;
+  get dao => db.trackTableAccessor;
 }
 
 class ArtistSelectionsMoorRepository
-    extends GenericMoorRepository<ArtistSelection, MoorArtistSelection>
+    extends GenericMoorRepository<ArtistSelection, MoorArtistSelection, ArtistSelections>
     implements ArtistSelectionsRepository {
   ArtistSelectionsMoorRepository(this.db);
   final MoorDatabase db;
   @override
-  GenericTableAccessor<ArtistSelection, MoorArtistSelection> get dao =>
+  get dao =>
       db.artistSelectionTableAccessor;
 
   @override
@@ -91,7 +89,7 @@ class ArtistSelectionsMoorRepository
   Future<void> deleteForUser(String userId, String artistId) async {
     await db.artistSelectionTableAccessor.deleteEntityWhere(
       db.artistSelections.userId.equals(userId) &
-      db.artistSelections.artistId.equals(artistId),
+          db.artistSelections.artistId.equals(artistId),
     );
   }
 

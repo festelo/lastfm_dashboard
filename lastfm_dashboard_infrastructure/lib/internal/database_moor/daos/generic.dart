@@ -6,28 +6,28 @@ import 'package:moor/moor.dart';
 import '../database.dart';
 import '../mappers.dart';
 
-abstract class GenericTableAccessor<TEntity,
-        TMoor extends Insertable<DataClass>>
-    extends DatabaseAccessor<MoorDatabase> {
+abstract class GenericTableAccessor<TEntity, TMoor extends DataClass,
+    TTable extends Table> extends DatabaseAccessor<MoorDatabase> {
   GenericTableAccessor(MoorDatabase attachedDatabase) : super(attachedDatabase);
-  Table get table;
+
+  TableInfo<TTable, TMoor> get tableInfo;
   MoorMapper<TEntity, TMoor> get mapper;
 
   Future<void> addOrUpdate(TEntity state) async {
     final moor = mapper.toMoor(state);
-    final res = await into(table).insertOnConflictUpdate(moor);
+    final res = await into(tableInfo).insertOnConflictUpdate(moor);
     return res;
   }
 
   Future<void> addOrUpdateAll(List<TEntity> states) async {
     final moors = states.map(mapper.toMoor).toList();
     await db.batch((batch) {
-      batch.insertAllOnConflictUpdate(table, moors);
+      batch.insertAll(tableInfo, moors, mode: InsertMode.insertOrReplace);
     });
   }
 
   Future<List<TEntity>> getAll() async {
-    final all = await db.select(table).get();
+    final all = await db.select(tableInfo).get();
     return all.cast<TMoor>().map(mapper.toDomain).toList();
   }
 
@@ -37,62 +37,64 @@ abstract class GenericTableAccessor<TEntity,
   }
 
   Future<void> deleteEntity(id) async {
-    await db.delete(table)
+    await db.delete(tableInfo)
       ..where((t) => t.primaryKey.first.equals(id));
   }
 
   Future<void> deleteEntityWhere(Expression<bool> statement) async {
-    await db.delete(table)
+    await db.delete(tableInfo)
       ..where((t) => statement);
   }
 
   Future<TEntity> get(id) async {
-    final select = await db.select(table)
+    final select = await db.select(tableInfo)
       ..where((t) => t.primaryKey.first.equals(id));
     final t = await select.getSingle();
-    return mapper.toDomain(t as TMoor);
+    return t.nullOr((t) => mapper.toDomain(t as TMoor));
   }
 
   Future<List<TEntity>> getWhere(Expression<bool> statement) async {
-    final select = await db.select(table)
+    final select = await db.select(tableInfo)
       ..where((t) => statement);
     final t = await select.get();
     return t.cast<TMoor>().map(mapper.toDomain).toList();
   }
 }
 
-class UserTableAccessor extends GenericTableAccessor<User, MoorUser> {
+class UserTableAccessor extends GenericTableAccessor<User, MoorUser, Users> {
   UserTableAccessor(MoorDatabase attachedDatabase) : super(attachedDatabase);
 
   @override
   MoorMapper<User, MoorUser> get mapper => UserMapper();
 
   @override
-  Table get table => db.users;
+  Users get tableInfo => db.users;
 }
 
-class ArtistTableAccessor extends GenericTableAccessor<Artist, MoorArtist> {
+class ArtistTableAccessor
+    extends GenericTableAccessor<Artist, MoorArtist, Artists> {
   ArtistTableAccessor(MoorDatabase attachedDatabase) : super(attachedDatabase);
 
   @override
   MoorMapper<Artist, MoorArtist> get mapper => ArtistMapper();
 
   @override
-  Table get table => db.artists;
+  Artists get tableInfo => db.artists;
 }
 
-class TrackTableAccessor extends GenericTableAccessor<Track, MoorTrack> {
+class TrackTableAccessor
+    extends GenericTableAccessor<Track, MoorTrack, Tracks> {
   TrackTableAccessor(MoorDatabase attachedDatabase) : super(attachedDatabase);
 
   @override
   MoorMapper<Track, MoorTrack> get mapper => TrackMapper();
 
   @override
-  Table get table => db.artists;
+  Tracks get tableInfo => db.tracks;
 }
 
-class TrackScrobbleTableAccessor
-    extends GenericTableAccessor<TrackScrobble, MoorTrackScrobble> {
+class TrackScrobbleTableAccessor extends GenericTableAccessor<TrackScrobble,
+    MoorTrackScrobble, TrackScrobbles> {
   TrackScrobbleTableAccessor(MoorDatabase attachedDatabase)
       : super(attachedDatabase);
 
@@ -101,11 +103,11 @@ class TrackScrobbleTableAccessor
       TrackScrobbleMapper();
 
   @override
-  Table get table => db.artists;
+  TrackScrobbles get tableInfo => db.trackScrobbles;
 }
 
-class ArtistSelectionTableAccessor
-    extends GenericTableAccessor<ArtistSelection, MoorArtistSelection> {
+class ArtistSelectionTableAccessor extends GenericTableAccessor<ArtistSelection,
+    MoorArtistSelection, ArtistSelections> {
   ArtistSelectionTableAccessor(MoorDatabase attachedDatabase)
       : super(attachedDatabase);
 
@@ -114,18 +116,5 @@ class ArtistSelectionTableAccessor
       ArtistSelectionMapper();
 
   @override
-  Table get table => db.artists;
-}
-
-class ArtistsTableAccessor
-    extends GenericTableAccessor<Artist, MoorArtist> {
-  ArtistsTableAccessor(MoorDatabase attachedDatabase)
-      : super(attachedDatabase);
-
-  @override
-  MoorMapper<Artist, MoorArtist> get mapper =>
-      ArtistMapper();
-
-  @override
-  Table get table => db.artists;
+  ArtistSelections get tableInfo => db.artistSelections;
 }

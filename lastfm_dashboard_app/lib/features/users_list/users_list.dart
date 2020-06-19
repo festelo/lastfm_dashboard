@@ -94,14 +94,13 @@ class _UsersListState extends EpicState<UsersList> {
     }
   }
 
-  Future<void> add(String id) async {
-    final addRunned = epicManager.start(AddUserEpic(id));
-    await addRunned.completed;
+  Future<void> add(String username) async {
+    final user = await epicManager.wait(AddUserEpic(username));
 
-    final switchRunned = epicManager.start(SwitchUserEpic(id));
+    final switchRunned = epicManager.start(SwitchUserEpic(user.id));
     await switchRunned.completed;
 
-    epicManager.start(RefreshUserEpic(id));
+    epicManager.start(RefreshUserEpic(user.id));
   }
 
   Future<void> remove(String id) async {

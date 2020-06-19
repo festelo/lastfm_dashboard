@@ -10,7 +10,7 @@ class DatePeriod {
   static const DatePeriod hour =
       DatePeriod(iterateHours, normalizeHour, addHours, 'hour');
 
-  static List<DatePeriod> get values => [month, week, day, hour];
+  static List<DatePeriod> get values => [year, month, week, day, hour];
 
   final String name;
   final Iterable<DateTime> Function(

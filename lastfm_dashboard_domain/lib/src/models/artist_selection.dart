@@ -1,8 +1,8 @@
 import 'entity.dart';
 
 class ArtistSelection extends Entity {
-  final dynamic artistId;
-  final dynamic userId;
+  final String artistId;
+  final String userId;
   final int color;
 
   ArtistSelection({

@@ -14,6 +14,7 @@ import 'package:lastfm_dashboard_infrastructure/services/lastfm_service.dart';
 import 'package:path_provider/path_provider.dart';
 
 import 'config.dart';
+import 'epics/helpers.dart';
 
 Future<MoorDatabase> buildDatabaseLazy() async {
   final folder = await getApplicationDocumentsDirectory();
@@ -29,6 +30,9 @@ void _configureInfrastructure(EpicContainer container) {
 
   container.addSingletonComplex<UsersRepository>(
       (c) async => UsersMoorRepository(await c.get<MoorDatabase>()));
+
+  container.addSingletonComplex<TracksRepository>(
+      (c) async => TracksMoorRepository(await c.get<MoorDatabase>()));
 
   container.addSingletonComplex<ArtistsRepository>(
       (c) async => ArtistsMoorRepository(await c.get<MoorDatabase>()));
@@ -73,6 +77,7 @@ EpicContainer configureDependencies(EpicManager manager) {
   final container = EpicContainer();
   _configureInfrastructure(container);
   _configureApp(container);
+  defineUserHelpers(container);
   manager.registerContainer(container);
   return container;
 }

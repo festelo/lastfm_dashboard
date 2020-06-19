@@ -314,6 +314,9 @@ class EpicProvider {
         return s.build(scope, this);
       }
     }
+    if (key != null) {
+      throw Exception('Value store for ${key} ($T) not found');
+    }
     throw Exception('Value store for $T not found');
   }
 }
