@@ -25,7 +25,6 @@ abstract class ArtistSelectionsRepository
   Future<List<ArtistSelection>> getWhere({
     String userId,
   });
-  Future<void> createOrUpdate(ArtistSelection sel);
   Future<void> deleteForUser(String userId, String artistId);
 }
 

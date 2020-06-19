@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:collection/collection.dart';
+import 'package:epic/container.dart';
 import 'package:f_charts/f_charts.dart';
 import 'package:flutter/material.dart';
 import 'package:lastfm_dashboard/epics/artists_epics.dart';
@@ -31,33 +32,34 @@ class _ArtistsChartState extends EpicState<ArtistsChart> {
   ChartData<DateTime, int> nextData;
 
   @override
-  Future<void> onLoad() async {
+  Future<void> onLoad(provider) async {
     final currentUser = await provider.get<User>(currentUserKey);
     final userId = currentUser.id;
 
     handleVM<ChartViewModel>(
-      (_) => refreshData(),
+      (_, p) => refreshData(p),
     );
 
     handle<UserScrobblesAdded>(
       userScrobblesAdded,
-      where: (e) => e.user.username == userId,
+      where: (e) => e.user.id == userId,
     );
 
     handle<ArtistSelected>(
-      (_) => refreshData(),
+      (_, p) => refreshData(p),
       where: (e) => e.selection.userId == userId,
     );
 
     handle<ArtistSelectionRemoved>(
-      (_) => refreshData(),
+      (_, p) => refreshData(p),
       where: (e) => e.userId == userId,
     );
 
-    await refreshData();
+    await refreshData(provider);
   }
 
   Future<ChartData<DateTime, int>> getData(
+    EpicProvider provider,
     DatePeriod period, [
     DateTime periodStart,
     DateTime periodEnd,
@@ -125,20 +127,22 @@ class _ArtistsChartState extends EpicState<ArtistsChart> {
 
   bool dataRefresing = false;
 
-  Future<void> refreshData() async {
+  Future<void> refreshData(EpicProvider provider) async {
     setState(() => dataRefresing = true);
 
     if (previousBounds != null)
       previousData = await getData(
+        provider,
         boundsPeriod,
         previousBounds.a,
         previousBounds.b,
       );
 
-    data = await getData(boundsPeriod, bounds?.a, bounds?.b);
+    data = await getData(provider, boundsPeriod, bounds?.a, bounds?.b);
 
     if (nextBounds != null)
       nextData = await getData(
+        provider,
         boundsPeriod,
         nextBounds.a,
         nextBounds.b,
@@ -182,7 +186,7 @@ class _ArtistsChartState extends EpicState<ArtistsChart> {
     return ChartData(newSeries);
   }
 
-  void userScrobblesAdded(UserScrobblesAdded e) {
+  void userScrobblesAdded(UserScrobblesAdded e, EpicProvider provider) {
     final scrobblesPerArtist =
         groupBy<TrackScrobble, String>(e.newScrobbles, (c) => c.userId);
     final previousData = this.previousData;

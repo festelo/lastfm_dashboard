@@ -38,7 +38,7 @@ class BaseChart extends StatelessWidget {
       case DatePeriod.hour:
         return bounds.a.toHumanable('E, d MMM y');
       default:
-        return bounds.a.toString();
+        return bounds?.a?.toString() ?? 'xz';
     }
   }
 

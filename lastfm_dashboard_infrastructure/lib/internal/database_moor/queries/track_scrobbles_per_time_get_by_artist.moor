@@ -9,4 +9,4 @@ SELECT
     userId
 FROM track_scrobbles
 WHERE $predicate
-GROUP BY groupedDate, artistId, id;
+GROUP BY groupedDate, artistId, userId;

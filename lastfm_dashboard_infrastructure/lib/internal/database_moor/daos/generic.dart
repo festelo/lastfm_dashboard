@@ -15,7 +15,8 @@ abstract class GenericTableAccessor<TEntity, TMoor extends DataClass,
 
   Future<void> addOrUpdate(TEntity state) async {
     final moor = mapper.toMoor(state);
-    final res = await into(tableInfo).insertOnConflictUpdate(moor);
+    final res =
+        await into(tableInfo).insert(moor, mode: InsertMode.insertOrReplace);
     return res;
   }
 

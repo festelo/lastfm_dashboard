@@ -81,11 +81,6 @@ class ArtistSelectionsMoorRepository
       db.artistSelectionTableAccessor;
 
   @override
-  Future<void> createOrUpdate(ArtistSelection sel) {
-    throw UnimplementedError();
-  }
-
-  @override
   Future<void> deleteForUser(String userId, String artistId) async {
     await db.artistSelectionTableAccessor.deleteEntityWhere(
       db.artistSelections.userId.equals(userId) &

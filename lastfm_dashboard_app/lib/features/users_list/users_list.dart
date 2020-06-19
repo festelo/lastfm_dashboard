@@ -22,7 +22,7 @@ class _UsersListState extends EpicState<UsersList> {
   List<String> removingUsers;
 
   @override
-  Future<void> onLoad() async {
+  Future<void> onLoad(provider) async {
     final usersRep = await provider.get<UsersRepository>();
     users = await usersRep.getAll();
     currentUser = await provider.get<User>(currentUserKey);
@@ -52,28 +52,28 @@ class _UsersListState extends EpicState<UsersList> {
     );
   }
 
-  void userRemovingStarted(String id) {
+  void userRemovingStarted(String id, _) {
     removingUsers.add(id);
     apply();
   }
 
-  void userRefresingStarted(String id) {
+  void userRefresingStarted(String id, _) {
     refresingUsers.add(id);
     apply();
   }
 
-  void userAdded(UserAdded event) {
+  void userAdded(UserAdded event, _) {
     users.add(event.user);
     apply();
   }
 
-  void userRemoved(UserRemoved event) {
+  void userRemoved(UserRemoved event, _) {
     users.removeWhere((u) => u.id == event.userId);
     removingUsers.remove(event.userId);
     apply();
   }
 
-  void userRefreshed(UserRefreshed event) {
+  void userRefreshed(UserRefreshed event, _) {
     users.replaceWhere(
       (u) => u.id == event.oldUser.id,
       event.newUser,
@@ -104,7 +104,7 @@ class _UsersListState extends EpicState<UsersList> {
   }
 
   Future<void> remove(String id) async {
-    final current = await provider.get(currentUserKey);
+    final current = await gain((p) => p.get(currentUserKey));
     if (id == current.id) {
       final switchUser = epicManager.start(SwitchUserEpic(null));
       await switchUser.completed;

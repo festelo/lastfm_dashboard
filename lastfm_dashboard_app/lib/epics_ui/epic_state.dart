@@ -6,7 +6,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:lastfm_dashboard/view_models/epic_view_model.dart';
 import 'package:provider/provider.dart';
 
-typedef Handler<T> = FutureOr<void> Function(T);
+typedef Handler<T> = FutureOr<void> Function(T, EpicProvider);
 typedef Mapper<T1, T2> = T2 Function(T1);
 typedef Checker<T> = bool Function(T event);
 
@@ -23,21 +23,19 @@ class EpicMapper<T1, T2> {
     this.handler,
   });
 
-  Future<bool> process(dynamic e) async {
+  Future<bool> process(dynamic e, EpicProvider p) async {
     if (e is T1 == false) return false;
     final event = e as T1;
     if (!where(event)) return false;
     final mapped = map(e);
-    await handler(mapped);
+    await handler(mapped, p);
     return true;
   }
 }
 
 abstract class EpicState<T extends StatefulWidget> extends State<T> {
-  EpicProvider provider;
   EpicManager epicManager;
   StreamSubscription epicSubscription;
-  final Scope scope = Scope('stated');
 
   final List<EpicMapper> _mappers = [];
   final Map<Type, dynamic> _vmMap = {};
@@ -48,19 +46,21 @@ abstract class EpicState<T extends StatefulWidget> extends State<T> {
   void initState() {
     super.initState();
     initEpic();
-    final v = onLoad();
+    final Scope scope = Scope('initState $runtimeType');
+    final provider = epicManager.container.getProvider(scope);
+    final v = onLoad(provider);
     if (v is Future<void>) {
-      v.then((_) => afterLoad());
+      v.then((_) => afterLoad()).whenComplete(() => scope.close());
     } else {
       afterLoad();
       loading = false;
+      scope.close();
     }
   }
 
   @override
   void dispose() {
     super.dispose();
-    scope.close();
     epicSubscription.cancel();
   }
 
@@ -75,7 +75,6 @@ abstract class EpicState<T extends StatefulWidget> extends State<T> {
 
   void initEpic() {
     epicManager = context.read<EpicManager>();
-    provider = epicManager.container.getProvider(scope);
     epicSubscription = epicManager.events.listen(onEvent);
   }
 
@@ -86,7 +85,7 @@ abstract class EpicState<T extends StatefulWidget> extends State<T> {
   void _subscribeVM<T>() {
     _vmMap[T] = Provider.of<T>(context, listen: false);
     handle<ViewModelReplaced<T>>(
-      (e) => _vmMap[T] = e,
+      (e, _) => _vmMap[T] = e,
       where: (e) => e.oldViewModel == _vmMap[T],
     );
   }
@@ -100,11 +99,22 @@ abstract class EpicState<T extends StatefulWidget> extends State<T> {
     );
   }
 
+  Future<T> gain<T>(FutureOr<T> Function(EpicProvider) fun) async {
+    final scope = Scope('Gain $runtimeType');
+    try {
+      final provider = epicManager.container.getProvider(scope);
+      return await fun(provider);
+    }
+    finally {
+      scope.close();
+    }
+  }
+  
   void subscribe<T>({
     Checker<T> where,
   }) {
     _mappers.add(EpicMapper<T, T>(
-      handler: (_) => apply(),
+      handler: (_, __) => apply(),
       map: (e) => e,
       where: where ?? (e) => true,
       typeFits: (e) => e is T,
@@ -162,16 +172,17 @@ abstract class EpicState<T extends StatefulWidget> extends State<T> {
 
   Future<void> onEvent(dynamic event) async {
     bool handled = false;
-    for (final mapper in _mappers) {
-      try {
-        if (await mapper.process(event)) handled = true;
-      } catch (e) {
-        if (scope.closed) return;
-        rethrow;
+    final scope = Scope('onEvent $event - $runtimeType');
+    try {
+      final provider = epicManager.container.getProvider(scope);
+      for (final mapper in _mappers) {
+        if (await mapper.process(event, provider)) handled = true;
       }
+      if (handled) apply();
+    } finally {
+      scope.close();
     }
-    if (handled) apply();
   }
 
-  FutureOr<void> onLoad() {}
+  FutureOr<void> onLoad(EpicProvider provider) {}
 }

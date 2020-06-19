@@ -117,7 +117,7 @@ class LastFMService {
         );
         newArtists.add(artist);
       }
-      final trackId = '${s.track.mbid}#@#${s.track.name}#@#${s.artist.id}';
+      final trackId = '${s.track.mbid}#@#${s.track.name}#@#${artistId}';
       if (trackIds.add(trackId)) {
         final track = Track(
           id: trackId,

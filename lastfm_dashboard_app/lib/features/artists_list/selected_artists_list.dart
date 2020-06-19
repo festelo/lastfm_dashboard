@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:epic/container.dart';
 import 'package:flutter/material.dart';
 import 'package:lastfm_dashboard/epics/artists_epics.dart';
 import 'package:lastfm_dashboard/epics_ui/epic_state.dart';
@@ -23,15 +24,15 @@ class _SelectedArtistsListState extends EpicState<SelectedArtistsList> {
   String userId;
 
   @override
-  Future<void> onLoad() async {
+  Future<void> onLoad(provider) async {
     final artistUserInfoRep = await provider.get<ArtistUserInfoRepository>();
     final artistSelections = await provider.get<ArtistSelectionsRepository>();
     final currentUser = await provider.get<User>(currentUserKey);
     userId = currentUser.id;
     selections = await artistSelections.getWhere(userId: userId);
     if (selections.isNotEmpty) {
-      final artistList = await artistUserInfoRep
-          .getWhere(artistIds: selections.map((e) => e.artistId).toList());
+      final artistList = await artistUserInfoRep.getWhere(
+          artistIds: selections.map((e) => e.artistId).toList());
       artists = Map.fromEntries(artistList.map((e) => MapEntry(e.artistId, e)));
     } else {
       artists = {};
@@ -54,15 +55,16 @@ class _SelectedArtistsListState extends EpicState<SelectedArtistsList> {
 
     handle<UserScrobblesAdded>(
       scrobblesAdded,
-      where: (e) => e.user.username == userId,
+      where: (e) => e.user.id == userId,
     );
-    
-    handle<UserRefreshed>(userRefreshed, 
-      where: (e) => e.newUser.username == userId,
+
+    handle<UserRefreshed>(
+      userRefreshed,
+      where: (e) => e.newUser.id == userId,
     );
   }
 
-  Future<void> artistSelected(ArtistSelected e) async {
+  Future<void> artistSelected(ArtistSelected e, EpicProvider provider) async {
     final artistUserInfoRep = await provider.get<ArtistUserInfoRepository>();
     artists[e.selection.artistId] = await artistUserInfoRep
         .getWhere(artistIds: [e.selection.artistId]).then((e) => e.first);
@@ -73,24 +75,25 @@ class _SelectedArtistsListState extends EpicState<SelectedArtistsList> {
       selections.add(e.selection);
   }
 
-  void artistSelectionRemoved(ArtistSelectionRemoved e) {
+  void artistSelectionRemoved(ArtistSelectionRemoved e, _) {
     selections.removeWhere((s) => s.artistId == e.artistId);
   }
 
-  Future<void> scrobblesAdded(UserScrobblesAdded e) async {
+  Future<void> scrobblesAdded(
+      UserScrobblesAdded e, EpicProvider provider) async {
     final artistUserInfoRep = await provider.get<ArtistUserInfoRepository>();
 
     final updatedArtistIds =
         e.newScrobbles.map((e) => e.artistId).toSet().toList();
     final updatedArtistList =
         await artistUserInfoRep.getWhere(artistIds: updatedArtistIds);
-    
+
     for (final artist in updatedArtistList) {
       artists[artist.artistId] = artist;
     }
   }
 
-  void userRefreshed(UserRefreshed event) {
+  void userRefreshed(UserRefreshed event, _) {
     userRefreshing = false;
     apply();
   }

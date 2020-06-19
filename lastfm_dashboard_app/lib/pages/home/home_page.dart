@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:epic/container.dart';
 import 'package:epic/epic.dart';
 import 'package:flutter/material.dart';
 import 'package:lastfm_dashboard/epics/helpers.dart';
@@ -34,33 +35,33 @@ class _HomePageState extends EpicState<HomePage> {
   }
 
   @override
-  Future<void> onLoad() async {
+  Future<void> onLoad(provider) async {
     isRefreshing = await provider.get(userRefreshingKey);
     handle<UserSwitched>(userSwitched);
     handle<UserRefreshed>(userRefreshed, 
-      where: (e) => e.newUser.username == user.username,
+      where: (e) => e.newUser.id == user.id,
     );
     map<EpicStarted, String>(
       userRefresingStarted,
       (e) => (e.runned.epic as RefreshUserEpic).userId,
       where: (e) => e.runned.epic is RefreshUserEpic,
     );
-    await refreshUser();
+    await refreshUser(provider);
   }
 
-  Future<void> userSwitched(UserSwitched e) async {
-    await refreshUser();
+  Future<void> userSwitched(UserSwitched e, EpicProvider provider) async {
+    await refreshUser(provider);
   }
 
-  Future<void> refreshUser([String username]) async {
+  Future<void> refreshUser(EpicProvider provider, [String username]) async {
     user = await provider.get(currentUserKey);
   }
 
-  void userRefreshed(UserRefreshed e) {
+  void userRefreshed(UserRefreshed e, _) {
     isRefreshing = false;
   }
 
-  void userRefresingStarted(String username) {
+  void userRefresingStarted(String username, _) {
     isRefreshing = true;
   }
 

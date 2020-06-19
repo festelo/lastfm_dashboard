@@ -94,7 +94,7 @@ class UserListItem extends StatelessWidget {
             ),
             Expanded(
               child: Text(
-                user.username,
+                user.username ?? 'ERROR',
                 style: Theme.of(context).textTheme.subtitle1,
               ),
             ),

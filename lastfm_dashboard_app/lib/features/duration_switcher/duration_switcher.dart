@@ -38,7 +38,7 @@ class _DurationSwitcherState extends EpicState<DurationSwitcher> {
   }
 
   @override
-  FutureOr<void> onLoad() {
+  FutureOr<void> onLoad(_) {
     subscribeVM<ChartViewModel>();
   }
 

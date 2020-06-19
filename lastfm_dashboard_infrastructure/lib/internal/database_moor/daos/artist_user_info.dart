@@ -20,14 +20,20 @@ class ArtistUserInfoDataAccessor extends DatabaseAccessor<MoorDatabase> {
     int take,
     SortDirection scrobblesSort,
   }) async {
-    final where =
-        (Constant(userIds == null) | db.trackScrobbles.userId.isIn(userIds)) &
-        (Constant(artistIds == null) | db.trackScrobbles.artistId.isIn(artistIds));
+    final userEx = userIds == null
+        ? Constant(true)
+        : db.trackScrobbles.userId.isIn(userIds);
+    final artistEx = artistIds == null
+        ? Constant(true)
+        : db.trackScrobbles.artistId.isIn(artistIds);
+    final where = userEx & artistEx;
     final term = scrobblesSort == SortDirection.ascending
         ? OrderingTerm.asc(CustomExpression('scrobbles'))
         : OrderingTerm.desc(CustomExpression('scrobbles'));
-    final res = await this.db.artists_by_user_detailed(
-        where, OrderBy([term]), Constant(take ?? maxRowsNumber), Constant(skip ?? 0))
+    final res = await this
+        .db
+        .artists_by_user_detailed(where, OrderBy([term]),
+            Constant(take ?? maxRowsNumber), Constant(skip ?? 0))
         .get();
     return res.map(mapper.toDomain).toList();
   }

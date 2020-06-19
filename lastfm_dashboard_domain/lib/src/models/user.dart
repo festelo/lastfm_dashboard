@@ -35,12 +35,12 @@ class User extends Entity {
     String username,
   }) {
     return User(
-      id: id ?? id,
-      imageInfo: imageInfo ?? imageInfo,
-      lastSync: lastSync ?? lastSync,
-      playCount: playCount ?? playCount,
-      setupSync: setupSync ?? setupSync,
-      username: username ?? username,
+      id: id ?? this.id,
+      imageInfo: imageInfo ?? this.imageInfo,
+      lastSync: lastSync ?? this.lastSync,
+      playCount: playCount ?? this.playCount,
+      setupSync: setupSync ?? this.setupSync,
+      username: username ?? this.username,
     );
   }
 }

@@ -25,15 +25,15 @@ class TrackScrobblesPerTimeMoorDataAccessor
     final cdate = this.db.trackScrobbles.date.$name;
     if (period == DatePeriod.day) {
       groupedQuery =
-          "strftime('%s000', date($cdate, 'start of day'))";
+          "strftime('%s000', date($cdate, 'unixepoch', 'start of day'))";
     }
     if (period == DatePeriod.month) {
       groupedQuery =
-          "strftime('%s000', date($cdate, 'start of month'))";
+          "strftime('%s000', date($cdate, 'unixepoch', 'start of month'))";
     }
     if (period == DatePeriod.week) {
       groupedQuery =
-          "strftime('%s000', date($cdate, '-6 days', 'weekday 1'))";
+          "strftime('%s000', date($cdate, 'unixepoch', '-6 days', 'weekday 1'))";
     }
     final where =
         (Constant(userIds == null) | db.trackScrobbles.userId.isIn(userIds)) &

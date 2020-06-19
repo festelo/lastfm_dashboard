@@ -32,11 +32,23 @@ part 'database.g.dart';
 class MoorDatabase extends _$MoorDatabase {
   MoorDatabase(String folder) : super(_openConnection(folder));
   MoorDatabase.connect(DatabaseConnection connection) : super.connect(connection);
-  static Future<MoorDatabase> isolated(String folder) async {
+
+  static Future<MoorDatabase> isolated(String folder, [String tempDirectory]) async {
     final isolate = await _createMoorIsolate(folder);
     final connection = await isolate.connect();
-    return MoorDatabase.connect(connection);
+    final db = MoorDatabase.connect(connection);
+    if (tempDirectory != null) {
+      await db.setTmpDirForAndroid(tempDirectory);
+    }
+    return db;
   }
+
+  Future<void> setTmpDirForAndroid(String folder) async {
+    if (Platform.isAndroid) {
+      await customStatement('PRAGMA temp_store_directory="${folder}"');
+    }
+  }
+
   @override
   int get schemaVersion => 1;
 }

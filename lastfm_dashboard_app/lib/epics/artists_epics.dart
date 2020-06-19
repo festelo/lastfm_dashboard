@@ -38,7 +38,7 @@ class SelectArtistEpic extends Epic {
       color: selectionColor.value,
     );
 
-    await artistSelections.createOrUpdate(artistSelection);
+    await artistSelections.addOrUpdate(artistSelection);
 
     notify(ArtistSelected(artistSelection));
   }

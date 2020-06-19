@@ -1,7 +1,8 @@
+import 'dart:io';
+
 import 'package:epic/container.dart';
 import 'package:epic/epic.dart';
 import 'package:epic/watcher.dart';
-import 'package:flutter/foundation.dart';
 import 'package:lastfm_dashboard/constants.dart';
 import 'package:lastfm_dashboard/services/auth/auth_service.dart';
 import 'package:lastfm_dashboard/watchers/refresh_config.dart';
@@ -17,8 +18,12 @@ import 'config.dart';
 import 'epics/helpers.dart';
 
 Future<MoorDatabase> buildDatabaseLazy() async {
+  String tempFolder;
+  if (Platform.isAndroid) {
+    tempFolder = await getTemporaryDirectory().then((v) => v.path);
+  }
   final folder = await getApplicationDocumentsDirectory();
-  return MoorDatabase.isolated(folder.path);
+  return MoorDatabase.isolated(folder.path, tempFolder);
 }
 
 void _configureInfrastructure(EpicContainer container) {

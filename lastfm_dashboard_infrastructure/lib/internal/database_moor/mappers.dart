@@ -141,7 +141,9 @@ class TrackScrobblesPerTimeMapper extends QueryMapper<TrackScrobblesPerTime,
     return TrackScrobblesPerTime(
       artistId: m.artistId,
       count: m.count,
-      groupedDate: DateTime.fromMillisecondsSinceEpoch(m.groupedDate),
+      groupedDate: m.groupedDate.nullOr((c) =>
+          DateTime.fromMillisecondsSinceEpoch(c)
+              .subtract(DateTime.now().timeZoneOffset)),
       trackId: m.trackId,
       userId: m.userId,
     );

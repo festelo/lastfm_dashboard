@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:epic/container.dart';
 import 'package:flutter/material.dart';
 import 'package:lastfm_dashboard/epics/artists_epics.dart';
 import 'package:lastfm_dashboard/epics/helpers.dart';
@@ -20,11 +21,10 @@ class _AllArtistsListState extends EpicState<AllArtistsList> {
   String userId;
 
   @override
-  Future<void> onLoad() async {
+  Future<void> onLoad(provider) async {
     final artistSelectionsRep =
         await provider.get<ArtistSelectionsRepository>();
-    final artistUserInfoRep =
-        await provider.get<ArtistUserInfoRepository>();
+    final artistUserInfoRep = await provider.get<ArtistUserInfoRepository>();
     final currentUser = await provider.get(currentUserKey);
     userId = currentUser.id;
     userArtists = await artistUserInfoRep.getWhere(
@@ -37,7 +37,7 @@ class _AllArtistsListState extends EpicState<AllArtistsList> {
 
     handle<UserScrobblesAdded>(
       scrobblesAdded,
-      where: (e) => e.user.username == userId,
+      where: (e) => e.user.id == userId,
     );
 
     handle<ArtistSelected>(
@@ -51,9 +51,9 @@ class _AllArtistsListState extends EpicState<AllArtistsList> {
     );
   }
 
-  Future<void> scrobblesAdded(UserScrobblesAdded e) async {
-    final artistUserInfoRep =
-        await provider.get<ArtistUserInfoRepository>();
+  Future<void> scrobblesAdded(
+      UserScrobblesAdded e, EpicProvider provider) async {
+    final artistUserInfoRep = await provider.get<ArtistUserInfoRepository>();
 
     final updatedArtistIds =
         e.newScrobbles.map((e) => e.artistId).toSet().toList();
@@ -78,11 +78,11 @@ class _AllArtistsListState extends EpicState<AllArtistsList> {
     }
   }
 
-  void artistSelected(ArtistSelected e) {
+  void artistSelected(ArtistSelected e, _) {
     selections[e.selection.artistId] = e.selection;
   }
 
-  void artistSelectionRemoved(ArtistSelectionRemoved e) {
+  void artistSelectionRemoved(ArtistSelectionRemoved e, _) {
     selections.remove(e.artistId);
   }
 
