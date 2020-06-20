@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:epic/container.dart';
 import 'package:epic/epic.dart';
 import 'package:epic/watcher.dart';
@@ -12,23 +10,17 @@ import 'package:lastfm_dashboard_infrastructure/internal/database_moor/database.
 import 'package:lastfm_dashboard_infrastructure/internal/lastfm/lastfm_api.dart';
 import 'package:lastfm_dashboard_infrastructure/repositories/repositories.dart';
 import 'package:lastfm_dashboard_infrastructure/services/lastfm_service.dart';
-import 'package:path_provider/path_provider.dart';
 
 import 'config.dart';
+import 'db_builder.dart'
+  if (dart.library.io) "db_builder_ffi.dart"
+  if (dart.library.js) "db_builder_web.dart";
 import 'epics/helpers.dart';
 
-Future<MoorDatabase> buildDatabaseLazy() async {
-  String tempFolder;
-  if (Platform.isAndroid) {
-    tempFolder = await getTemporaryDirectory().then((v) => v.path);
-  }
-  final folder = await getApplicationDocumentsDirectory();
-  return MoorDatabase.isolated(folder.path, tempFolder);
-}
 
 void _configureInfrastructure(EpicContainer container) {
   container.addSingleton(() => defaultRefreshConfig);
-  container.addSingleton(() => buildDatabaseLazy());
+  container.addSingleton(() => buildDatabase());
 
   container.addSingletonComplex<ArtistsRepository>(
       (c) async => ArtistsMoorRepository(await c.get<MoorDatabase>()));

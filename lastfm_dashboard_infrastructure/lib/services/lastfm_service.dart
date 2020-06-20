@@ -97,7 +97,7 @@ class LastFMService {
 
   Future<UpdateInfo> _addLastFmScrobbles(
     String userId,
-    List<LastFMScrobble> scrobbles,
+    Iterable<LastFMScrobble> scrobbles,
   ) async {
     List<TrackScrobble> newScrobbles = [];
     List<Artist> newArtists = [];
@@ -105,8 +105,10 @@ class LastFMService {
 
     Set<String> artistIds = {};
     Set<String> trackIds = {};
-
-    for (final s in scrobbles) {
+    var i = 0;
+    for (var s in scrobbles) {
+      i++;
+      if (i % 10 == 0) await Future.delayed(Duration(milliseconds: 200));
       final artistId = '${s.artist.mbid}#@#${s.artist.name}';
       if (artistIds.add(artistId)) {
         final artist = Artist(
@@ -138,12 +140,15 @@ class LastFMService {
       );
       newScrobbles.add(scrobble);
     }
-    
-    await tracks.transaction(() async {
-      await artists.addOrUpdateAll(newArtists);
-      await tracks.addOrUpdateAll(newTracks);
-      await trackScrobbles.addOrUpdateAll(newScrobbles);
-    });
+
+    await artists.addOrUpdateAll(newArtists);
+    await tracks.addOrUpdateAll(newTracks);
+    await trackScrobbles.addOrUpdateAll(newScrobbles);
+    // await tracks.transaction(() async {
+    //   await artists.addOrUpdateAll(newArtists);
+    //   await tracks.addOrUpdateAll(newTracks);
+    //   await trackScrobbles.addOrUpdateAll(newScrobbles);
+    // });
 
     return UpdateInfo(
       newScrobbles: newScrobbles,

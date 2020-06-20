@@ -17,7 +17,7 @@ class LastFMScrobble {
 }
 
 class GetUserScrobblesResponse {
-  List<LastFMScrobble> scrobbles;
+  Iterable<LastFMScrobble> scrobbles;
   int pagesCount;
   GetUserScrobblesResponse(this.scrobbles, this.pagesCount);
 }
@@ -145,7 +145,6 @@ class LastFMApi {
       if (from != null) 'from': from.secondsSinceEpoch.toString(),
       if (to != null) 'to': to.secondsSinceEpoch.toString()
     });
-
     if (resp['recenttracks']['track'].isEmpty)
       return GetUserScrobblesResponse([], page);
 
@@ -155,17 +154,16 @@ class LastFMApi {
       scrobbles.addAll(resp['recenttracks']['track']);
     }
 
-    scrobbles = scrobbles
+    final mapped = scrobbles
         .where((scrobble) =>
             scrobble['@attr'] == null ||
             scrobble['@attr']['nowplaying'] != 'true')
-        .toList();
+        .map(_deserializeScrobble);
 
     final totalPages =
         int.tryParse(resp['recenttracks']['@attr']['totalPages']);
 
-    return GetUserScrobblesResponse(
-        scrobbles.map(_deserializeScrobble).toList(), totalPages);
+    return GetUserScrobblesResponse(mapped, totalPages);
   }
 
   void dispose() {
