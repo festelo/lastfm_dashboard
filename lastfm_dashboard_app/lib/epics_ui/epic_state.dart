@@ -27,7 +27,7 @@ class EpicMapper<T1, T2> {
     if (e is T1 == false) return false;
     final event = e as T1;
     if (!where(event)) return false;
-    final mapped = map(e);
+    final mapped = map(event);
     await handler(mapped, p);
     return true;
   }
