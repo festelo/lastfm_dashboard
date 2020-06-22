@@ -11,8 +11,11 @@ class WebDatabase extends MoorDatabase {
 
 LazyDatabase _openConnectionWebWorker(
     String name, String workerPath, String sqlJsPath) {
-  final storage =
-      w.MoorWebStorageFactory.indexedDb(name, inWebWorker: true, migrateFromLocalStorage: false);
+  final storage = w.MoorWebStorageFactory.indexedDb(
+    name,
+    inWebWorker: true,
+    migrateFromLocalStorage: false,
+  );
   return LazyDatabase(() async {
     return w.WebDatabase.withDelegate(
         w.MoorWorkerClient(workerPath, sqlJsPath, storage));

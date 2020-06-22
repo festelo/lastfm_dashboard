@@ -1,12 +1,9 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
-import 'package:lastfm_dashboard/epics_ui/epic_state.dart';
+import 'package:lastfm_dashboard/epics_ui/epic_bloc_state_mixin.dart';
+import 'package:lastfm_dashboard/features/base_chart/chart_bloc.dart';
 import 'package:shared/models.dart';
-import 'package:lastfm_dashboard/view_models/chart_view_model.dart';
-import 'package:provider/provider.dart';
 
-class DurationSwitcher extends StatefulWidget {
+class DurationSwitcher<T extends ChartBloc> extends StatefulWidget {
   final double width;
   final double height;
   final double margin;
@@ -16,14 +13,16 @@ class DurationSwitcher extends StatefulWidget {
       : super(key: key);
 
   @override
-  _DurationSwitcherState createState() => _DurationSwitcherState();
+  _DurationSwitcherState createState() => _DurationSwitcherState<T>();
 }
 
-class _DurationSwitcherState extends EpicState<DurationSwitcher> {
-  ChartViewModel get vm => Provider.of(context, listen: false);
+class _DurationSwitcherState<T extends ChartBloc>
+    extends State<DurationSwitcher>
+    with EpicBlocStateMixin<DurationSwitcher, T>{
+  ChartViewModel get vm => bloc.vm;
 
   String getDurationName() {
-    switch (vm.boundsPeriod) {
+    switch (vm.period) {
       case DatePeriod.day:
         return 'Day';
       case DatePeriod.week:
@@ -37,20 +36,15 @@ class _DurationSwitcherState extends EpicState<DurationSwitcher> {
     }
   }
 
-  @override
-  FutureOr<void> onLoad(_) {
-    subscribeVM<ChartViewModel>();
-  }
-
   DatePeriod get nextPeriod {
-    return vm.nextPeriod;
+    return vm.innerPeriod;
   }
 
   DatePeriod get previousPeriod {
-    final i = DatePeriod.values.indexOf(vm.boundsPeriod);
+    final i = vm.supportedPeriods.indexOf(vm.period);
     final newI = i - 1;
     if (newI == -1) return null;
-    return DatePeriod.values[newI];
+    return vm.supportedPeriods[newI];
   }
 
   @override
@@ -82,23 +76,20 @@ class _DurationSwitcherState extends EpicState<DurationSwitcher> {
               width: 40,
               child: IconButton(
                 icon: Icon(Icons.add, size: 18),
-                onPressed:
-                    nextPeriod == null || vm.boundsMap[nextPeriod] == null
-                        ? null
-                        : () {
-                            vm.boundsPeriod = nextPeriod;
-                          },
+                onPressed: null,
               ),
             ),
             Container(
               width: 40,
               child: IconButton(
                 icon: Icon(Icons.remove, size: 18),
-                onPressed: previousPeriod == null ||
-                        vm.boundsMap[previousPeriod] == null
+                onPressed: previousPeriod == null
                     ? null
                     : () {
-                        vm.boundsPeriod = previousPeriod;
+                        bloc.pushEvent(MovePeriod(
+                            period: previousPeriod,
+                            periodStart:
+                                previousPeriod.normalize(vm.periodStart)));
                       },
               ),
             ),

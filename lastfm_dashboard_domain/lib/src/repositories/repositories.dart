@@ -37,7 +37,12 @@ abstract class ArtistUserInfoRepository extends _TranscationableRepository {
 }
 
 abstract class TrackScrobblesRepository
-    extends _CollectionRepository<TrackScrobble> {}
+    extends _CollectionRepository<TrackScrobble> {
+  Future<Pair<DateTime>> getScrobblesBounds({
+    List<String> userIds,
+    List<String> artistIds,
+  });
+}
 
 abstract class UsersRepository extends _CollectionRepository<User> {}
 

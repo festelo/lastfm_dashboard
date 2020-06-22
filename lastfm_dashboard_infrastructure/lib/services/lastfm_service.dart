@@ -108,7 +108,10 @@ class LastFMService {
     var i = 0;
     for (var s in scrobbles) {
       i++;
-      if (i % 10 == 0) await Future.delayed(Duration(milliseconds: 200));
+      if (i % 10 == 0) {
+        await Future.delayed(
+            Duration(milliseconds: 200)); // for perfomance issue
+      }
       final artistId = '${s.artist.mbid}#@#${s.artist.name}';
       if (artistIds.add(artistId)) {
         final artist = Artist(

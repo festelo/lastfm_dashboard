@@ -13,6 +13,7 @@ part 'database.g.dart';
     'queries/track_scrobbles_per_time_get_by_artist.moor',
     'queries/scrobbles_count.moor',
     'queries/artists_by_user_detailed.moor',
+    'queries/get_last_first_scrobble_date.moor',
   },
   daos: [
     UserTableAccessor,

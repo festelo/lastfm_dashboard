@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:lastfm_dashboard_domain/domain.dart';
 import 'package:moor/moor.dart';
+import 'package:shared/models.dart';
 
 import '../database.dart';
 import '../mappers.dart';
@@ -105,6 +106,16 @@ class TrackScrobbleTableAccessor extends GenericTableAccessor<TrackScrobble,
 
   @override
   TrackScrobbles get tableInfo => db.trackScrobbles;
+
+  Future<Pair<DateTime>> getScrobblesBounds({
+    List<String> userIds,
+    List<String> artistIds,
+  }) async {
+    final where =
+        tableInfo.userId.isIn(userIds) & tableInfo.artistId.isIn(artistIds);
+    final data = await db.get_last_first_scrobble_date(where).getSingle();
+    return Pair(data.firstScrobbleDate, data.lastScrobbleDate);
+  }
 }
 
 class ArtistSelectionTableAccessor extends GenericTableAccessor<ArtistSelection,
