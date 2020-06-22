@@ -21,6 +21,7 @@
 analyzer:
   strong-mode:
     implicit-dynamic: true
+    implicit-casts: false
   enable-experiment:
     - extension-methods
   errors:
