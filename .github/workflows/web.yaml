@@ -4,6 +4,11 @@ on:
   push:
     branches: [ web ]
 
+defaults:
+  run:
+    shell: bash
+    working-directory: lastfm_dashboard_app
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -13,8 +18,15 @@ jobs:
     - uses: subosito/flutter-action@v1.3.0
       with:
         channel: beta
-    - name: Enable Web
-      run: flutter config --enable-web
+    - run: flutter config --enable-web
+
+    - name: Pub get for infrastructure
+      run: flutter pub get
+      working-directory: lastfm_dashboard_infrastructure
+    - name: Build codegen for infrastructure
+      run: flutter packages pub run build_runner build
+      working-directory: lastfm_dashboard_infrastructure
+
     - name: Flutter get dependencies
       run: flutter pub get
     - name: Get application version
@@ -32,7 +44,7 @@ jobs:
       uses: actions/upload-artifact@v1
       with:
         name: web-build
-        path: ./build/web
+        path: ./lastfm_dashboard_app/build/web
   deploy:
     runs-on: ubuntu-latest
     needs: build

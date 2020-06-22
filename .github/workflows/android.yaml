@@ -2,6 +2,11 @@ name: Android CI/CD
 
 on: [push, pull_request]
 
+defaults:
+  run:
+    shell: bash
+    working-directory: lastfm_dashboard_app
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -10,8 +15,15 @@ jobs:
     - uses: actions/checkout@v2
     - uses: subosito/flutter-action@v1.3.0
       with:
-        flutter-version: 1.17.0-dev.3.1
         channel: beta
+
+    - name: Pub get for infrastructure
+      run: flutter pub get
+      working-directory: lastfm_dashboard_infrastructure
+    - name: Build codegen for infrastructure
+      run: flutter packages pub run build_runner build
+      working-directory: lastfm_dashboard_infrastructure
+
     - name: Flutter get dependencies
       run: flutter pub get
     - name: Set application build number
@@ -26,7 +38,7 @@ jobs:
       uses: actions/upload-artifact@v1
       with:
         name: build
-        path: ./build/app/outputs/apk/release/
+        path: ./lastfm_dashboard_app/build/app/outputs/apk/release/
 
   deploy:
     runs-on: ubuntu-latest
