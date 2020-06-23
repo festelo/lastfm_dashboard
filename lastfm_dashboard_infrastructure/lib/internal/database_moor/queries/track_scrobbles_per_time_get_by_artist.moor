@@ -1,0 +1,12 @@
+import '../tables.moor';
+
+track_scrobbles_per_time_get_by_artist:
+SELECT
+    CAST($groupedDate AS INTEGER) as groupedDate,
+    artistId,
+    count(*) as count,
+    trackId,
+    userId
+FROM track_scrobbles
+WHERE $predicate
+GROUP BY groupedDate, artistId, userId;

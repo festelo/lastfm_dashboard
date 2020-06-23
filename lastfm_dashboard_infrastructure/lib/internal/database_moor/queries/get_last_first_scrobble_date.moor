@@ -1,0 +1,8 @@
+import '../tables.moor';
+
+get_last_first_scrobble_date:
+SELECT 
+    min(date) as firstScrobbleDate,
+	max(date) as lastScrobbleDate
+FROM track_scrobbles
+WHERE $where;

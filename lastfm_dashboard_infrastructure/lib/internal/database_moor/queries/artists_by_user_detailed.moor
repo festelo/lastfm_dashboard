@@ -1,0 +1,22 @@
+import '../tables.moor';
+
+artists_by_user_detailed:
+SELECT
+    artists.mbid,
+    artists.url,
+    count(*) as scrobbles,
+    userId,
+    artistId,
+    artists.imageInfo_small,
+    artists.imageInfo_medium,
+    artists.imageInfo_large,
+    artists.imageInfo_extraLarge
+FROM track_scrobbles
+INNER JOIN artists ON artists.id = artistId
+WHERE $where
+GROUP BY 
+    artistId,
+    userId
+ORDER BY $orderBy
+LIMIT $limit
+OFFSET $offset;
