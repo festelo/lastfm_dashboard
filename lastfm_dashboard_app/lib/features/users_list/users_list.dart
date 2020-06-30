@@ -28,11 +28,13 @@ class _UsersListState extends EpicState<UsersList> {
     currentUser = await provider.get<User>(currentUserKey);
 
     refresingUsers = epicManager.runned
+        .map((e) => e.epic)
         .whereType<RefreshUserEpic>()
         .map((e) => e.userId)
         .toList();
 
     removingUsers = epicManager.runned
+        .map((e) => e.epic)
         .whereType<RemoveUserEpic>()
         .map((e) => e.userId)
         .toList();
@@ -148,51 +150,48 @@ class _UsersListState extends EpicState<UsersList> {
         ),
       );
     }
-    return Container(
-      padding: EdgeInsets.all(20),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: <Widget>[
-          Flexible(
-            child: ScrollConfiguration(
-              behavior: NoGlowScrollBehavior(),
-              child: content,
-            ),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        Flexible(
+          child: ScrollConfiguration(
+            behavior: NoGlowScrollBehavior(),
+            child: content,
           ),
-          if (!_connecting)
-            Container(
-              width: double.infinity,
-              child: FlatButton(
-                onPressed: () {
-                  setState(() => _connecting = true);
-                },
-                child: Text('Connect account'),
-              ),
-            )
-          else
-            Row(
-              children: <Widget>[
-                Expanded(
-                  child: TextField(
-                    autofocus: true,
-                    controller: _connectingController,
-                    onSubmitted: (t) => addPress(t),
-                    decoration: InputDecoration(
-                      errorText: _errorText,
-                      hintText: 'Last.FM username or link',
-                      suffix: IconButton(
-                        onPressed: () {
-                          addPress(_connectingController.text);
-                        },
-                        icon: Icon(Icons.check_circle),
-                      ),
+        ),
+        if (!_connecting)
+          Container(
+            width: double.infinity,
+            child: FlatButton(
+              onPressed: () {
+                setState(() => _connecting = true);
+              },
+              child: Text('Connect account'),
+            ),
+          )
+        else
+          Row(
+            children: <Widget>[
+              Expanded(
+                child: TextField(
+                  autofocus: true,
+                  controller: _connectingController,
+                  onSubmitted: (t) => addPress(t),
+                  decoration: InputDecoration(
+                    errorText: _errorText,
+                    hintText: 'Last.FM username or link',
+                    suffix: IconButton(
+                      onPressed: () {
+                        addPress(_connectingController.text);
+                      },
+                      icon: Icon(Icons.check_circle),
                     ),
                   ),
                 ),
-              ],
-            )
-        ],
-      ),
+              ),
+            ],
+          )
+      ],
     );
   }
 }

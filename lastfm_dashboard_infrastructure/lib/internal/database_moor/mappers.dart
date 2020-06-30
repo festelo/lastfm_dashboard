@@ -100,6 +100,7 @@ class ArtistMapper extends MoorMapper<Artist, MoorArtist> {
   @override
   MoorArtist toMoor(d) {
     return MoorArtist(
+      name: d.name,
       imageInfoExtraLarge: d.imageInfo?.extraLarge,
       imageInfoLarge: d.imageInfo?.large,
       imageInfoMedium: d.imageInfo?.medium,
@@ -111,13 +112,14 @@ class ArtistMapper extends MoorMapper<Artist, MoorArtist> {
   }
 }
 
-class ArtistUserInfoMapper
-    extends QueryMapper<ArtistUserInfo, ArtistsByUserDetailedResult> {
-  const ArtistUserInfoMapper();
+class ArtistInfoForUserMapper
+    extends QueryMapper<ArtistInfoForUser, ArtistsByUserDetailedResult> {
+  const ArtistInfoForUserMapper();
   @override
   toDomain(m) {
-    return ArtistUserInfo(
+    return ArtistInfoForUser(
       artistId: m.artistId,
+      name: m.name,
       userId: m.userId,
       imageInfo: ImageInfo(
         extraLarge: m.imageInfoExtraLarge,

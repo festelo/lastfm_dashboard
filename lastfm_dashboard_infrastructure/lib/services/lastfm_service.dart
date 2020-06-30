@@ -33,6 +33,14 @@ class LastFMService {
     return await updateUser(user);
   }
 
+  DateTime _getLastScrobbleDate(List<TrackScrobble> scrobbles) => scrobbles
+      .map((c) => c.date)
+      .reduce((a, b) => a.compareTo(b) == 1 ? a : b);
+
+  DateTime _getFirstScrobbleDate(List<TrackScrobble> scrobbles) => scrobbles
+      .map((c) => c.date)
+      .reduce((a, b) => a.compareTo(b) == 1 ? a : b);
+
   Future<User> getUser(String username) async {
     final user = await api.getUser(username);
     return User(
@@ -51,17 +59,31 @@ class LastFMService {
       final substream =
           _updateUser(user, null, user.setupSync.earliestScrobble);
       await for (final c in substream) {
+        final lastScrobbleDate = _getLastScrobbleDate(c.newScrobbles);
+        if (user.lastSync == null ||
+            user.lastSync == DateTime.fromMillisecondsSinceEpoch(0) ||
+            lastScrobbleDate.isAfter(user.lastSync)) {
+          user = user.copyWith(lastSync: lastScrobbleDate);
+        }
         user = user.copyWith(
-            setupSync: UserSetupSync(
-                passed: false,
-                earliestScrobble: c.newScrobbles
-                    .map((c) => c.date)
-                    .reduce((a, b) => a.compareTo(b) == 1 ? b : a)));
+          setupSync: UserSetupSync(
+            passed: false,
+            earliestScrobble: _getFirstScrobbleDate(c.newScrobbles),
+          ),
+        );
         await users.addOrUpdate(user);
         yield c;
       }
+
+      user = user.copyWith(
+        setupSync: UserSetupSync(
+          passed: true,
+          earliestScrobble: user.setupSync.earliestScrobble,
+        ),
+      );
+      await users.addOrUpdate(user);
     } else {
-      final substream = _updateUser(user, null, user.lastSync);
+      final substream = _updateUser(user, user.lastSync, null);
       await for (final c in substream) {
         user = user.copyWith(
             lastSync: c.newScrobbles

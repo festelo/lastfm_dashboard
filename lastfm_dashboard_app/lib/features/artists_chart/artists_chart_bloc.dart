@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:collection/collection.dart';
 import 'package:epic/container.dart';
 import 'package:epic/epic.dart';
@@ -14,6 +16,8 @@ import 'package:shared/models.dart';
 
 class ArtistsChartViewModel extends ChartViewModel {
   String userId;
+
+  List<ArtistSelection> artistSelections = [];
 
   List<String> get usedArtistIds {
     final artistIds = <String>{};
@@ -46,7 +50,7 @@ class ArtistsChartBloc extends ChartBloc {
     if (event is InitStateEvent) {
       final user = await provider.get(currentUserKey);
       vm.userId = user.id;
-      await initState(rep);
+      await initArtistsState(rep);
       return true;
     }
     if (event is UserScrobblesAdded && event.user.id == vm.userId) {
@@ -64,13 +68,31 @@ class ArtistsChartBloc extends ChartBloc {
     return await handleBase(event, rep);
   }
 
+  Future<void> initArtistsState(ArtistsChartRepository rep) async {
+    super.initState(rep);
+    vm.artistSelections = await rep.getSelections();
+  }
+
   ChartData<DateTime, int> handleScrobbleAdding(
     ChartData<DateTime, int> data,
     Map<String, List<TrackScrobble>> scrobblesPerArtist,
   ) {
-    if (data == null) return null;
-    final newSeries = [...data.series.map((e) => e.deepCopy())];
-    for (final series in newSeries) {
+    final newSeries = data == null
+        ? <String, ChartSeries<DateTime, int>>{}
+        : Map.fromEntries(data.series
+            .map((e) => e.deepCopy())
+            .map((e) => MapEntry(e.name, e)));
+
+    final newArtists = <String>[];
+    for (final s in vm.artistSelections) {
+      if (!newSeries.containsKey(s.artistId)) {
+        newSeries[s.artistId] =
+            ChartSeries(entities: [], color: Color(s.color), name: s.id);
+        newArtists.add(s.artistId);
+      }
+    }
+
+    for (final series in newSeries.values) {
       final scrobbles = scrobblesPerArtist[series.name];
       if (scrobbles == null) continue;
       for (final scrobble in scrobbles) {
@@ -83,7 +105,16 @@ class ArtistsChartBloc extends ChartBloc {
             ChartEntity(normalized, series.entities[index].ordinate + 1);
       }
     }
-    return ChartData(newSeries);
+
+    for (var n in newArtists) {
+      if (newSeries[n].entities.isEmpty) {
+        newSeries.remove(n);
+      }
+    }
+
+    final series = newSeries.values.toList();
+
+    return series.isEmpty ? null : ChartData(series);
   }
 
   Future<void> userScrobblesAdded(
@@ -106,6 +137,7 @@ class ArtistsChartBloc extends ChartBloc {
   }
 
   Future<void> artistSelected(ArtistSelected e, ChartRepository rep) async {
+    vm.artistSelections.add(e.selection);
     await refreshData(rep);
   }
 
@@ -127,6 +159,8 @@ class ArtistsChartBloc extends ChartBloc {
     EpicProvider provider,
     ChartRepository rep,
   ) async {
+    vm.artistSelections
+        .removeWhere((e) => e.id == e.userId && e.id == e.artistId);
     final artists = await provider.get<ArtistsRepository>();
     final artist = await artists.get(e.artistId);
     vm.previousData = handleArtistRemoving(vm.previousData, artist.name);

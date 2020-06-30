@@ -6,14 +6,14 @@ import 'package:moor/moor.dart';
 import '../database.dart';
 import '../mappers.dart';
 
-class ArtistUserInfoDataAccessor extends DatabaseAccessor<MoorDatabase> {
-  ArtistUserInfoDataAccessor(MoorDatabase attachedDatabase,
-      {this.mapper = const ArtistUserInfoMapper()})
+class ArtistInfoForUserDataAccessor extends DatabaseAccessor<MoorDatabase> {
+  ArtistInfoForUserDataAccessor(MoorDatabase attachedDatabase,
+      {this.mapper = const ArtistInfoForUserMapper()})
       : super(attachedDatabase);
-  final ArtistUserInfoMapper mapper;
+  final ArtistInfoForUserMapper mapper;
   static const maxRowsNumber = 1000000;
 
-  Future<List<ArtistUserInfo>> getWhere({
+  Future<List<ArtistInfoForUser>> getWhere({
     List<String> userIds,
     List<String> artistIds,
     int skip,

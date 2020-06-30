@@ -19,19 +19,20 @@ class SelectedArtistsList extends StatefulWidget {
 
 class _SelectedArtistsListState extends EpicState<SelectedArtistsList> {
   List<ArtistSelection> selections;
-  Map<String, ArtistUserInfo> artists;
+  Map<String, ArtistInfoForUser> artists;
   bool userRefreshing;
   String userId;
 
   @override
   Future<void> onLoad(provider) async {
-    final artistUserInfoRep = await provider.get<ArtistUserInfoRepository>();
+    final artistInfoForUserRep =
+        await provider.get<artistInfoForUserRepository>();
     final artistSelections = await provider.get<ArtistSelectionsRepository>();
     final currentUser = await provider.get<User>(currentUserKey);
     userId = currentUser.id;
     selections = await artistSelections.getWhere(userId: userId);
     if (selections.isNotEmpty) {
-      final artistList = await artistUserInfoRep.getWhere(
+      final artistList = await artistInfoForUserRep.getWhere(
           artistIds: selections.map((e) => e.artistId).toList());
       artists = Map.fromEntries(artistList.map((e) => MapEntry(e.artistId, e)));
     } else {
@@ -65,8 +66,9 @@ class _SelectedArtistsListState extends EpicState<SelectedArtistsList> {
   }
 
   Future<void> artistSelected(ArtistSelected e, EpicProvider provider) async {
-    final artistUserInfoRep = await provider.get<ArtistUserInfoRepository>();
-    artists[e.selection.artistId] = await artistUserInfoRep
+    final artistInfoForUserRep =
+        await provider.get<artistInfoForUserRepository>();
+    artists[e.selection.artistId] = await artistInfoForUserRep
         .getWhere(artistIds: [e.selection.artistId]).then((e) => e.first);
     final i = selections.indexWhere((s) => s.artistId == e.selection.artistId);
     if (i != -1)
@@ -81,12 +83,13 @@ class _SelectedArtistsListState extends EpicState<SelectedArtistsList> {
 
   Future<void> scrobblesAdded(
       UserScrobblesAdded e, EpicProvider provider) async {
-    final artistUserInfoRep = await provider.get<ArtistUserInfoRepository>();
+    final artistInfoForUserRep =
+        await provider.get<artistInfoForUserRepository>();
 
     final updatedArtistIds =
         e.newScrobbles.map((e) => e.artistId).toSet().toList();
     final updatedArtistList =
-        await artistUserInfoRep.getWhere(artistIds: updatedArtistIds);
+        await artistInfoForUserRep.getWhere(artistIds: updatedArtistIds);
 
     for (final artist in updatedArtistList) {
       artists[artist.artistId] = artist;

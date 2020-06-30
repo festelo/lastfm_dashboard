@@ -105,15 +105,15 @@ class ArtistSelectionsMoorRepository extends GenericMoorRepository<
   }
 }
 
-class ArtistUserInfoMoorRepository implements ArtistUserInfoRepository {
-  ArtistUserInfoMoorRepository(this.db);
+class ArtistInfoForUserMoorRepository implements artistInfoForUserRepository {
+  ArtistInfoForUserMoorRepository(this.db);
   final MoorDatabase db;
   @override
-  Future<List<ArtistUserInfo>> getWhere(
+  Future<List<ArtistInfoForUser>> getWhere(
       {List<String> artistIds,
       List<String> userIds,
       SortDirection scrobblesSort}) {
-    return db.artistUserInfoDataAccessor.getWhere(
+    return db.artistInfoForUserDataAccessor.getWhere(
       artistIds: artistIds,
       userIds: userIds,
       scrobblesSort: scrobblesSort,

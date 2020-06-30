@@ -7,7 +7,7 @@ import 'package:provider/provider.dart';
 class ArtistListItem extends StatelessWidget {
   final bool drawSelectionCircle;
   final ArtistSelection selection;
-  final ArtistUserInfo artistDetails;
+  final ArtistInfoForUser artistDetails;
 
   static const _colors = <Color>[
     Colors.red,
@@ -99,7 +99,7 @@ class ArtistListItem extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
                   Text(
-                    artistDetails.artistId,
+                    artistDetails.name,
                     style: Theme.of(context).textTheme.subtitle1,
                   ),
                   Text(

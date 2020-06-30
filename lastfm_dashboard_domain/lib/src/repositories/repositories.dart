@@ -28,8 +28,8 @@ abstract class ArtistSelectionsRepository
   Future<void> deleteForUser(String userId, String artistId);
 }
 
-abstract class ArtistUserInfoRepository extends _TranscationableRepository {
-  Future<List<ArtistUserInfo>> getWhere({
+abstract class artistInfoForUserRepository extends _TranscationableRepository {
+  Future<List<ArtistInfoForUser>> getWhere({
     List<String> artistIds,
     List<String> userIds,
     SortDirection scrobblesSort,

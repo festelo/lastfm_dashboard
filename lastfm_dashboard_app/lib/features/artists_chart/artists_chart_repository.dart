@@ -24,6 +24,17 @@ class ArtistsChartRepository extends ChartRepository {
     return DateBounds(pair.a, pair.b);
   }
 
+  Future<List<ArtistSelection>> getSelections() async {
+    final artistSelectionsRep =
+        await provider.get<ArtistSelectionsRepository>();
+
+    final selections = await artistSelectionsRep.getWhere(
+      userId: userId,
+    );
+
+    return selections;
+  }
+
   @override
   Future<ChartData<DateTime, int>> getChartData(
     DatePeriod interval, [
@@ -34,6 +45,7 @@ class ArtistsChartRepository extends ChartRepository {
         await provider.get<TrackScrobblesPerTimeRepository>();
     final artistSelectionsRep =
         await provider.get<ArtistSelectionsRepository>();
+
     final selections = await artistSelectionsRep.getWhere(
       userId: userId,
     );

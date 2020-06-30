@@ -53,7 +53,7 @@ abstract class ArtistSelectionCollection extends Collection<ArtistSelection> {
 }
 
 abstract class UserArtistDetailsQuery extends Query {
-  Future<List<ArtistUserInfo>> getWhere({
+  Future<List<ArtistInfoForUser>> getWhere({
     List<String> artistIds,
     List<String> userIds,
     SortDirection scrobblesSort,

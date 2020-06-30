@@ -6,6 +6,7 @@ typedef ValueBuilder<T> = FutureOr<T> Function();
 typedef ValueBuilderComplex<T> = FutureOr<T> Function(EpicProvider provider);
 
 class Scope {
+  // ignore: unused_field
   final String _debugLabel;
   final List<ScopeListener> _listeners = [];
   var _closed = false;

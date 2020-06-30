@@ -11,14 +11,14 @@ class UserArtistDetailsColumns {
   const UserArtistDetailsColumns();
 }
 
-class UserArtistDetailsMapper extends LiteMapper<ArtistUserInfo> {
+class UserArtistDetailsMapper extends LiteMapper<ArtistInfoForUser> {
   final UserArtistDetailsColumns columns = const UserArtistDetailsColumns();
   final ImageInfoMapper imageMapper;
   const UserArtistDetailsMapper({this.imageMapper = const ImageInfoMapper()});
 
   @override
-  ArtistUserInfo fromMap(Map<String, dynamic> map) {
-    return ArtistUserInfo(
+  ArtistInfoForUser fromMap(Map<String, dynamic> map) {
+    return ArtistInfoForUser(
       mbid: map['mbid'],
       url: map['url'],
       scrobbles: map['scrobbles'],
@@ -29,7 +29,7 @@ class UserArtistDetailsMapper extends LiteMapper<ArtistUserInfo> {
   }
 
   @override
-  Map<String, dynamic> toMap(ArtistUserInfo o) => {
+  Map<String, dynamic> toMap(ArtistInfoForUser o) => {
         'mbid': o.mbid,
         'url': o.url,
         'scrobbles': o.scrobbles,

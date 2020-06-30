@@ -21,13 +21,14 @@ part 'database.g.dart';
     TrackTableAccessor,
     ArtistSelectionTableAccessor,
     TrackScrobblesPerTimeMoorDataAccessor,
-    ArtistUserInfoDataAccessor,
+    ArtistInfoForUserDataAccessor,
     ArtistTableAccessor,
   ],
 )
 class MoorDatabase extends _$MoorDatabase {
   MoorDatabase(QueryExecutor e) : super(e);
-  MoorDatabase.connect(DatabaseConnection connection) : super.connect(connection);
+  MoorDatabase.connect(DatabaseConnection connection)
+      : super.connect(connection);
   Future<void> setTmpDirForAndroid(String folder) async {
     if (Platform.isAndroid) {
       await customStatement('PRAGMA temp_store_directory="${folder}"');

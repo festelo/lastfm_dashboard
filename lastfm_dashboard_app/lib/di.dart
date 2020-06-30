@@ -13,10 +13,9 @@ import 'package:lastfm_dashboard_infrastructure/services/lastfm_service.dart';
 
 import 'config.dart';
 import 'db_builder.dart'
-  if (dart.library.io) "db_builder_ffi.dart"
-  if (dart.library.js) "db_builder_web.dart";
+    if (dart.library.io) 'db_builder_ffi.dart'
+    if (dart.library.js) 'db_builder_web.dart';
 import 'epics/helpers.dart';
-
 
 void _configureInfrastructure(EpicContainer container) {
   container.addSingleton(() => defaultRefreshConfig);
@@ -40,8 +39,8 @@ void _configureInfrastructure(EpicContainer container) {
   container.addSingletonComplex<ArtistSelectionsRepository>(
       (c) async => ArtistSelectionsMoorRepository(await c.get<MoorDatabase>()));
 
-  container.addSingletonComplex<ArtistUserInfoRepository>(
-      (c) async => ArtistUserInfoMoorRepository(await c.get<MoorDatabase>()));
+  container.addSingletonComplex<artistInfoForUserRepository>((c) async =>
+      ArtistInfoForUserMoorRepository(await c.get<MoorDatabase>()));
 
   container.addSingletonComplex<TrackScrobblesPerTimeRepository>((c) async =>
       TrackScrobblesPerTimeMoorRepository(await c.get<MoorDatabase>()));

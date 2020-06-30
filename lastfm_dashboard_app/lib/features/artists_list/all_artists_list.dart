@@ -15,7 +15,7 @@ class AllArtistsList extends StatefulWidget {
 }
 
 class _AllArtistsListState extends EpicState<AllArtistsList> {
-  List<ArtistUserInfo> userArtists;
+  List<ArtistInfoForUser> userArtists;
   Map<String, ArtistSelection> selections;
   bool userRefreshing;
   String userId;
@@ -24,10 +24,11 @@ class _AllArtistsListState extends EpicState<AllArtistsList> {
   Future<void> onLoad(provider) async {
     final artistSelectionsRep =
         await provider.get<ArtistSelectionsRepository>();
-    final artistUserInfoRep = await provider.get<ArtistUserInfoRepository>();
+    final artistInfoForUserRep =
+        await provider.get<artistInfoForUserRepository>();
     final currentUser = await provider.get(currentUserKey);
     userId = currentUser.id;
-    userArtists = await artistUserInfoRep.getWhere(
+    userArtists = await artistInfoForUserRep.getWhere(
       userIds: [userId],
       scrobblesSort: SortDirection.descending,
     );
@@ -53,12 +54,13 @@ class _AllArtistsListState extends EpicState<AllArtistsList> {
 
   Future<void> scrobblesAdded(
       UserScrobblesAdded e, EpicProvider provider) async {
-    final artistUserInfoRep = await provider.get<ArtistUserInfoRepository>();
+    final artistInfoForUserRep =
+        await provider.get<artistInfoForUserRepository>();
 
     final updatedArtistIds =
         e.newScrobbles.map((e) => e.artistId).toSet().toList();
     final updatedArtistList =
-        await artistUserInfoRep.getWhere(artistIds: updatedArtistIds);
+        await artistInfoForUserRep.getWhere(artistIds: updatedArtistIds);
     final updatedArtistMap =
         Map.fromEntries(updatedArtistList.map((e) => MapEntry(e.artistId, e)));
 

@@ -1,4 +1,3 @@
-
 import 'dart:ui';
 
 import 'package:flutter/foundation.dart';
@@ -62,6 +61,8 @@ class UserListItem extends StatelessWidget {
             ),
           );
 
+    final date = refreshing ? null : user.lastSync;
+
     return Padding(
       padding: EdgeInsets.symmetric(vertical: 5),
       child: InkWell(
@@ -98,7 +99,7 @@ class UserListItem extends StatelessWidget {
                 style: Theme.of(context).textTheme.subtitle1,
               ),
             ),
-            Text(user.lastSync?.toHumanable() ?? ''),
+            Text(date?.toHumanable() ?? ''),
             endWidget
           ],
         ),

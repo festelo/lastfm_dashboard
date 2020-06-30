@@ -39,13 +39,14 @@ abstract class GenericTableAccessor<TEntity, TMoor extends DataClass,
   }
 
   Future<void> deleteEntity(id) async {
-    await db.delete(tableInfo)
+    final query = db.delete(tableInfo)
       ..where((t) => t.primaryKey.first.equals(id));
+    await query.go();
   }
 
   Future<void> deleteEntityWhere(Expression<bool> statement) async {
-    await db.delete(tableInfo)
-      ..where((t) => statement);
+    final query = db.delete(tableInfo)..where((t) => statement);
+    await query.go();
   }
 
   Future<TEntity> get(id) async {
