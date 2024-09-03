@@ -50,7 +50,7 @@ jobs:
         with:
             persist-credentials: false
       - name: Download artifact
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v4.1.7
         with:
           name: build
           path: build
